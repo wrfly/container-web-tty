@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  web-tty:
+    image: wrfly/container-web-tty:latest
+    ports:
+      - 8080:8080
+    environments:
+      - WEB_TTY_DEBUG: true
