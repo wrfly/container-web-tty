@@ -5,10 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/wrfly/container-web-tty/config"
-
 	"github.com/sirupsen/logrus"
 	"gopkg.in/urfave/cli.v2"
+
+	"github.com/wrfly/container-web-tty/config"
 )
 
 func appBefore(c *cli.Context) error {
@@ -92,7 +92,7 @@ func main() {
 			conf.Backend.ExtraArgs = c.StringSlice("extra-args")
 			conf.Servers = c.StringSlice("servers")
 			logrus.Debugf("got config: %+v", conf)
-			run(c)
+			run(c, conf)
 			return nil
 		},
 	}

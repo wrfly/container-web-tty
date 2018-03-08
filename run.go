@@ -12,12 +12,14 @@ import (
 	// "github.com/codegangsta/cli"
 	"gopkg.in/urfave/cli.v2"
 
-	"github.com/yudai/gotty/backend/localcommand"
-	"github.com/yudai/gotty/server"
-	"github.com/yudai/gotty/utils"
+	"github.com/wrfly/container-web-tty/gotty/backend/localcommand"
+	"github.com/wrfly/container-web-tty/gotty/server"
+	"github.com/wrfly/container-web-tty/gotty/utils"
+
+	"github.com/wrfly/container-web-tty/config"
 )
 
-func run(c *cli.Context) {
+func run(c *cli.Context, conf config.Config) {
 	// app := cli.NewApp()
 	// app.Name = "gotty"
 	// app.Version = Version + "+" + CommitID
@@ -64,8 +66,10 @@ func run(c *cli.Context) {
 
 	// utils.ApplyFlags(cliFlags, flagMappings, c, appOptions, backendOptions)
 
+	appOptions.Port = fmt.Sprint(conf.Port)
 	appOptions.EnableBasicAuth = c.IsSet("credential")
 	appOptions.EnableTLSClientAuth = c.IsSet("tls-ca-crt")
+	appOptions.PermitWrite = true
 
 	err := appOptions.Validate()
 	if err != nil {
@@ -81,7 +85,7 @@ func run(c *cli.Context) {
 	appOptions.TitleVariables = map[string]interface{}{
 		"command":  args[0],
 		"argv":     args[1:],
-		"hostname": "container_name",
+		"hostname": "container-name",
 	}
 
 	srv, err := server.New(factory, appOptions)
