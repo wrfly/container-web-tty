@@ -20,5 +20,5 @@ test:
 	go test --cover -v `glide nv`
 
 dev: build
-	./$(NAME) --debug
+	./$(NAME) -d docker exec -ti bb sh
 	
