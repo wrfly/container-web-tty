@@ -48,6 +48,7 @@ func main() {
 			Name:        "backend",
 			Aliases:     []string{"b"},
 			EnvVars:     envVars("backend"),
+			Value:       "docker",
 			Usage:       "backend type, docker or kubectl for now",
 			Destination: &conf.Backend.Type,
 		},
@@ -90,6 +91,8 @@ func main() {
 		Action: func(c *cli.Context) error {
 			conf.Backend.ExtraArgs = c.StringSlice("extra-args")
 			conf.Servers = c.StringSlice("servers")
+			logrus.Debugf("got config: %+v", conf)
+			run(c)
 			return nil
 		},
 	}
