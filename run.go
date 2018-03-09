@@ -67,6 +67,7 @@ func run(c *cli.Context, conf config.Config) {
 	// utils.ApplyFlags(cliFlags, flagMappings, c, appOptions, backendOptions)
 
 	appOptions.Port = fmt.Sprint(conf.Port)
+	appOptions.Address = "0.0.0.0"
 	appOptions.EnableBasicAuth = c.IsSet("credential")
 	appOptions.EnableTLSClientAuth = c.IsSet("tls-ca-crt")
 	appOptions.PermitWrite = true
