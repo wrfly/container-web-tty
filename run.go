@@ -78,18 +78,19 @@ func run(c *cli.Context, conf config.Config) {
 	}
 
 	args := c.Args().Slice()
-	factory, err := localcommand.NewFactory(args[0], args[1:], backendOptions)
+	defaultFactory, err := localcommand.NewFactory(args[0], args[1:], backendOptions)
 	if err != nil {
 		exit(err, 3)
 	}
 
+	hostname, _ := os.Hostname()
 	appOptions.TitleVariables = map[string]interface{}{
-		"command":  args[0],
-		"argv":     args[1:],
-		"hostname": "container-name",
+		"hostname":      hostname,
+		"containerName": "",
+		"containerID":   "",
 	}
 
-	srv, err := server.New(factory, appOptions)
+	srv, err := server.New(defaultFactory, appOptions)
 	if err != nil {
 		exit(err, 3)
 	}
