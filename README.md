@@ -15,4 +15,16 @@ Both `docker` and `kubectl` are supported.
 - [ ] proxy mode(client -> server's containers)
 
 ~~- [ ] session and auth~~
+
 ~~- [ ] hold the TTY(with timeout)~~
+
+## Show-off
+
+List the containers on your machine:
+![List containers](images/list.png)
+
+It will excute `sh` if there is no `/bin/bash` inside the container:
+![sh by dfault](images/sh.png)
+
+Of Cause `bash`:
+![also bash](images/bash.png)
