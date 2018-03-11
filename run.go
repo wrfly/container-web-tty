@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"gopkg.in/urfave/cli.v2"
@@ -29,12 +27,6 @@ func run(c *cli.Context, conf config.Config) {
 		exit(err, 1)
 	}
 
-	if len(c.Args().Slice()) == 0 {
-		msg := "Error: No command given."
-		cli.ShowAppHelp(c)
-		exit(fmt.Errorf(msg), 1)
-	}
-
 	appOptions.Port = fmt.Sprint(conf.Port)
 	appOptions.Address = "0.0.0.0"
 	appOptions.PermitWrite = true
@@ -44,22 +36,22 @@ func run(c *cli.Context, conf config.Config) {
 		exit(err, 6)
 	}
 
-	args := c.Args().Slice()
-	defaultFactory, err := localcommand.NewFactory(args[0], args[1:], backendOptions)
-	if err != nil {
-		exit(err, 3)
-	}
-
 	hostname, _ := os.Hostname()
 	appOptions.TitleVariables = map[string]interface{}{
 		"hostname":      hostname,
 		"containerName": "",
 		"containerID":   "",
 	}
-	containerCli, err := container.NewCli(conf.Backend)
+	containerCli, cmds, err := container.NewCli(conf.Backend)
 	if err != nil {
 		exit(err, 3)
 	}
+
+	defaultFactory, err := localcommand.NewFactory(cmds[0], cmds[1:], backendOptions)
+	if err != nil {
+		exit(err, 3)
+	}
+
 	srv, err := server.New(defaultFactory, appOptions, containerCli)
 	if err != nil {
 		exit(err, 3)
@@ -67,8 +59,6 @@ func run(c *cli.Context, conf config.Config) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	gCtx, gCancel := context.WithCancel(context.Background())
-
-	log.Printf("GoTTY is starting with command: %s", strings.Join(args, " "))
 
 	errs := make(chan error, 1)
 	go func() {

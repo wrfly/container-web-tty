@@ -14,7 +14,7 @@ type DockerCli struct {
 	cli *client.Client
 }
 
-func NewDockerCli(conf config.DockerConfig) (*DockerCli, error) {
+func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 	host := ""
 	if conf.DockerAPI != "" {
 		host = "tcp://" + conf.DockerAPI
@@ -26,11 +26,11 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, error) {
 	cli, err := client.NewClient(host, version, nil, UA)
 	if err != nil {
 		logrus.Error(err)
-		return nil, err
+		return nil, nil, err
 	}
 	return &DockerCli{
 		cli: cli,
-	}, nil
+	}, []string{"docker", "exec", "-ti"}, nil
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {

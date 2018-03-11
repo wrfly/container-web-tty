@@ -43,6 +43,7 @@ func main() {
 		&cli.StringFlag{
 			Name:        "log-level",
 			Aliases:     []string{"l"},
+			Value:       "info",
 			EnvVars:     envVars("log-level"),
 			Usage:       "log level",
 			Destination: &conf.LogLevel,
@@ -89,8 +90,8 @@ func main() {
 	}
 
 	app := &cli.App{
-		Name:   "reg",
-		Usage:  "docker registry.v2 cli",
+		Name:   "container-web-tty",
+		Usage:  "connect your containers via a web-tty",
 		Before: appBefore,
 		Flags:  appFlags,
 		EnableShellCompletion: true,

@@ -12,7 +12,7 @@ Both `docker` and `kubectl` are supported.
 - [x] docker backend
 - [ ] kubectl backend
 - [x] beautiful index
-- [ ] hold the TTY(with timeout)
 - [ ] proxy mode(client -> server's containers)
 
 ~~- [ ] session and auth~~
+~~- [ ] hold the TTY(with timeout)~~

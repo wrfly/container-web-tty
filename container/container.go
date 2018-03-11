@@ -14,11 +14,11 @@ type Cli interface {
 	BashExist(ctx context.Context, containerID string) bool
 }
 
-func NewCli(conf config.BackendConfig) (Cli, error) {
+func NewCli(conf config.BackendConfig) (Cli, []string, error) {
 	switch conf.Type {
 	case "docker":
 		return backend.NewDockerCli(conf.Docker)
 	default:
-		return nil, fmt.Errorf("unknown backend type %s", conf.Type)
+		return nil, nil, fmt.Errorf("unknown backend type %s", conf.Type)
 	}
 }
