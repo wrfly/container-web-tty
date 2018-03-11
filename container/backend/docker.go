@@ -42,10 +42,19 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 	containers := []types.Container{}
 	for _, container := range cs {
 		containers = append(containers, types.Container{
-			ID:    container.ID,
-			Name:  container.Names[0],
-			Image: container.Image,
+			ID:      container.ID,
+			Name:    container.Names[0][1:],
+			Image:   container.Image,
+			Command: container.Command,
 		})
 	}
 	return containers
+}
+
+func (docker DockerCli) BashExist(ctx context.Context, cid string) bool {
+	_, err := docker.cli.ContainerStatPath(ctx, cid, "/bin/bash")
+	if err != nil {
+		return false
+	}
+	return true
 }

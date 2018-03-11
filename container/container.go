@@ -11,6 +11,7 @@ import (
 
 type Cli interface {
 	List(context.Context) []types.Container
+	BashExist(ctx context.Context, containerID string) bool
 }
 
 func NewCli(conf config.BackendConfig) (Cli, error) {
