@@ -23,7 +23,7 @@ Both `docker` and `kubectl` are supported.
 List the containers on your machine:
 ![List containers](images/list.png)
 
-It will excute `sh` if there is no `/bin/bash` inside the container:
+It will execute `sh` if there is no `/bin/bash` inside the container:
 ![sh by dfault](images/sh.png)
 
 Of Cause `bash`:

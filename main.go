@@ -11,14 +11,6 @@ import (
 	"github.com/wrfly/container-web-tty/config"
 )
 
-func appBefore(c *cli.Context) error {
-	// set log-level
-	if c.Bool("debug") {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
-	return nil
-}
-
 func envVars(e string) []string {
 	e = strings.ToUpper(e)
 	return []string{"WEB_TTY_" + strings.Replace(e, "-", "_", -1)}
@@ -87,19 +79,26 @@ func main() {
 			EnvVars: envVars("servers"),
 			Usage:   "upstream servers, for proxy mode",
 		},
+		&cli.BoolFlag{
+			Name:    "help",
+			Aliases: []string{"h"},
+			Usage:   "show help",
+		},
 	}
 
 	app := &cli.App{
-		Name:   "container-web-tty",
-		Usage:  "connect your containers via a web-tty",
-		Before: appBefore,
-		Flags:  appFlags,
-		EnableShellCompletion: true,
-		Authors: []*cli.Author{
-			&cli.Author{Name: "wrfly", Email: "mr.wrfly@gmail.com"},
-		},
-		Version: fmt.Sprintf("v%s-%s @%s", Version, CommitID, BuildAt),
+		Name:      "container-web-tty",
+		Usage:     "connect your containers via a web-tty",
+		UsageText: "container-web-tty [global options]",
+		Flags:     appFlags,
+		HideHelp:  true,
+		Authors:   author,
+		Version:   fmt.Sprintf("Version: %s\tCommit: %s\tDate: %s", Version, CommitID, BuildAt),
 		Action: func(c *cli.Context) error {
+			if c.Bool("help") {
+				return cli.ShowAppHelp(c)
+			}
+
 			conf.Backend.ExtraArgs = c.StringSlice("extra-args")
 			conf.Servers = c.StringSlice("servers")
 			level, err := logrus.ParseLevel(conf.LogLevel)
