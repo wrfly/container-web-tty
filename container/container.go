@@ -13,11 +13,11 @@ type Cli interface {
 	List(context.Context) []types.Container
 }
 
-func NewCli(typ string, Opts interface{}) (Cli, error) {
-	switch typ {
+func NewCli(conf config.BackendConfig) (Cli, error) {
+	switch conf.Type {
 	case "docker":
-		return backend.NewDockerCli(Opts.(config.DockerConfig))
+		return backend.NewDockerCli(conf.Docker)
 	default:
-		return nil, fmt.Errorf("unknown backend type %s", typ)
+		return nil, fmt.Errorf("unknown backend type %s", conf.Type)
 	}
 }

@@ -63,6 +63,13 @@ func main() {
 			Destination: &conf.Backend.Docker.DockerPath,
 		},
 		&cli.StringFlag{
+			Name:        "docker-sock",
+			EnvVars:     envVars("docker-sock"),
+			Value:       "/var/run/docker.sock",
+			Usage:       "docker sock path",
+			Destination: &conf.Backend.Docker.DockerSock,
+		},
+		&cli.StringFlag{
 			Name:        "kubectl-path",
 			EnvVars:     envVars("kubectl-path"),
 			Value:       "/usr/bin/kubectl",

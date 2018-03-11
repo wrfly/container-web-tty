@@ -13,7 +13,10 @@ CTIMEVAR = -X main.CommitID=$(COMMITID) \
 GO_LDFLAGS = -ldflags "-w $(CTIMEVAR)"
 GO_LDFLAGS_STATIC = -ldflags "-w $(CTIMEVAR) -extldflags -static"
 
-build:
+asset:
+	cd gotty && make asset && cd ..
+
+build: asset
 	go build $(GO_LDFLAGS) -o $(NAME) .
 
 test:

@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	// "github.com/codegangsta/cli"
 	"gopkg.in/urfave/cli.v2"
 
 	"github.com/wrfly/container-web-tty/gotty/backend/localcommand"
@@ -17,15 +16,10 @@ import (
 	"github.com/wrfly/container-web-tty/gotty/utils"
 
 	"github.com/wrfly/container-web-tty/config"
+	"github.com/wrfly/container-web-tty/container"
 )
 
 func run(c *cli.Context, conf config.Config) {
-	// app := cli.NewApp()
-	// app.Name = "gotty"
-	// app.Version = Version + "+" + CommitID
-	// app.Usage = "Share your terminal as a web application"
-	// app.HideHelp = true
-
 	appOptions := &server.Options{}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
 		exit(err, 1)
@@ -35,41 +29,14 @@ func run(c *cli.Context, conf config.Config) {
 		exit(err, 1)
 	}
 
-	// cliFlags, flagMappings, err := utils.GenerateFlags(appOptions, backendOptions)
-	// if err != nil {
-	// 	exit(err, 3)
-	// }
-
-	// app.Flags = append(
-	// 	cliFlags,
-	// 	cli.StringFlag{
-	// 		Name:   "config",
-	// 		Value:  "~/.gotty",
-	// 		Usage:  "Config file path",
-	// 		EnvVar: "GOTTY_CONFIG",
-	// 	},
-	// )
-
 	if len(c.Args().Slice()) == 0 {
 		msg := "Error: No command given."
 		cli.ShowAppHelp(c)
 		exit(fmt.Errorf(msg), 1)
 	}
 
-	// configFile := c.String("config")
-	// _, err := os.Stat(homedir.Expand(configFile))
-	// if configFile != "~/.gotty" || !os.IsNotExist(err) {
-	// 	if err := utils.ApplyConfigFile(configFile, appOptions, backendOptions); err != nil {
-	// 		exit(err, 2)
-	// 	}
-	// }
-
-	// utils.ApplyFlags(cliFlags, flagMappings, c, appOptions, backendOptions)
-
 	appOptions.Port = fmt.Sprint(conf.Port)
 	appOptions.Address = "0.0.0.0"
-	appOptions.EnableBasicAuth = c.IsSet("credential")
-	appOptions.EnableTLSClientAuth = c.IsSet("tls-ca-crt")
 	appOptions.PermitWrite = true
 
 	err := appOptions.Validate()
@@ -89,8 +56,11 @@ func run(c *cli.Context, conf config.Config) {
 		"containerName": "",
 		"containerID":   "",
 	}
-
-	srv, err := server.New(defaultFactory, appOptions)
+	containerCli, err := container.NewCli(conf.Backend)
+	if err != nil {
+		exit(err, 3)
+	}
+	srv, err := server.New(defaultFactory, appOptions, containerCli)
 	if err != nil {
 		exit(err, 3)
 	}
