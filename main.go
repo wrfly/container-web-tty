@@ -26,7 +26,10 @@ func envVars(e string) []string {
 
 func main() {
 	conf := config.Config{
-		Backend: config.BackendConfig{},
+		Backend: config.BackendConfig{
+			Docker: config.DockerConfig{},
+			Kube:   config.KuberConfig{},
+		},
 	}
 	appFlags := []cli.Flag{
 		&cli.IntFlag{
@@ -37,12 +40,12 @@ func main() {
 			Value:       8080,
 			Destination: &conf.Port,
 		},
-		&cli.BoolFlag{
-			Name:        "debug",
-			Aliases:     []string{"d"},
-			EnvVars:     envVars("debug"),
-			Usage:       "debug log level",
-			Destination: &conf.Debug,
+		&cli.StringFlag{
+			Name:        "log-level",
+			Aliases:     []string{"l"},
+			EnvVars:     envVars("log-level"),
+			Usage:       "log level",
+			Destination: &conf.LogLevel,
 		},
 		&cli.StringFlag{
 			Name:        "backend",
@@ -57,14 +60,14 @@ func main() {
 			EnvVars:     envVars("docker-path"),
 			Value:       "/usr/bin/docker",
 			Usage:       "docker cli path",
-			Destination: &conf.Backend.DockerPath,
+			Destination: &conf.Backend.Docker.DockerPath,
 		},
 		&cli.StringFlag{
 			Name:        "kubectl-path",
 			EnvVars:     envVars("kubectl-path"),
 			Value:       "/usr/bin/kubectl",
 			Usage:       "kubectl cli path",
-			Destination: &conf.Backend.KubectlPath,
+			Destination: &conf.Backend.Kube.KubectlPath,
 		},
 		&cli.StringSliceFlag{
 			Name:    "extra-args",
@@ -91,7 +94,14 @@ func main() {
 		Action: func(c *cli.Context) error {
 			conf.Backend.ExtraArgs = c.StringSlice("extra-args")
 			conf.Servers = c.StringSlice("servers")
+			level, err := logrus.ParseLevel(conf.LogLevel)
+			if err != nil {
+				logrus.Error(err)
+				return err
+			}
+			logrus.SetLevel(level)
 			logrus.Debugf("got config: %+v", conf)
+
 			run(c, conf)
 			return nil
 		},
