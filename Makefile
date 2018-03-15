@@ -18,12 +18,12 @@ GO_LDFLAGS_STATIC = -ldflags "-w $(CTIMEVAR) -extldflags -static"
 asset:
 	cd gotty && make asset && cd ..
 
-.PHONY: asset
+.PHONY: bin
 bin:
-	mkdir -f bin
+	mkdir -p bin
 
 .PHONY: build
-build: asset
+build: bin
 	go build $(GO_LDFLAGS) -o $(BIN)/$(NAME) .
 
 .PHONY: test
@@ -31,7 +31,7 @@ test:
 	go test --cover -v `glide nv`
 
 .PHONY: dev
-dev: build
+dev: asset build
 	./$(BIN)/$(NAME) -l debug
 
 .PHONY: release
