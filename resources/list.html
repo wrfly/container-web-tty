@@ -26,7 +26,7 @@
                     {{ range .containers }}
                     <tr class="row100 body">
                         <td class="cell100 column1">
-                            <a href="{{ printf "%.12s" .ID }}" target="_blank" title="{{ .ID }}">
+                            <a href="/exec/{{ printf "%.12s" .ID }}" target="_blank" title="{{ .ID }}">
                                 {{ printf "%.12s" .ID }}
                             </a>
                         </td>

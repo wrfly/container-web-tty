@@ -15,9 +15,9 @@ import (
 
 	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/gorilla/websocket"
+	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/container"
-	"github.com/wrfly/container-web-tty/gotty/webtty"
 )
 
 // Server provides a webtty HTTP endpoint.
@@ -114,11 +114,11 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	router.GET("/auth_token.js", server.handleAuthToken)
 	router.GET("/config.js", server.handleConfig)
 
-	router.GET("/c/:id", func(c *gin.Context) {
+	router.GET("/exec/:id", func(c *gin.Context) {
 		c.Redirect(301, c.Request.URL.String()+"/")
 	})
-	router.GET("/c/:id/", server.handleIndex)
-	router.GET("/c/:id/"+"ws", func(c *gin.Context) {
+	router.GET("/exec/:id/", server.handleIndex)
+	router.GET("/exec/:id/"+"ws", func(c *gin.Context) {
 		id := c.Param("id")
 		server.generateHandleWS(ctx, cancel, counter, id).ServeHTTP(c.Writer, c.Request)
 	})

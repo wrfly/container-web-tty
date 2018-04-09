@@ -12,8 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-
-	"github.com/wrfly/container-web-tty/gotty/webtty"
+	"github.com/yudai/gotty/webtty"
 )
 
 func (server *Server) generateHandleWS(ctx context.Context,
