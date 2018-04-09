@@ -1,0 +1,179 @@
+/*//////////////////////////////////////////////////////////////////
+[ RESTYLE TAG ]*/
+* {
+    margin: 0px; 
+    padding: 0px; 
+    box-sizing: border-box;
+}
+
+body, html {
+    height: 100%;
+    font-family: sans-serif;
+    background-color: #393939;    
+}
+
+/* ------------------------------------ */
+a {
+    margin: 0px;
+    transition: all 0.4s;
+    -webkit-transition: all 0.4s;
+    -o-transition: all 0.4s;
+    text-decoration: none;
+    -moz-transition: all 0.4s;
+    color: burlywood;
+}
+
+a:hover {
+    outline: none !important;
+    color: chocolate;
+}
+
+
+/* ------------------------------------ */
+h1,h2,h3,h4,h5,h6 {margin: 0px;}
+
+p {margin: 0px;}
+
+ul, li {
+    margin: 0px;
+    list-style-type: none;
+}
+
+
+/* ------------------------------------ */
+input {
+display: block;
+    outline: none;
+    border: none !important;
+}
+
+textarea {
+display: block;
+outline: none;
+}
+
+textarea:focus, input:focus {
+border-color: transparent !important;
+}
+
+/* ------------------------------------ */
+button {
+    outline: none !important;
+    border: none;
+    background: transparent;
+}
+
+button:hover {
+    cursor: pointer;
+}
+
+iframe {
+    border: none !important;
+}
+
+
+.container-table {
+    width: 100%;
+    min-height: 100vh;
+    background: #fff;
+
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 33px 30px;
+}
+
+.wrap-table {
+width: 1170px;
+}
+
+
+table {
+width: 100%;
+border-collapse: collapse;
+}
+
+th, td {
+font-weight: unset;
+padding-right: 10px;
+text-align:left;
+}
+
+.column1 {
+    width: 20%;
+    padding-left: 40px;
+    min-width: 120px;
+}
+
+.column2 {
+    width: 20%;
+    overflow: hidden;
+    padding-left: 40px;
+}
+
+.column3 {
+    width: 20%;
+    overflow: hidden;
+}
+
+.column4 {
+    width: 20%;
+    overflow: hidden;
+}
+
+.column5 {
+    width: 10%;
+    overflow: hidden;
+}
+
+.column6 {
+    width: 10%;
+    overflow: hidden;
+}
+
+.table-head th {
+    padding-top: 18px;
+    padding-bottom: 18px;
+}
+
+.table-body td {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
+/*==================================================================
+[ Fix header ]*/
+.table {
+    position: relative;
+    padding-top: 60px;
+    background-color: #393939;
+}
+
+.table-head {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
+.table.ver3 th {
+    font-family: Lato-Bold;
+    font-size: 15px;
+    color: #00ad5f;
+    line-height: 1.4;
+    text-transform: uppercase;
+    background-color: #393939;
+}
+
+.table.ver3 td {
+    font-family: Lato-Regular;
+    font-size: 15px;
+    color: #808080;
+    line-height: 1.4;
+    background-color: #222222;
+}

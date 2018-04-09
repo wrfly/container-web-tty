@@ -9,16 +9,16 @@ import (
 
 	"gopkg.in/urfave/cli.v2"
 
-	"github.com/wrfly/container-web-tty/gotty/backend/localcommand"
-	"github.com/wrfly/container-web-tty/gotty/server"
-	"github.com/wrfly/container-web-tty/gotty/utils"
+	"github.com/yudai/gotty/backend/localcommand"
+	"github.com/yudai/gotty/utils"
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"
+	"github.com/wrfly/container-web-tty/route"
 )
 
 func run(c *cli.Context, conf config.Config) {
-	appOptions := &server.Options{}
+	appOptions := &route.Options{}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
 		exit(err, 1)
 	}
@@ -52,7 +52,7 @@ func run(c *cli.Context, conf config.Config) {
 		exit(err, 3)
 	}
 
-	srv, err := server.New(defaultFactory, appOptions, containerCli)
+	srv, err := route.New(defaultFactory, appOptions, containerCli)
 	if err != nil {
 		exit(err, 3)
 	}
@@ -62,7 +62,7 @@ func run(c *cli.Context, conf config.Config) {
 
 	errs := make(chan error, 1)
 	go func() {
-		errs <- srv.Run(ctx, server.WithGracefullContext(gCtx))
+		errs <- srv.Run(ctx, route.WithGracefullContext(gCtx))
 	}()
 	err = waitSignals(errs, cancel, gCancel)
 
