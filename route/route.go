@@ -37,25 +37,26 @@ type Server struct {
 func New(factory Factory, options *Options, containerCli container.Cli) (*Server, error) {
 	indexData, err := Asset("static/index.html")
 	if err != nil {
-		panic("index not found") // must be in bindata
+		return nil, err
 	}
 	indexTemplate, err := template.New("index").Parse(string(indexData))
 	if err != nil {
-		panic("index template parse failed") // must be valid
+		return nil, err
 	}
 
 	listIndexData, err := Asset("static/list.html")
 	if err != nil {
-		panic("list index not found") // must be in bindata
+		return nil, err
 	}
 	listTemplate, err := template.New("list").Parse(string(listIndexData))
 	if err != nil {
-		panic("list template parse failed") // must be valid
+		return nil, err
 	}
 
-	titleTemplate, err := noesctmpl.New("title").Parse(options.TitleFormat)
+	titleFormat := "{{ .containerName }} - {{ .containerID }}@{{ .hostname }}"
+	titleTemplate, err := noesctmpl.New("title").Parse(titleFormat)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse window title format `%s`", options.TitleFormat)
+		return nil, err
 	}
 
 	var originChekcer func(r *http.Request) bool
@@ -145,6 +146,8 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		case <-cctx.Done():
 		}
 	}()
+
+	log.Printf("Server running at http://%s", hostPort)
 
 	var err error
 	select {

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -17,7 +16,7 @@ import (
 
 func (server *Server) generateHandleWS(ctx context.Context,
 	cancel context.CancelFunc, counter *counter, containerID string) http.HandlerFunc {
-	once := new(int64)
+	// once := new(int64)
 
 	go func() {
 		select {
@@ -28,13 +27,13 @@ func (server *Server) generateHandleWS(ctx context.Context,
 	}()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if server.options.Once {
-			success := atomic.CompareAndSwapInt64(once, 0, 1)
-			if !success {
-				http.Error(w, "Server is shutting down", http.StatusServiceUnavailable)
-				return
-			}
-		}
+		// if server.options.Once {
+		// 	success := atomic.CompareAndSwapInt64(once, 0, 1)
+		// 	if !success {
+		// 		http.Error(w, "Server is shutting down", http.StatusServiceUnavailable)
+		// 		return
+		// 	}
+		// }
 
 		num := counter.add(1)
 		closeReason := "unknown reason"
@@ -46,9 +45,9 @@ func (server *Server) generateHandleWS(ctx context.Context,
 				closeReason, r.RemoteAddr, num, server.options.MaxConnection,
 			)
 
-			if server.options.Once {
-				cancel()
-			}
+			// if server.options.Once {
+			// 	cancel()
+			// }
 		}()
 
 		if int64(server.options.MaxConnection) != 0 {
@@ -107,9 +106,9 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, a
 	if err != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
 	}
-	if init.AuthToken != server.options.Credential {
-		return errors.New("failed to authenticate websocket connection")
-	}
+	// if init.AuthToken != server.options.Credential {
+	// 	return errors.New("failed to authenticate websocket connection")
+	// }
 
 	var slave Slave
 	slave, err = server.factory.New(map[string][]string{
@@ -144,9 +143,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, a
 	opts := []webtty.Option{
 		webtty.WithWindowTitle(titleBuf.Bytes()),
 	}
-	if server.options.PermitWrite {
-		opts = append(opts, webtty.WithPermitWrite())
-	}
+	opts = append(opts, webtty.WithPermitWrite())
 	// if server.options.EnableReconnect {
 	// 	opts = append(opts, webtty.WithReconnect(server.options.ReconnectTime))
 	// }

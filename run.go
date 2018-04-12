@@ -22,6 +22,7 @@ func run(c *cli.Context, conf config.Config) {
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
 		exit(err, 1)
 	}
+
 	backendOptions := &localcommand.Options{}
 	if err := utils.ApplyDefaultValues(backendOptions); err != nil {
 		exit(err, 1)
@@ -29,12 +30,6 @@ func run(c *cli.Context, conf config.Config) {
 
 	appOptions.Port = fmt.Sprint(conf.Port)
 	appOptions.Address = "0.0.0.0"
-	appOptions.PermitWrite = true
-
-	err := appOptions.Validate()
-	if err != nil {
-		exit(err, 6)
-	}
 
 	hostname, _ := os.Hostname()
 	appOptions.TitleVariables = map[string]interface{}{

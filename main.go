@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/urfave/cli.v2"
 
@@ -107,6 +108,9 @@ func main() {
 				return err
 			}
 			logrus.SetLevel(level)
+			if level != logrus.DebugLevel {
+				gin.SetMode(gin.ReleaseMode)
+			}
 			logrus.Debugf("got config: %+v", conf)
 
 			run(c, conf)
