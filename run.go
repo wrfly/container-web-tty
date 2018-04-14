@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,12 +21,12 @@ import (
 func run(c *cli.Context, conf config.Config) {
 	appOptions := &route.Options{}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
-		exit(err, 1)
+		log.Fatal(err)
 	}
 
 	backendOptions := &localcommand.Options{}
 	if err := utils.ApplyDefaultValues(backendOptions); err != nil {
-		exit(err, 1)
+		log.Fatal(err)
 	}
 
 	appOptions.Port = fmt.Sprint(conf.Port)
@@ -39,17 +40,17 @@ func run(c *cli.Context, conf config.Config) {
 	}
 	containerCli, cmds, err := container.NewCli(conf.Backend)
 	if err != nil {
-		exit(err, 3)
+		log.Fatal(err)
 	}
 
 	defaultFactory, err := localcommand.NewFactory(cmds[0], cmds[1:], backendOptions)
 	if err != nil {
-		exit(err, 3)
+		log.Fatal(err)
 	}
 
 	srv, err := route.New(defaultFactory, appOptions, containerCli)
 	if err != nil {
-		exit(err, 3)
+		log.Fatal(err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -62,17 +63,8 @@ func run(c *cli.Context, conf config.Config) {
 	err = waitSignals(errs, cancel, gCancel)
 
 	if err != nil && err != context.Canceled {
-		fmt.Printf("Error: %s\n", err)
-		exit(err, 8)
+		log.Fatal(err)
 	}
-
-}
-
-func exit(err error, code int) {
-	if err != nil {
-		fmt.Println(err)
-	}
-	os.Exit(code)
 }
 
 func waitSignals(errs chan error, cancel context.CancelFunc, gracefullCancel context.CancelFunc) error {

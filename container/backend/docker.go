@@ -15,17 +15,17 @@ type DockerCli struct {
 }
 
 func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
-	host := ""
-	if conf.DockerAPI != "" {
-		host = "tcp://" + conf.DockerAPI
+	host := conf.DockerHost
+	if host[:1] == "/" {
+		host = "unix://" + host
 	} else {
-		host = "unix://" + conf.DockerSock
+		host = "tcp://" + host
 	}
 	version := "v1.24"
 	UA := map[string]string{"User-Agent": "engine-api-cli-1.0"}
 	cli, err := client.NewClient(host, version, nil, UA)
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("create new docker client error: %s", err)
 		return nil, nil, err
 	}
 	return &DockerCli{

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,7 +15,6 @@ import (
 
 func (server *Server) generateHandleWS(ctx context.Context,
 	cancel context.CancelFunc, counter *counter, containerID string) http.HandlerFunc {
-	// once := new(int64)
 
 	go func() {
 		select {
@@ -27,14 +25,6 @@ func (server *Server) generateHandleWS(ctx context.Context,
 	}()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// if server.options.Once {
-		// 	success := atomic.CompareAndSwapInt64(once, 0, 1)
-		// 	if !success {
-		// 		http.Error(w, "Server is shutting down", http.StatusServiceUnavailable)
-		// 		return
-		// 	}
-		// }
-
 		num := counter.add(1)
 		closeReason := "unknown reason"
 
@@ -44,10 +34,6 @@ func (server *Server) generateHandleWS(ctx context.Context,
 				"Connection closed by %s: %s, connections: %d/%d",
 				closeReason, r.RemoteAddr, num, server.options.MaxConnection,
 			)
-
-			// if server.options.Once {
-			// 	cancel()
-			// }
 		}()
 
 		if int64(server.options.MaxConnection) != 0 {
@@ -98,7 +84,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, a
 		return fmt.Errorf("failed to authenticate websocket connection")
 	}
 	if typ != websocket.TextMessage {
-		return errors.New("failed to authenticate websocket connection: invalid message type")
+		return fmt.Errorf("failed to authenticate websocket connection: invalid message type")
 	}
 
 	var init InitMessage
@@ -107,7 +93,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, a
 		return fmt.Errorf("failed to authenticate websocket connection")
 	}
 	// if init.AuthToken != server.options.Credential {
-	// 	return errors.New("failed to authenticate websocket connection")
+	// 	return fmt.Errorf("failed to authenticate websocket connection")
 	// }
 
 	var slave Slave
@@ -135,27 +121,15 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, a
 	)
 
 	titleBuf := new(bytes.Buffer)
-	err = server.titleTemplate.Execute(titleBuf, titleVars)
+	err = titleTemplate.Execute(titleBuf, titleVars)
 	if err != nil {
 		return fmt.Errorf("failed to fill window title template")
 	}
 
 	opts := []webtty.Option{
 		webtty.WithWindowTitle(titleBuf.Bytes()),
+		webtty.WithPermitWrite(),
 	}
-	opts = append(opts, webtty.WithPermitWrite())
-	// if server.options.EnableReconnect {
-	// 	opts = append(opts, webtty.WithReconnect(server.options.ReconnectTime))
-	// }
-	// if server.options.Width > 0 {
-	// 	opts = append(opts, webtty.WithFixedColumns(server.options.Width))
-	// }
-	// if server.options.Height > 0 {
-	// 	opts = append(opts, webtty.WithFixedRows(server.options.Height))
-	// }
-	// if server.options.Preferences != nil {
-	// 	opts = append(opts, webtty.WithMasterPreferences(server.options.Preferences))
-	// }
 
 	tty, err := webtty.New(&wsWrapper{conn}, slave, opts...)
 	if err != nil {
@@ -183,7 +157,7 @@ func (server *Server) handleIndex(c *gin.Context) {
 	)
 
 	titleBuf := new(bytes.Buffer)
-	err := server.titleTemplate.Execute(titleBuf, titleVars)
+	err := titleTemplate.Execute(titleBuf, titleVars)
 	if err != nil {
 		c.Error(err)
 	}
@@ -193,7 +167,7 @@ func (server *Server) handleIndex(c *gin.Context) {
 	}
 
 	indexBuf := new(bytes.Buffer)
-	err = server.indexTemplate.Execute(indexBuf, indexVars)
+	err = indexTemplate.Execute(indexBuf, indexVars)
 	if err != nil {
 		c.Error(err)
 	}
@@ -251,7 +225,7 @@ func (server *Server) handleListContainers(c *gin.Context) {
 	)
 
 	titleBuf := new(bytes.Buffer)
-	err := server.titleTemplate.Execute(titleBuf, titleVars)
+	err := titleTemplate.Execute(titleBuf, titleVars)
 	if err != nil {
 		c.Error(err)
 	}
@@ -262,7 +236,7 @@ func (server *Server) handleListContainers(c *gin.Context) {
 	}
 
 	listBuf := new(bytes.Buffer)
-	err = server.listTemplate.Execute(listBuf, listVars)
+	err = listTemplate.Execute(listBuf, listVars)
 	if err != nil {
 		c.Error(err)
 	}

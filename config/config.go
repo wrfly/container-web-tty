@@ -2,8 +2,7 @@ package config
 
 type DockerConfig struct {
 	DockerPath string // default is /usr/bin/docker
-	DockerSock string // default is /var/run/docker.sock
-	DockerAPI  string // default is empty
+	DockerHost string // default is /var/run/docker.sock
 }
 
 type KuberConfig struct {

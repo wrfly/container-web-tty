@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/container"
+	"github.com/wrfly/container-web-tty/util"
 )
 
 // Server provides a webtty HTTP endpoint.
@@ -25,39 +27,45 @@ type Server struct {
 	factory      Factory
 	options      *Options
 	containerCli container.Cli
+	upgrader     *websocket.Upgrader
+	srv          *http.Server
+}
 
-	upgrader      *websocket.Upgrader
+var (
 	indexTemplate *template.Template
 	listTemplate  *template.Template
 	titleTemplate *noesctmpl.Template
+)
+
+func init() {
+	indexData, err := Asset("static/index.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	indexTemplate, err = template.New("index").Parse(string(indexData))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	listIndexData, err := Asset("static/list.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	listTemplate, err = template.New("list").Parse(string(listIndexData))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	titleFormat := "{{ .containerName }} - {{ .containerID }}@{{ .hostname }}"
+	titleTemplate, err = noesctmpl.New("title").Parse(titleFormat)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // New creates a new instance of Server.
 // Server will use the New() of the factory provided to handle each request.
 func New(factory Factory, options *Options, containerCli container.Cli) (*Server, error) {
-	indexData, err := Asset("static/index.html")
-	if err != nil {
-		return nil, err
-	}
-	indexTemplate, err := template.New("index").Parse(string(indexData))
-	if err != nil {
-		return nil, err
-	}
-
-	listIndexData, err := Asset("static/list.html")
-	if err != nil {
-		return nil, err
-	}
-	listTemplate, err := template.New("list").Parse(string(listIndexData))
-	if err != nil {
-		return nil, err
-	}
-
-	titleFormat := "{{ .containerName }} - {{ .containerID }}@{{ .hostname }}"
-	titleTemplate, err := noesctmpl.New("title").Parse(titleFormat)
-	if err != nil {
-		return nil, err
-	}
 
 	var originChekcer func(r *http.Request) bool
 	if options.WSOrigin != "" {
@@ -81,9 +89,6 @@ func New(factory Factory, options *Options, containerCli container.Cli) (*Server
 			Subprotocols:    webtty.Protocols,
 			CheckOrigin:     originChekcer,
 		},
-		indexTemplate: indexTemplate,
-		titleTemplate: titleTemplate,
-		listTemplate:  listTemplate,
 	}, nil
 }
 
@@ -99,7 +104,10 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 
 	counter := newCounter(time.Duration(server.options.Timeout) * time.Second)
 
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
+	gin.DefaultWriter = ioutil.Discard
+	router.Use(util.GinLogger())
 
 	h := http.FileServer(
 		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "static"},
