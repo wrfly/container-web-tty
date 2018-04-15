@@ -15,6 +15,8 @@
 						<th class="cell100 column2">Image</th>
 						<th class="cell100 column3">Command</th>
 						<th class="cell100 column4">Name</th>
+						<th class="cell100 column5">IP</th>
+						<th class="cell100 column6">Status</th>
 					</tr>
 				</thead>
 			</table>
@@ -33,6 +35,8 @@
                         <td class="cell100 column2" title="{{ .Image }}">{{ printf "%.20s" .Image }}</td>
                         <td class="cell100 column3" title="{{ .Command }}">{{ printf "%.20s" .Command }}</td>
                         <td class="cell100 column4" title="{{ .Name }}">{{ printf "%.20s" .Name }}</td>
+                        <td class="cell100 column5">{{ .IPs }}</td>
+                        <td class="cell100 column6"  title="{{ .State }}">{{ .Status }}</td>
                     </tr>
                     {{ end }}
                 </tbody>

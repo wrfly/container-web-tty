@@ -10,6 +10,7 @@ import (
 )
 
 type Cli interface {
+	GetInfo(ID string) types.Container
 	List(context.Context) []types.Container
 	BashExist(ctx context.Context, containerID string) bool
 }

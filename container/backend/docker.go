@@ -33,6 +33,24 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 	}, []string{conf.DockerPath, "exec", "-ti"}, nil
 }
 
+func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
+	ips := []string{}
+
+	if networkSettings == nil {
+		return ips
+	}
+
+	for net := range networkSettings.Networks {
+		ips = append(ips, networkSettings.Networks[net].IPAddress)
+	}
+
+	return ips
+}
+
+func (docker DockerCli) GetInfo(ID string) types.Container {
+	return types.Container{}
+}
+
 func (docker DockerCli) List(ctx context.Context) []types.Container {
 	cs, err := docker.cli.ContainerList(ctx, apiTypes.ContainerListOptions{})
 	if err != nil {
@@ -46,6 +64,9 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 			Name:    container.Names[0][1:],
 			Image:   container.Image,
 			Command: container.Command,
+			IPs:     getContainerIP(container.NetworkSettings),
+			Status:  container.Status,
+			State:   container.State,
 		})
 	}
 	return containers
