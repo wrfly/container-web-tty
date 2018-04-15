@@ -31,12 +31,12 @@ func run(c *cli.Context, conf config.Config) {
 	appOptions.Port = fmt.Sprint(conf.Port)
 	appOptions.Address = "0.0.0.0"
 
-	hostname, _ := os.Hostname()
-	appOptions.TitleVariables = map[string]interface{}{
-		"hostname":      hostname,
-		"containerName": "",
-		"containerID":   "",
-	}
+	// hostname, _ := os.Hostname()
+	// appOptions.TitleVariables = map[string]interface{}{
+	// 	"hostname":      hostname,
+	// 	"containerName": "",
+	// 	"containerID":   "",
+	// }
 	containerCli, cmds, err := container.NewCli(conf.Backend)
 	if err != nil {
 		log.Fatalf("create backend client error: %s", err)

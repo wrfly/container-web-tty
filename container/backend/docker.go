@@ -11,7 +11,8 @@ import (
 )
 
 type DockerCli struct {
-	cli *client.Client
+	cli        *client.Client
+	containers map[string]types.Container
 }
 
 func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
@@ -29,7 +30,8 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 		return nil, nil, err
 	}
 	return &DockerCli{
-		cli: cli,
+		cli:        cli,
+		containers: map[string]types.Container{},
 	}, []string{conf.DockerPath, "exec", "-ti"}, nil
 }
 
@@ -48,7 +50,7 @@ func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
 }
 
 func (docker DockerCli) GetInfo(ID string) types.Container {
-	return types.Container{}
+	return docker.containers[ID]
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {
@@ -69,6 +71,12 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 			State:   container.State,
 		})
 	}
+
+	for _, c := range containers {
+		// see list.html:31
+		docker.containers[c.ID[:12]] = c
+	}
+
 	return containers
 }
 

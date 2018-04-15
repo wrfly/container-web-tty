@@ -11,10 +11,12 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/webtty"
+
+	"github.com/wrfly/container-web-tty/types"
 )
 
 func (server *Server) generateHandleWS(ctx context.Context,
-	cancel context.CancelFunc, counter *counter, containerID string) http.HandlerFunc {
+	cancel context.CancelFunc, counter *counter, container types.Container) http.HandlerFunc {
 
 	go func() {
 		select {
@@ -58,12 +60,12 @@ func (server *Server) generateHandleWS(ctx context.Context,
 		defer conn.Close()
 
 		sh := "sh"
-		if server.containerCli.BashExist(r.Context(), containerID) {
+		if server.containerCli.BashExist(r.Context(), container.ID) {
 			sh = "bash"
 		}
-		args := []string{containerID, sh}
+		args := []string{container.ID, sh}
 
-		err = server.processWSConn(ctx, conn, args)
+		err = server.processWSConn(ctx, conn, container, args)
 
 		switch err {
 		case ctx.Err():
@@ -78,7 +80,8 @@ func (server *Server) generateHandleWS(ctx context.Context,
 	}
 }
 
-func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, args []string) error {
+func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
+	container types.Container, args []string) error {
 	typ, initLine, err := conn.ReadMessage()
 	if err != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
@@ -109,9 +112,9 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, a
 		[]string{"server", "master", "slave"},
 		map[string]map[string]interface{}{
 			"server": map[string]interface{}{
-				"hostname":      server.options.TitleVariables["hostname"].(string),
-				"containerName": args[0],
-				"containerID":   args[0],
+				"containerIP":   container.IPs[0],
+				"containerName": container.Name,
+				"containerID":   container.ID,
 			},
 			"master": map[string]interface{}{
 				"remote_addr": conn.RemoteAddr(),
@@ -141,16 +144,12 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, a
 	return err
 }
 
-func (server *Server) handleIndex(c *gin.Context) {
+func (server *Server) handleExec(c *gin.Context) {
 	titleVars := server.titleVariables(
-		[]string{"server", "master"},
+		[]string{"server"},
 		map[string]map[string]interface{}{
-			"master": map[string]interface{}{
-				"remote_addr": c.Request.RemoteAddr,
-			},
 			"server": map[string]interface{}{
-				"hostname":      server.options.TitleVariables["hostname"].(string),
-				"containerName": "name",
+				"containerName": "Name",
 				"containerID":   "ID",
 			},
 		},
@@ -161,6 +160,7 @@ func (server *Server) handleIndex(c *gin.Context) {
 	if err != nil {
 		c.Error(err)
 	}
+	log.Info(titleBuf.String())
 
 	indexVars := map[string]interface{}{
 		"title": titleBuf.String(),
@@ -210,33 +210,13 @@ func (server *Server) titleVariables(order []string, varUnits map[string]map[str
 }
 
 func (server *Server) handleListContainers(c *gin.Context) {
-	titleVars := server.titleVariables(
-		[]string{"server", "master"},
-		map[string]map[string]interface{}{
-			"master": map[string]interface{}{
-				"remote_addr": c.Request.RemoteAddr,
-			},
-			"server": map[string]interface{}{
-				"containerName": "List",
-				"containerID":   "Containers",
-				"hostname":      server.options.TitleVariables["hostname"].(string),
-			},
-		},
-	)
-
-	titleBuf := new(bytes.Buffer)
-	err := titleTemplate.Execute(titleBuf, titleVars)
-	if err != nil {
-		c.Error(err)
-	}
-
 	listVars := map[string]interface{}{
-		"title":      titleBuf.String(),
+		"title":      "List Containers",
 		"containers": server.containerCli.List(c.Request.Context()),
 	}
 
 	listBuf := new(bytes.Buffer)
-	err = listTemplate.Execute(listBuf, listVars)
+	err := listTemplate.Execute(listBuf, listVars)
 	if err != nil {
 		c.Error(err)
 	}

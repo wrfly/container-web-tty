@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"regexp"
 	noesctmpl "text/template"
 	"time"
@@ -28,6 +29,7 @@ type Server struct {
 	containerCli container.Cli
 	upgrader     *websocket.Upgrader
 	srv          *http.Server
+	hostname     string
 }
 
 var (
@@ -55,7 +57,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	titleFormat := "{{ .containerName }} - {{ .containerID }}@{{ .hostname }}"
+	titleFormat := "{{ .containerName }} - {{ printf \"%.8s\" .containerID }}@{{ .containerIP }}"
 	titleTemplate, err = noesctmpl.New("title").Parse(titleFormat)
 	if err != nil {
 		log.Fatal(err)
@@ -77,10 +79,12 @@ func New(factory Factory, options *Options, containerCli container.Cli) (*Server
 		}
 	}
 
+	h, _ := os.Hostname()
 	return &Server{
 		factory:      factory,
 		options:      options,
 		containerCli: containerCli,
+		hostname:     h,
 
 		upgrader: &websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -125,10 +129,11 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	router.GET("/exec/:id", func(c *gin.Context) {
 		c.Redirect(301, c.Request.URL.String()+"/")
 	})
-	router.GET("/exec/:id/", server.handleIndex)
+	router.GET("/exec/:id/", server.handleExec)
 	router.GET("/exec/:id/"+"ws", func(c *gin.Context) {
 		id := c.Param("id")
-		server.generateHandleWS(ctx, cancel, counter, id).ServeHTTP(c.Writer, c.Request)
+		containerInfo := server.containerCli.GetInfo(id)
+		server.generateHandleWS(ctx, cancel, counter, containerInfo).ServeHTTP(c.Writer, c.Request)
 	})
 
 	hostPort := net.JoinHostPort(server.options.Address, server.options.Port)
