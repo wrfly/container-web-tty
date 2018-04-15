@@ -5,17 +5,16 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"regexp"
 	noesctmpl "text/template"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/elazarl/go-bindata-assetfs"
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/container"
@@ -155,7 +154,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		}
 	}()
 
-	log.Printf("Server running at http://%s", hostPort)
+	log.Infof("Server running at http://%s", hostPort)
 
 	var err error
 	select {

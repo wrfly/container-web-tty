@@ -3,15 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"gopkg.in/urfave/cli.v2"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/backend/localcommand"
 	"github.com/yudai/gotty/utils"
+	"gopkg.in/urfave/cli.v2"
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"
@@ -24,9 +23,9 @@ func run(c *cli.Context, conf config.Config) {
 		log.Fatal(err)
 	}
 
-	backendOptions := &localcommand.Options{}
-	if err := utils.ApplyDefaultValues(backendOptions); err != nil {
-		log.Fatal(err)
+	backendOptions := &localcommand.Options{
+		CloseSignal:  1,
+		CloseTimeout: -1,
 	}
 
 	appOptions.Port = fmt.Sprint(conf.Port)
@@ -40,17 +39,17 @@ func run(c *cli.Context, conf config.Config) {
 	}
 	containerCli, cmds, err := container.NewCli(conf.Backend)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("create backend client error: %s", err)
 	}
 
 	defaultFactory, err := localcommand.NewFactory(cmds[0], cmds[1:], backendOptions)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("create factory command error: %s", err)
 	}
 
 	srv, err := route.New(defaultFactory, appOptions, containerCli)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("create server error: %s", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -60,10 +59,11 @@ func run(c *cli.Context, conf config.Config) {
 	go func() {
 		errs <- srv.Run(ctx, route.WithGracefullContext(gCtx))
 	}()
+
 	err = waitSignals(errs, cancel, gCancel)
 
 	if err != nil && err != context.Canceled {
-		log.Fatal(err)
+		log.Fatalf("server exist with error: %s", err)
 	}
 }
 

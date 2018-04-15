@@ -30,7 +30,7 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 	}
 	return &DockerCli{
 		cli: cli,
-	}, []string{"docker", "exec", "-ti"}, nil
+	}, []string{conf.DockerPath, "exec", "-ti"}, nil
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {

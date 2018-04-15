@@ -5,11 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/webtty"
 )
 
@@ -30,7 +30,7 @@ func (server *Server) generateHandleWS(ctx context.Context,
 
 		defer func() {
 			num := counter.done()
-			log.Printf(
+			log.Infof(
 				"Connection closed by %s: %s, connections: %d/%d",
 				closeReason, r.RemoteAddr, num, server.options.MaxConnection,
 			)
@@ -43,7 +43,7 @@ func (server *Server) generateHandleWS(ctx context.Context,
 			}
 		}
 
-		log.Printf("New client connected: %s, connections: %d/%d", r.RemoteAddr, num, server.options.MaxConnection)
+		log.Infof("New client connected: %s, connections: %d/%d", r.RemoteAddr, num, server.options.MaxConnection)
 
 		if r.Method != "GET" {
 			http.Error(w, "Method not allowed", 405)
