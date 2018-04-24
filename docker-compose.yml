@@ -5,8 +5,9 @@ services:
     image: wrfly/container-web-tty:latest
     ports:
       - 8080:8080
-    environments:
-      - WEB_TTY_DEBUG: false
-      - DOCKER_HOST: tcp://localhost:2323
-    volume:
+    environment:
+      - WEB_TTY_DEBUG: "false"
+      - DOCKER_HOST: "/var/run/docker.sock"
+    volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker

@@ -12,7 +12,7 @@ RUN cd ${SRC} && \
     mv bin/${BIN} /root
 
 FROM alpine
-COPY --from=0 /root/* /bin/
+COPY --from=0 /root/container-web-tty /bin/
 CMD [ "container-web-tty" ]
 
 
