@@ -1,0 +1,20 @@
+package: .
+import:
+- package: github.com/docker/docker
+  version: ^17.5.0-ce-rc3
+  subpackages:
+  - api/types
+  - client
+- package: github.com/elazarl/go-bindata-assetfs
+- package: github.com/gin-gonic/gin
+- package: github.com/gorilla/websocket
+- package: github.com/sirupsen/logrus
+- package: github.com/yudai/gotty
+  version: ^2.0.0-alpha.3
+  subpackages:
+  - backend/localcommand
+  - server
+  - utils
+  - webtty
+- package: gopkg.in/urfave/cli.v2
+  version: ^2

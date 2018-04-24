@@ -10,10 +10,10 @@ import (
 func TestDocker(t *testing.T) {
 	ctx := context.Background()
 	dockerConf := config.DockerConfig{
-		DockerSock: "/var/run/docker.sock",
+		DockerHost: "/var/run/docker.sock",
 	}
 	t.Run("test new docker client", func(t *testing.T) {
-		cli, err := newDockerCli(dockerConf)
+		cli, _, err := NewDockerCli(dockerConf)
 		if err != nil {
 			t.Error(err)
 		}

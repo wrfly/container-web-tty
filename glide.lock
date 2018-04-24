@@ -1,0 +1,118 @@
+hash: 8478d19bcd8f97eb71a8573ae3c98928b9921492a92805c92ca7f674075f9266
+updated: 2018-04-25T01:17:55.316131223+08:00
+imports:
+- name: github.com/codegangsta/cli
+  version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
+- name: github.com/docker/distribution
+  version: 83389a148052d74ac602f5f1d62f86ff2f3c4aa5
+  subpackages:
+  - digestset
+  - reference
+- name: github.com/docker/docker
+  version: 90d35abf7b3535c1c319c872900fbd76374e521c
+  subpackages:
+  - api
+  - api/types
+  - api/types/blkiodev
+  - api/types/container
+  - api/types/events
+  - api/types/filters
+  - api/types/image
+  - api/types/mount
+  - api/types/network
+  - api/types/registry
+  - api/types/strslice
+  - api/types/swarm
+  - api/types/time
+  - api/types/versions
+  - api/types/volume
+  - client
+  - pkg/ioutils
+  - pkg/longpath
+  - pkg/system
+  - pkg/tlsconfig
+- name: github.com/docker/go-connections
+  version: 7395e3f8aa162843a74ed6d48e79627d9792ac55
+  subpackages:
+  - nat
+  - sockets
+  - tlsconfig
+- name: github.com/docker/go-units
+  version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
+- name: github.com/docker/libtrust
+  version: aabc10ec26b754e797f9028f4589c5b7bd90dc20
+- name: github.com/elazarl/go-bindata-assetfs
+  version: d5cac425555ca5cf00694df246e04f05e6a55150
+- name: github.com/fatih/structs
+  version: a9f7daa9c2729e97450c2da2feda19130a367d8f
+- name: github.com/gin-contrib/sse
+  version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
+- name: github.com/gin-gonic/gin
+  version: d459835d2b077e44f7c9b453505ee29881d5d12d
+  subpackages:
+  - binding
+  - render
+- name: github.com/golang/protobuf
+  version: e09c5db296004fbe3f74490e84dcd62c3c5ddb1b
+  subpackages:
+  - proto
+- name: github.com/gorilla/websocket
+  version: b6ab76f1fe9803ee1d59e7e5b2a797c1fe897ce5
+- name: github.com/hashicorp/go-multierror
+  version: 56912fb08d85084aa318edcf2bba735b97cf35c5
+- name: github.com/kr/pty
+  version: 5cf931ef8f76dccd0910001d74a58a7fca84a83d
+- name: github.com/mattn/go-isatty
+  version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
+- name: github.com/Microsoft/go-winio
+  version: 7da180ee92d8bd8bb8c37fc560e673e6557c392f
+- name: github.com/NYTimes/gziphandler
+  version: 967539e5e271a2bc9b3dcb1285078a1b1df105ae
+- name: github.com/opencontainers/go-digest
+  version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
+- name: github.com/pkg/errors
+  version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
+- name: github.com/Sirupsen/logrus
+  version: 778f2e774c725116edbc3d039dc0dfc1cc62aae8
+- name: github.com/sirupsen/logrus
+  version: c155da19408a8799da419ed3eeb0cb5db0ad5dbc
+- name: github.com/ugorji/go
+  version: f3cacc17c85ecb7f1b6a9e373ee85d1480919868
+  subpackages:
+  - codec
+- name: github.com/yudai/gotty
+  version: a080c85cbc59226c94c6941ad8c395232d72d517
+  subpackages:
+  - backend/localcommand
+  - pkg/homedir
+  - pkg/randomstring
+  - server
+  - utils
+  - webtty
+- name: github.com/yudai/hcl
+  version: 5fa2393b3552119bf33a69adb1402a1160cba23d
+  subpackages:
+  - hcl
+  - json
+- name: golang.org/x/crypto
+  version: 2b6c08872f4b66da917bb4ce98df4f0307330f78
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 66aacef3dd8a676686c7ae3716979581e8b03c47
+  subpackages:
+  - context
+  - context/ctxhttp
+  - proxy
+- name: golang.org/x/sys
+  version: 79b0c6888797020a994db17c8510466c72fe75d9
+  subpackages:
+  - unix
+  - windows
+- name: gopkg.in/go-playground/validator.v8
+  version: 5f1438d3fca68893a817e4a66806cea46a9e4ebf
+- name: gopkg.in/urfave/cli.v2
+  version: d3ae77c26ac8db90639677e4831a728d33c36111
+- name: gopkg.in/yaml.v2
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
+testImports: []

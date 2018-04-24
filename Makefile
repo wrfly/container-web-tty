@@ -3,6 +3,7 @@
 NAME = container-web-tty
 PKG = github.com/wrfly/$(NAME)
 BIN = bin
+IMAGE := wrfly/$(NAME)
 
 VERSION := $(shell cat VERSION)
 COMMITID := $(shell git rev-parse --short HEAD)
@@ -14,9 +15,17 @@ CTIMEVAR = -X main.CommitID=$(COMMITID) \
 GO_LDFLAGS = -ldflags "-w $(CTIMEVAR)"
 GO_LDFLAGS_STATIC = -ldflags "-w $(CTIMEVAR) -extldflags -static"
 
+.PHONY: prepare
+prepare:
+	glide i
+
 .PHONY: bin
 bin:
 	mkdir -p bin
+
+.PHONY: glide-up
+glide-up:
+	https_proxy=http://127.0.0.1:1081 glide up
 
 .PHONY: build
 build: bin
@@ -24,7 +33,7 @@ build: bin
 
 .PHONY: test
 test:
-	go test --cover -v `glide nv`
+	go test -cover -v `glide nv`
 
 .PHONY: dev
 dev: asset build
@@ -35,13 +44,18 @@ release:
 	GOOS=linux GOARCH=amd64 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME)_linux_amd64 .
 	GOOS=darwin GOARCH=amd64 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME)_darwin_amd64 .
 
+.PHONY: image push-image
+image:
+	docker build -t $(IMAGE) .
+push-image:
+	docker push $(IMAGE)
+
+
+## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
 asset: bindata/static/js/gotty-bundle.js bindata/static/index.html bindata/static/favicon.png bindata/static/css/index.css bindata/static/css/xterm.css bindata/static/css/xterm_customize.css
 	go-bindata -prefix bindata -pkg route -ignore=\\.gitkeep -o route/asset.go bindata/...
 	gofmt -w route/asset.go
-
-.PHONY: all
-all: asset gotty
 
 bindata:
 	mkdir bindata
