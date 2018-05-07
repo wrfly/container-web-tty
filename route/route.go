@@ -97,10 +97,10 @@ func New(factory Factory, options *Options, containerCli container.Cli) (*Server
 
 // Run starts the main process of the Server.
 // The cancelation of ctx will shutdown the server immediately with aborting
-// existing connections. Use WithGracefullContext() to support gracefull shutdown.
+// existing connections. Use WithGracefulContext() to support graceful shutdown.
 func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	cctx, cancel := context.WithCancel(ctx)
-	opts := &RunOptions{gracefullCtx: context.Background()}
+	opts := &RunOptions{gracefulCtx: context.Background()}
 	for _, opt := range options {
 		opt(opts)
 	}
@@ -149,7 +149,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 
 	go func() {
 		select {
-		case <-opts.gracefullCtx.Done():
+		case <-opts.gracefulCtx.Done():
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			if err := srv.Shutdown(ctx); err != nil {
@@ -164,7 +164,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	var err error
 	select {
 	case err = <-srvErr:
-		if err == http.ErrServerClosed { // by gracefull ctx
+		if err == http.ErrServerClosed { // by graceful ctx
 			err = nil
 		} else {
 			cancel()

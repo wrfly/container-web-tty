@@ -21,7 +21,7 @@ type Factory interface {
 
 // RunOptions holds a set of configurations for Server.Run().
 type RunOptions struct {
-	gracefullCtx context.Context
+	gracefulCtx context.Context
 }
 
 // RunOption is an option of Server.Run().
@@ -31,6 +31,6 @@ type RunOption func(*RunOptions)
 // with care for existing client connections.
 func WithGracefullContext(ctx context.Context) RunOption {
 	return func(options *RunOptions) {
-		options.gracefullCtx = ctx
+		options.gracefulCtx = ctx
 	}
 }
