@@ -23,10 +23,13 @@ Both `docker` and `kubectl` are supported.
 ## Show-off
 
 List the containers on your machine:
-![List containers](images/list.png)
+
+<img src="images/list.png" width="1100" height="400">
 
 It will execute `sh` if there is no `/bin/bash` inside the container:
-![sh by dfault](images/sh.png)
+
+<img src="images/sh.png" width="400" height="150">
 
 Of Cause `bash`:
-![also bash](images/bash.png)
+
+<img src="images/bash.png" width="400" height="150">
