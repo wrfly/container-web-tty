@@ -81,6 +81,7 @@ func main() {
 		&cli.StringFlag{
 			Name:    "extra-args",
 			EnvVars: envVars("extra-args"),
+			Value:   "-e HISTCONTROL=ignoredups -e TERM=xterm",
 			Usage:   "extra args for your backend",
 		},
 		&cli.StringFlag{
@@ -102,7 +103,8 @@ func main() {
 		Flags:     appFlags,
 		HideHelp:  true,
 		Authors:   author,
-		Version:   fmt.Sprintf("Version: %s\tCommit: %s\tDate: %s", Version, CommitID, BuildAt),
+		Version: fmt.Sprintf("version: %s\tcommit: %s\tdate: %s",
+			Version, CommitID, BuildAt),
 		Action: func(c *cli.Context) error {
 			if c.Bool("help") {
 				return cli.ShowAppHelp(c)
