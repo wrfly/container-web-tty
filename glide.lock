@@ -73,9 +73,13 @@ imports:
 - name: github.com/pkg/errors
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/Sirupsen/logrus
+  repo: https://github.com/sirupsen/logrus.git
+  vcs: git
   version: 778f2e774c725116edbc3d039dc0dfc1cc62aae8
 - name: github.com/sirupsen/logrus
-  version: c155da19408a8799da419ed3eeb0cb5db0ad5dbc
+  repo: https://github.com/sirupsen/logrus.git
+  vcs: git
+  version: v1.0.5
 - name: github.com/ugorji/go
   version: f3cacc17c85ecb7f1b6a9e373ee85d1480919868
   subpackages:

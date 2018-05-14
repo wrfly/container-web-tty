@@ -9,6 +9,9 @@ import:
 - package: github.com/gin-gonic/gin
 - package: github.com/gorilla/websocket
 - package: github.com/sirupsen/logrus
+  repo: git@github.com:/sirupsen/logrus
+  vcs: git
+  version: ^1.0.5
 - package: github.com/yudai/gotty
   version: ^2.0.0-alpha.3
   subpackages:
