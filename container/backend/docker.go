@@ -2,6 +2,8 @@ package backend
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	apiTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -11,8 +13,9 @@ import (
 )
 
 type DockerCli struct {
-	cli        *client.Client
-	containers map[string]types.Container
+	cli             *client.Client
+	containers      map[string]types.Container
+	containersMutex *sync.RWMutex
 }
 
 func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
@@ -29,9 +32,19 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 		logrus.Errorf("create new docker client error: %s", err)
 		return nil, nil, err
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	ping, err := cli.Ping(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	logrus.Infof("Docker is running at [%s] with API [%s]", ping.OSType, ping.APIVersion)
+
 	return &DockerCli{
-		cli:        cli,
-		containers: map[string]types.Container{},
+		cli:             cli,
+		containers:      map[string]types.Container{},
+		containersMutex: &sync.RWMutex{},
 	}, []string{conf.DockerPath, "exec", "-ti"}, nil
 }
 
@@ -50,6 +63,13 @@ func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
 }
 
 func (docker DockerCli) GetInfo(ID string) types.Container {
+	if len(docker.containers) == 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		docker.List(ctx)
+		cancel()
+	}
+	docker.containersMutex.RLock()
+	defer docker.containersMutex.RUnlock()
 	return docker.containers[ID]
 }
 
@@ -72,6 +92,8 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 		})
 	}
 
+	docker.containersMutex.Lock()
+	defer docker.containersMutex.Unlock()
 	for _, c := range containers {
 		// see list.html:31
 		docker.containers[c.ID[:12]] = c
@@ -80,10 +102,18 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 	return containers
 }
 
-func (docker DockerCli) BashExist(ctx context.Context, cid string) bool {
-	_, err := docker.cli.ContainerStatPath(ctx, cid, "/bin/bash")
+func (docker DockerCli) exist(ctx context.Context, cid, path string) bool {
+	_, err := docker.cli.ContainerStatPath(ctx, cid, path)
 	if err != nil {
 		return false
 	}
 	return true
+}
+
+func (docker DockerCli) BashExist(ctx context.Context, cid string) bool {
+	return docker.exist(ctx, cid, "/bin/bash")
+}
+
+func (docker DockerCli) ShExist(ctx context.Context, cid string) bool {
+	return docker.exist(ctx, cid, "/bin/sh")
 }

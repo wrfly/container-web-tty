@@ -59,11 +59,21 @@ func (server *Server) generateHandleWS(ctx context.Context,
 		}
 		defer conn.Close()
 
-		sh := "sh"
-		if server.containerCli.BashExist(r.Context(), container.ID) {
+		sh := ""
+		cID := container.ID
+
+		if server.containerCli.BashExist(r.Context(), cID) {
 			sh = "bash"
+		} else if server.containerCli.ShExist(r.Context(), cID) {
+			sh = "sh"
 		}
-		args := []string{container.ID, sh}
+
+		if sh == "" {
+			log.Errorf("cannot find sh or bash in container [%s]", cID)
+			return
+		}
+
+		args := []string{cID, sh}
 
 		err = server.processWSConn(ctx, conn, container, args)
 
@@ -104,7 +114,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 		"arg": args,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create backend")
+		return fmt.Errorf("failed to create backend: %s", err)
 	}
 	defer slave.Close()
 
@@ -126,7 +136,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 	titleBuf := new(bytes.Buffer)
 	err = titleTemplate.Execute(titleBuf, titleVars)
 	if err != nil {
-		return fmt.Errorf("failed to fill window title template")
+		return fmt.Errorf("failed to fill window title template: %s", err)
 	}
 
 	opts := []webtty.Option{
@@ -136,7 +146,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 
 	tty, err := webtty.New(&wsWrapper{conn}, slave, opts...)
 	if err != nil {
-		return fmt.Errorf("failed to create webtty")
+		return fmt.Errorf("failed to create webtty: %s", err)
 	}
 
 	err = tty.Run(ctx)
@@ -160,7 +170,6 @@ func (server *Server) handleExec(c *gin.Context) {
 	if err != nil {
 		c.Error(err)
 	}
-	log.Info(titleBuf.String())
 
 	indexVars := map[string]interface{}{
 		"title": titleBuf.String(),
