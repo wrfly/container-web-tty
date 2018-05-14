@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -12,9 +13,16 @@ import (
 	"github.com/wrfly/container-web-tty/config"
 )
 
+func dockerCliPath() string {
+	if runtime.GOOS == `darwin` {
+		return "/usr/local/bin/docker"
+	}
+	return "/usr/bin/docker"
+}
+
 func envVars(e string) []string {
 	e = strings.ToUpper(e)
-	return []string{"WEB_TTY_" + strings.Replace(e, "-", "_", -1)}
+	return []string{"CWT_" + strings.Replace(e, "-", "_", -1)}
 }
 
 func main() {
@@ -52,7 +60,7 @@ func main() {
 		&cli.StringFlag{
 			Name:        "docker-path",
 			EnvVars:     envVars("docker-path"),
-			Value:       "/usr/bin/docker",
+			Value:       dockerCliPath(),
 			Usage:       "docker cli path",
 			Destination: &conf.Backend.Docker.DockerPath,
 		},
@@ -70,12 +78,12 @@ func main() {
 			Usage:       "kubectl cli path",
 			Destination: &conf.Backend.Kube.KubectlPath,
 		},
-		&cli.StringSliceFlag{
+		&cli.StringFlag{
 			Name:    "extra-args",
 			EnvVars: envVars("extra-args"),
 			Usage:   "extra args for your backend",
 		},
-		&cli.StringSliceFlag{
+		&cli.StringFlag{
 			Name:    "servers",
 			EnvVars: envVars("servers"),
 			Usage:   "upstream servers, for proxy mode",
@@ -100,8 +108,8 @@ func main() {
 				return cli.ShowAppHelp(c)
 			}
 
-			conf.Backend.ExtraArgs = c.StringSlice("extra-args")
-			conf.Servers = c.StringSlice("servers")
+			conf.Backend.ExtraArgs = strings.Split(c.String("extra-args"), " ")
+			conf.Servers = strings.Split(c.String("servers"), " ")
 			level, err := logrus.ParseLevel(conf.LogLevel)
 			if err != nil {
 				logrus.Error(err)

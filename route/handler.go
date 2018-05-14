@@ -114,7 +114,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 		"arg": args,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create backend")
+		return fmt.Errorf("failed to create backend: %s", err)
 	}
 	defer slave.Close()
 
@@ -136,7 +136,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 	titleBuf := new(bytes.Buffer)
 	err = titleTemplate.Execute(titleBuf, titleVars)
 	if err != nil {
-		return fmt.Errorf("failed to fill window title template")
+		return fmt.Errorf("failed to fill window title template: %s", err)
 	}
 
 	opts := []webtty.Option{
@@ -146,7 +146,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 
 	tty, err := webtty.New(&wsWrapper{conn}, slave, opts...)
 	if err != nil {
-		return fmt.Errorf("failed to create webtty")
+		return fmt.Errorf("failed to create webtty: %s", err)
 	}
 
 	err = tty.Run(ctx)

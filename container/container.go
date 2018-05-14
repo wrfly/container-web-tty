@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/backend/localcommand"
 
 	"github.com/wrfly/container-web-tty/config"
@@ -38,6 +39,7 @@ func NewCliBackend(conf config.BackendConfig) (cli Cli, factory *localcommand.Fa
 		CloseSignal:  1,
 		CloseTimeout: -1,
 	}
+	logrus.Infof("backend args: %v", args)
 	factory, err = localcommand.NewFactory(args[0], args[1:], backendOptions)
 	if err != nil {
 		return
