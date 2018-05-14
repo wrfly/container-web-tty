@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/yudai/gotty/backend/localcommand"
+
 	"github.com/yudai/gotty/utils"
 	"gopkg.in/urfave/cli.v2"
 
@@ -23,31 +23,14 @@ func run(c *cli.Context, conf config.Config) {
 		log.Fatal(err)
 	}
 
-	backendOptions := &localcommand.Options{
-		CloseSignal:  1,
-		CloseTimeout: -1,
-	}
-
 	appOptions.Port = fmt.Sprint(conf.Port)
-	appOptions.Address = "0.0.0.0"
 
-	// hostname, _ := os.Hostname()
-	// appOptions.TitleVariables = map[string]interface{}{
-	// 	"hostname":      hostname,
-	// 	"containerName": "",
-	// 	"containerID":   "",
-	// }
-	containerCli, cmds, err := container.NewCli(conf.Backend)
+	containerCli, factory, err := container.NewCliBackend(conf.Backend)
 	if err != nil {
 		log.Fatalf("create backend client error: %s", err)
 	}
 
-	defaultFactory, err := localcommand.NewFactory(cmds[0], cmds[1:], backendOptions)
-	if err != nil {
-		log.Fatalf("create factory command error: %s", err)
-	}
-
-	srv, err := route.New(defaultFactory, appOptions, containerCli)
+	srv, err := route.New(factory, appOptions, containerCli)
 	if err != nil {
 		log.Fatalf("create server error: %s", err)
 	}

@@ -59,11 +59,21 @@ func (server *Server) generateHandleWS(ctx context.Context,
 		}
 		defer conn.Close()
 
-		sh := "sh"
-		if server.containerCli.BashExist(r.Context(), container.ID) {
+		sh := ""
+		cID := container.ID
+
+		if server.containerCli.BashExist(r.Context(), cID) {
 			sh = "bash"
+		} else if server.containerCli.ShExist(r.Context(), cID) {
+			sh = "sh"
 		}
-		args := []string{container.ID, sh}
+
+		if sh == "" {
+			log.Errorf("cannot find sh or bash in container [%s]", cID)
+			return
+		}
+
+		args := []string{cID, sh}
 
 		err = server.processWSConn(ctx, conn, container, args)
 
@@ -160,7 +170,6 @@ func (server *Server) handleExec(c *gin.Context) {
 	if err != nil {
 		c.Error(err)
 	}
-	log.Info(titleBuf.String())
 
 	indexVars := map[string]interface{}{
 		"title": titleBuf.String(),
