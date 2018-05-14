@@ -13,7 +13,9 @@ import (
 )
 
 type Cli interface {
+	// GetInfo of a container
 	GetInfo(ID string) types.Container
+	// List all containers
 	List(context.Context) []types.Container
 	BashExist(ctx context.Context, containerID string) bool
 	ShExist(ctx context.Context, containerID string) bool
