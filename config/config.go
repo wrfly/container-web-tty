@@ -17,9 +17,18 @@ type BackendConfig struct {
 	ExtraArgs []string // extra args pass to docker or kubectl
 }
 
+type ControlConfig struct {
+	Enable  bool
+	Start   bool
+	Stop    bool
+	Restart bool
+	Kill    bool
+}
+
 type Config struct {
 	Port     int
 	LogLevel string
+	Control  ControlConfig
 	Backend  BackendConfig
 	Servers  []string // for proxy mode
 }

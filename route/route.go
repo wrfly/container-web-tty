@@ -100,6 +100,8 @@ func New(factory Factory, options *Options, containerCli container.Cli) (*Server
 // existing connections. Use WithGracefulContext() to support graceful shutdown.
 func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	cctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	opts := &RunOptions{gracefulCtx: context.Background()}
 	for _, opt := range options {
 		opt(opts)
@@ -129,11 +131,13 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	router.GET("/exec/:id", func(c *gin.Context) {
 		c.Redirect(301, c.Request.URL.String()+"/")
 	})
-	router.GET("/exec/:id/", server.handleExec)
+	router.GET("/exec/:id/", func(c *gin.Context) {
+		containerInfo := server.containerCli.GetInfo(c.Param("id"))
+		server.handleExec(c, containerInfo)
+	})
 	router.GET("/exec/:id/"+"ws", func(c *gin.Context) {
-		id := c.Param("id")
-		containerInfo := server.containerCli.GetInfo(id)
-		server.generateHandleWS(ctx, cancel, counter, containerInfo).ServeHTTP(c.Writer, c.Request)
+		containerInfo := server.containerCli.GetInfo(c.Param("id"))
+		server.generateHandleWS(cctx, counter, containerInfo).ServeHTTP(c.Writer, c.Request)
 	})
 
 	hostPort := net.JoinHostPort(server.options.Address, server.options.Port)

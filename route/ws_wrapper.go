@@ -14,7 +14,6 @@ func (wsw *wsWrapper) Write(p []byte) (n int, err error) {
 		return 0, err
 	}
 	defer writer.Close()
-	// fmt.Printf("write: %s", p)
 	return writer.Write(p)
 }
 
@@ -28,7 +27,6 @@ func (wsw *wsWrapper) Read(p []byte) (n int, err error) {
 		if msgType != websocket.TextMessage {
 			continue
 		}
-		// fmt.Printf("read: %s", p)
 		return reader.Read(p)
 	}
 }

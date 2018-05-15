@@ -15,17 +15,7 @@ import (
 	"github.com/wrfly/container-web-tty/types"
 )
 
-func (server *Server) generateHandleWS(ctx context.Context,
-	cancel context.CancelFunc, counter *counter, container types.Container) http.HandlerFunc {
-
-	go func() {
-		select {
-		case <-counter.timer().C:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-
+func (server *Server) generateHandleWS(ctx context.Context, counter *counter, container types.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		num := counter.add(1)
 		closeReason := "unknown reason"
@@ -83,6 +73,7 @@ func (server *Server) generateHandleWS(ctx context.Context,
 		case webtty.ErrSlaveClosed:
 			closeReason = server.factory.Name()
 		case webtty.ErrMasterClosed:
+			// tab closed
 			closeReason = "client"
 		default:
 			closeReason = fmt.Sprintf("an error: %s", err)
@@ -116,20 +107,25 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 	if err != nil {
 		return fmt.Errorf("failed to create backend: %s", err)
 	}
-	defer slave.Close()
+	defer func() {
+		// exit every shell before close slave
+		slave.Write([]byte("exit\n"))
+		slave.Close()
+	}()
+
+	cIP := "127.0.0.1"
+	if len(container.IPs) > 0 {
+		cIP = container.IPs[0]
+	}
 
 	titleVars := server.titleVariables(
-		[]string{"server", "master", "slave"},
+		[]string{"server"},
 		map[string]map[string]interface{}{
 			"server": map[string]interface{}{
-				"containerIP":   container.IPs[0],
+				"containerIP":   cIP,
 				"containerName": container.Name,
 				"containerID":   container.ID,
 			},
-			"master": map[string]interface{}{
-				"remote_addr": conn.RemoteAddr(),
-			},
-			"slave": slave.WindowTitleVariables(),
 		},
 	)
 
@@ -144,7 +140,8 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 		webtty.WithPermitWrite(),
 	}
 
-	tty, err := webtty.New(&wsWrapper{conn}, slave, opts...)
+	wrapper := &wsWrapper{conn}
+	tty, err := webtty.New(wrapper, slave, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create webtty: %s", err)
 	}
@@ -154,13 +151,13 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 	return err
 }
 
-func (server *Server) handleExec(c *gin.Context) {
+func (server *Server) handleExec(c *gin.Context, cInfo types.Container) {
 	titleVars := server.titleVariables(
 		[]string{"server"},
 		map[string]map[string]interface{}{
 			"server": map[string]interface{}{
-				"containerName": "Name",
-				"containerID":   "ID",
+				"containerName": cInfo.Name,
+				"containerID":   cInfo.ID,
 			},
 		},
 	)
