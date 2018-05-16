@@ -1,4 +1,4 @@
-package: .
+package: github.com/wrfly/container-web-tty
 import:
 - package: github.com/docker/docker
   version: ^17.5.0-ce-rc3

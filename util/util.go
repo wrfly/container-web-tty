@@ -46,3 +46,10 @@ func GinLogger() gin.HandlerFunc {
 		}
 	}
 }
+
+func HomeDIR() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
+}

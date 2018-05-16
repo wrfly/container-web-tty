@@ -5,15 +5,16 @@ type DockerConfig struct {
 	DockerHost string // default is /var/run/docker.sock
 }
 
-type KuberConfig struct {
+type KubeConfig struct {
 	KubectlPath string // default is /usr/bin/kubectl
-	KubectlAPI  string // default is https://localhost:6443
+	KubeAPI     string // default is https://localhost:6443
+	ConfigPath  string // normally is $HOME/.kube/config
 }
 
 type BackendConfig struct {
 	Type      string // docker or kubectl (for now)
 	Docker    DockerConfig
-	Kube      KuberConfig
+	Kube      KubeConfig
 	ExtraArgs []string // extra args pass to docker or kubectl
 }
 

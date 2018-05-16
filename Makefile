@@ -12,7 +12,7 @@ BUILDAT := $(shell date +%Y-%m-%d)
 CTIMEVAR = -X main.CommitID=$(COMMITID) \
 	-X main.Version=$(VERSION) \
 	-X main.BuildAt=$(BUILDAT)
-GO_LDFLAGS = -ldflags "-w $(CTIMEVAR)"
+GO_LDFLAGS = -ldflags "-s -w $(CTIMEVAR)"
 GO_LDFLAGS_STATIC = -ldflags "-w $(CTIMEVAR) -extldflags -static"
 
 .PHONY: prepare

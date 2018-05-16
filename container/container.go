@@ -27,6 +27,8 @@ func NewCliBackend(conf config.BackendConfig) (cli Cli, factory *localcommand.Fa
 	switch conf.Type {
 	case "docker":
 		cli, args, err = backend.NewDockerCli(conf.Docker)
+	case "kube":
+		cli, args, err = backend.NewKubeCli(conf.Kube)
 	default:
 		err = fmt.Errorf("unknown backend type %s", conf.Type)
 	}

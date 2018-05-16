@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,23 +12,11 @@ import (
 	"github.com/wrfly/container-web-tty/config"
 )
 
-func dockerCliPath() string {
-	if runtime.GOOS == `darwin` {
-		return "/usr/local/bin/docker"
-	}
-	return "/usr/bin/docker"
-}
-
-func envVars(e string) []string {
-	e = strings.ToUpper(e)
-	return []string{"CWT_" + strings.Replace(e, "-", "_", -1)}
-}
-
 func main() {
 	conf := config.Config{
 		Backend: config.BackendConfig{
 			Docker: config.DockerConfig{},
-			Kube:   config.KuberConfig{},
+			Kube:   config.KubeConfig{},
 		},
 	}
 	appFlags := []cli.Flag{
@@ -54,7 +41,7 @@ func main() {
 			Aliases:     []string{"b"},
 			EnvVars:     envVars("backend"),
 			Value:       "docker",
-			Usage:       "backend type, docker or kubectl for now",
+			Usage:       "backend type, 'docker' or 'kube' for now",
 			Destination: &conf.Backend.Type,
 		},
 		&cli.StringFlag{
@@ -77,6 +64,20 @@ func main() {
 			Value:       "/usr/bin/kubectl",
 			Usage:       "kubectl cli path",
 			Destination: &conf.Backend.Kube.KubectlPath,
+		},
+		&cli.StringFlag{
+			Name:        "kube-api",
+			EnvVars:     envVars("kube-api"),
+			Value:       "https://localhost:6443",
+			Usage:       "kubectl api address",
+			Destination: &conf.Backend.Kube.KubeAPI,
+		},
+		&cli.StringFlag{
+			Name:        "kube-config",
+			EnvVars:     envVars("kube-config"),
+			Value:       kubeConfigPath(),
+			Usage:       "kube config path",
+			Destination: &conf.Backend.Kube.ConfigPath,
 		},
 		&cli.StringFlag{
 			Name:    "extra-args",
