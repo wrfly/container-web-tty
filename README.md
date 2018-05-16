@@ -14,6 +14,18 @@ based on [yudai/gotty](https://github.com/yudai/gotty) with some changes.
 
 Both `docker` and `kubectl` are supported.
 
+## Usage
+
+For docker:
+
+```bash
+docker run --rm -ti --name web-tty \
+    -p 8080:8080 \
+    -v /usr/bin/docker:/usr/bin/docker \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wrfly/container-web-tty
+```
+
 ## Features
 
 - [x] it works
