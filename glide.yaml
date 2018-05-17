@@ -6,10 +6,13 @@ import:
   - api/types
   - client
 - package: github.com/elazarl/go-bindata-assetfs
+  version: ^1.0.0
 - package: github.com/gin-gonic/gin
+  version: ^1.2.0
 - package: github.com/gorilla/websocket
+  version: ^1.2.0
 - package: github.com/sirupsen/logrus
-  repo: git@github.com:/sirupsen/logrus
+  repo: https://github.com:/sirupsen/logrus.git
   vcs: git
   version: ^1.0.5
 - package: github.com/yudai/gotty
@@ -21,3 +24,11 @@ import:
   - webtty
 - package: gopkg.in/urfave/cli.v2
   version: ^2
+- package: k8s.io/apimachinery
+  subpackages:
+  - pkg/apis/meta/v1
+- package: k8s.io/client-go
+  version: ^7.0.0
+  subpackages:
+  - kubernetes
+  - tools/clientcmd
