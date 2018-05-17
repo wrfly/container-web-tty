@@ -39,7 +39,7 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	logrus.Infof("Docker is running at [%s] with API [%s]", ping.OSType, ping.APIVersion)
+	logrus.Infof("New docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
 
 	return &DockerCli{
 		cli:             cli,
@@ -110,10 +110,12 @@ func (docker DockerCli) exist(ctx context.Context, cid, path string) bool {
 	return true
 }
 
-func (docker DockerCli) BashExist(ctx context.Context, cid string) bool {
-	return docker.exist(ctx, cid, "/bin/bash")
-}
-
-func (docker DockerCli) ShExist(ctx context.Context, cid string) bool {
-	return docker.exist(ctx, cid, "/bin/sh")
+func (docker DockerCli) GetShell(ctx context.Context, cid string) string {
+	for _, sh := range types.SHELL_LIST {
+		if docker.exist(ctx, cid, sh) {
+			return sh
+		}
+	}
+	// generally it would'n come here
+	return ""
 }

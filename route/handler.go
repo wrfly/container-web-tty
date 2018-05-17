@@ -17,6 +17,14 @@ import (
 
 func (server *Server) generateHandleWS(ctx context.Context, counter *counter, container types.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cID := container.ID
+		sh := server.containerCli.GetShell(r.Context(), cID)
+
+		if sh == "" {
+			log.Errorf("cannot find a valid shell in container [%s]", cID)
+			return
+		}
+
 		num := counter.add(1)
 		closeReason := "unknown reason"
 
@@ -49,22 +57,7 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		}
 		defer conn.Close()
 
-		sh := ""
-		cID := container.ID
-
-		if server.containerCli.BashExist(r.Context(), cID) {
-			sh = "bash"
-		} else if server.containerCli.ShExist(r.Context(), cID) {
-			sh = "sh"
-		}
-
-		if sh == "" {
-			log.Errorf("cannot find sh or bash in container [%s]", cID)
-			return
-		}
-
 		args := []string{cID, sh}
-
 		err = server.processWSConn(ctx, conn, container, args)
 
 		switch err {

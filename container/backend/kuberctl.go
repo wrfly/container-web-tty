@@ -2,9 +2,12 @@ package backend
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -32,6 +35,18 @@ func NewKubeCli(conf config.KubeConfig) (*KubeCli, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// get namespaces
+	namespaceList, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, nil, err
+	}
+	ns := []string{}
+	for _, namespace := range namespaceList.Items {
+		ns = append(ns, namespace.Name)
+	}
+	logrus.Infof("New kube client: host [%s], namespaces [%s]",
+		kubeConfig.Host, strings.Join(ns, ","))
 
 	return &KubeCli{
 		cli:             clientset,
@@ -92,42 +107,80 @@ func (kube KubeCli) GetInfo(ID string) types.Container {
 	return kube.containers[ID]
 }
 
+func trimContainerIDPrefix(id string) string {
+	if id := strings.TrimLeft(id, "docker://"); id != "" {
+		return id
+	}
+	return "null"
+}
+
+func containerReady(ready bool) string {
+	if ready {
+		return "Ready"
+	}
+	return "Not Ready"
+}
+
+func containerStartTime(state v1.ContainerState) time.Duration {
+	if state.Running == nil {
+		return 0
+	}
+	return time.Since(state.Running.StartedAt.Time).Round(time.Second)
+}
+
 func (kube KubeCli) List(ctx context.Context) []types.Container {
 	pods, err := kube.cli.CoreV1().Pods("").List(metav1.ListOptions{})
 	if err != nil {
 		logrus.Errorf("kubectl list pods error: %s", err)
 		return nil
 	}
-	logrus.Infof("There are %d pods in the cluster\n", len(pods.Items))
 
-	return nil
+	containers := []types.Container{}
 
-	// cs, err := Kube.cli.ContainerList(ctx, apiTypes.ContainerListOptions{})
-	// if err != nil {
-	// 	logrus.Errorf("list containers eror: %s", err)
-	// 	return nil
-	// }
-	// containers := []types.Container{}
-	// for _, container := range cs {
-	// 	containers = append(containers, types.Container{
-	// 		ID:      container.ID,
-	// 		Name:    container.Names[0][1:],
-	// 		Image:   container.Image,
-	// 		Command: container.Command,
-	// 		IPs:     getContainerIP(container.NetworkSettings),
-	// 		Status:  container.Status,
-	// 		State:   container.State,
-	// 	})
-	// }
+	for _, pod := range pods.Items {
+		// map key is name
+		containerMap := make(map[string]types.Container, 0)
 
-	// 	Kube.containersMutex.Lock()
-	// 	defer Kube.containersMutex.Unlock()
-	// 	for _, c := range containers {
-	// 		// see list.html:31
-	// 		Kube.containers[c.ID[:12]] = c
-	// 	}
+		spec := pod.Spec
+		status := pod.Status
 
-	// 	return containers
+		podIP := pod.Status.PodIP
+		hostIP := pod.Status.HostIP
+		podState := string(status.Phase)
+
+		// spec
+		for _, container := range spec.Containers {
+			c := types.Container{
+				Command: strings.Join(container.Command, " "),
+				Image:   container.Image,
+			}
+			containerMap[container.Name] = c
+		}
+
+		// status
+		for _, container := range status.ContainerStatuses {
+			id := trimContainerIDPrefix(container.ContainerID)
+			c := types.Container{
+				ID:        id,
+				PodName:   pod.GetName(),
+				Namespace: pod.GetNamespace(),
+				Name:      container.Name,
+				State:     fmt.Sprintf("%s / %s", containerReady(container.Ready), podState),
+				Status:    fmt.Sprintf("age: %s; restart %d", containerStartTime(container.State), container.RestartCount),
+				IPs:       []string{podIP, hostIP},
+				Image:     containerMap[container.Name].Image,
+				Command:   containerMap[container.Name].Command,
+			}
+			logrus.Debugf("get container: %+v\n", c)
+			kube.containersMutex.Lock()
+			kube.containersMutex.Unlock()
+			kube.containers[id] = c
+			containers = append(containers, c)
+		}
+
+	}
+
+	return containers
 }
 
 func (kube KubeCli) exist(ctx context.Context, podname, path string) bool {
@@ -163,10 +216,12 @@ func (kube KubeCli) exist(ctx context.Context, podname, path string) bool {
 	return true
 }
 
-func (kube KubeCli) BashExist(ctx context.Context, cid string) bool {
-	return kube.exist(ctx, cid, "/bin/bash")
-}
-
-func (kube KubeCli) ShExist(ctx context.Context, cid string) bool {
-	return kube.exist(ctx, cid, "/bin/sh")
+func (kube KubeCli) GetShell(ctx context.Context, cid string) string {
+	for _, sh := range types.SHELL_LIST {
+		if kube.exist(ctx, cid, sh) {
+			return sh
+		}
+	}
+	// generally it would'n come here
+	return "sh"
 }
