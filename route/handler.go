@@ -31,8 +31,8 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		defer func() {
 			num := counter.done()
 			log.Infof(
-				"Connection closed by %s: %s, connections: %d/%d",
-				closeReason, r.RemoteAddr, num, server.options.MaxConnection,
+				"connection closed by %s: %s, connections: %d",
+				closeReason, r.RemoteAddr, num,
 			)
 		}()
 
@@ -43,7 +43,7 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 			}
 		}
 
-		log.Infof("New client connected: %s, connections: %d/%d", r.RemoteAddr, num, server.options.MaxConnection)
+		log.Infof("new client connected: %s, connections: %d", r.RemoteAddr, num)
 
 		if r.Method != "GET" {
 			http.Error(w, "Method not allowed", 405)
@@ -57,8 +57,14 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		}
 		defer conn.Close()
 
-		args := []string{cID, sh}
-		err = server.processWSConn(ctx, conn, container, args)
+		execArgs := []string{cID, sh}
+
+		// it's a kubernetes pod
+		if container.PodName != "" {
+			execArgs = []string{container.PodName, "-c", container.ContainerName, sh}
+		}
+
+		err = server.processWSConn(ctx, conn, container, execArgs)
 
 		switch err {
 		case ctx.Err():

@@ -30,7 +30,7 @@ docker run --rm -ti --name web-tty \
 
 - [x] it works
 - [x] docker backend
-- [ ] kubectl backend
+- [x] kubectl backend
 - [x] beautiful index
 - [x] environment injection(extra params)
 - [ ] proxy mode(client -> server's containers)
