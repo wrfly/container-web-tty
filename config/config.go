@@ -7,7 +7,6 @@ type DockerConfig struct {
 
 type KubeConfig struct {
 	KubectlPath string // default is /usr/bin/kubectl
-	KubeAPI     string // default is https://localhost:6443
 	ConfigPath  string // normally is $HOME/.kube/config
 }
 

@@ -66,13 +66,6 @@ func main() {
 			Destination: &conf.Backend.Kube.KubectlPath,
 		},
 		&cli.StringFlag{
-			Name:        "kube-api",
-			EnvVars:     envVars("kube-api"),
-			Value:       "https://localhost:6443",
-			Usage:       "kubectl api address",
-			Destination: &conf.Backend.Kube.KubeAPI,
-		},
-		&cli.StringFlag{
 			Name:        "kube-config",
 			EnvVars:     envVars("kube-config"),
 			Value:       kubeConfigPath(),

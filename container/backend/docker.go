@@ -62,15 +62,17 @@ func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
 	return ips
 }
 
-func (docker DockerCli) GetInfo(ID string) types.Container {
+func (docker DockerCli) GetInfo(ctx context.Context, ID string) types.Container {
 	if len(docker.containers) == 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		docker.List(ctx)
-		cancel()
 	}
 	docker.containersMutex.RLock()
-	defer docker.containersMutex.RUnlock()
-	return docker.containers[ID]
+	info, ok := docker.containers[ID]
+	if !ok {
+		info = types.Container{}
+	}
+	docker.containersMutex.RUnlock()
+	return info
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {

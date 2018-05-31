@@ -14,7 +14,7 @@ import (
 
 type Cli interface {
 	// GetInfo of a container
-	GetInfo(ID string) types.Container
+	GetInfo(ctx context.Context, containerID string) types.Container
 	// List all containers
 	List(context.Context) []types.Container
 	GetShell(ctx context.Context, containerID string) string

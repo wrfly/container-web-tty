@@ -3,24 +3,29 @@ package backend
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/sirupsen/logrus"
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/types"
 )
 
 type KubeCli struct {
-	cli             *kubernetes.Clientset
-	containers      map[string]types.Container
-	containersMutex *sync.RWMutex
+	cli                 *kubernetes.Clientset
+	restCli             rest.Interface
+	containers          map[string]types.Container
+	containersMutex     *sync.RWMutex
+	binPath, configPath string
 }
 
 func NewKubeCli(conf config.KubeConfig) (*KubeCli, []string, error) {
@@ -48,63 +53,39 @@ func NewKubeCli(conf config.KubeConfig) (*KubeCli, []string, error) {
 	logrus.Infof("New kube client: host [%s], namespaces [%s]",
 		kubeConfig.Host, strings.Join(ns, ","))
 
+	oriConfigPath, exist := os.LookupEnv("KUBECONFIG")
+	if !exist {
+		logrus.Debugf("original kube config path not exist, set to %s", conf.ConfigPath)
+		os.Setenv("KUBECONFIG", conf.ConfigPath)
+	} else if oriConfigPath != conf.ConfigPath {
+		logrus.Debugf("original kube config path %s != %s", oriConfigPath, conf.ConfigPath)
+		os.Setenv("KUBECONFIG", "$KUBECONFIG:"+conf.ConfigPath)
+	}
+	logrus.Infof("kube config path: %s", os.Getenv("KUBECONFIG"))
+
 	return &KubeCli{
 		cli:             clientset,
+		restCli:         clientset.RESTClient(),
 		containers:      map[string]types.Container{},
 		containersMutex: &sync.RWMutex{},
+		binPath:         conf.KubectlPath,
+		configPath:      conf.ConfigPath,
 	}, []string{conf.KubectlPath, "exec", "-ti"}, nil
-
-	// for {
-	// 	pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	// 	if err != nil {
-	// 		return nil, nil, err
-	// 	}
-	// 	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-
-	// 	// Examples for error handling:
-	// 	// - Use helper functions like e.g. errors.IsNotFound()
-	// 	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-	// 	namespace := "default"
-	// 	pod := "example-xxxxx"
-	// 	_, err = clientset.CoreV1().Pods(namespace).Get(pod, metav1.GetOptions{})
-	// 	if errors.IsNotFound(err) {
-	// 		fmt.Printf("Pod %s in namespace %s not found\n", pod, namespace)
-	// 	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-	// 		fmt.Printf("Error getting pod %s in namespace %s: %v\n",
-	// 			pod, namespace, statusError.ErrStatus.Message)
-	// 	} else if err != nil {
-	// 		return nil, nil, err
-	// 	} else {
-	// 		fmt.Printf("Found pod %s in namespace %s\n", pod, namespace)
-	// 	}
-
-	// 	time.Sleep(10 * time.Second)
-	// }
 }
 
-// func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
-// 	ips := []string{}
-
-// 	if networkSettings == nil {
-// 		return ips
-// 	}
-
-// 	for net := range networkSettings.Networks {
-// 		ips = append(ips, networkSettings.Networks[net].IPAddress)
-// 	}
-
-// 	return ips
-// }
-
-func (kube KubeCli) GetInfo(ID string) types.Container {
+func (kube KubeCli) GetInfo(ctx context.Context, cid string) types.Container {
 	if len(kube.containers) == 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		kube.List(ctx)
-		cancel()
 	}
 	kube.containersMutex.RLock()
 	defer kube.containersMutex.RUnlock()
-	return kube.containers[ID]
+	for id, info := range kube.containers {
+		if strings.HasPrefix(id, cid) {
+			return info
+		}
+	}
+
+	return types.Container{}
 }
 
 func trimContainerIDPrefix(id string) string {
@@ -161,20 +142,26 @@ func (kube KubeCli) List(ctx context.Context) []types.Container {
 		for _, container := range status.ContainerStatuses {
 			id := trimContainerIDPrefix(container.ContainerID)
 			c := types.Container{
-				ID:        id,
-				PodName:   pod.GetName(),
-				Namespace: pod.GetNamespace(),
-				Name:      container.Name,
-				State:     fmt.Sprintf("%s / %s", containerReady(container.Ready), podState),
-				Status:    fmt.Sprintf("age: %s; restart %d", containerStartTime(container.State), container.RestartCount),
-				IPs:       []string{podIP, hostIP},
-				Image:     containerMap[container.Name].Image,
-				Command:   containerMap[container.Name].Command,
+				ID:            id,
+				PodName:       pod.GetName(),
+				ContainerName: container.Name,
+				Namespace:     pod.GetNamespace(),
+				Name:          container.Name,
+				State:         fmt.Sprintf("%s / %s", containerReady(container.Ready), podState),
+				Status:        fmt.Sprintf("age: %s; restart %d", containerStartTime(container.State), container.RestartCount),
+				IPs: func() []string {
+					if podIP != hostIP {
+						return []string{podIP, hostIP}
+					}
+					return []string{hostIP}
+				}(),
+				Image:   containerMap[container.Name].Image,
+				Command: containerMap[container.Name].Command,
 			}
 			logrus.Debugf("get container: %+v\n", c)
 			kube.containersMutex.Lock()
-			kube.containersMutex.Unlock()
 			kube.containers[id] = c
+			kube.containersMutex.Unlock()
 			containers = append(containers, c)
 		}
 
@@ -183,7 +170,41 @@ func (kube KubeCli) List(ctx context.Context) []types.Container {
 	return containers
 }
 
-func (kube KubeCli) exist(ctx context.Context, podname, path string) bool {
+func (kube KubeCli) exist(ctx context.Context, containerID, path string) bool {
+	info := kube.GetInfo(ctx, containerID)
+	if info.ID != containerID {
+		logrus.Errorf("get container [%s]'s info error, real ID: %s", containerID, info.ID)
+		return false
+	}
+	logrus.Debugf("container info: %v", info)
+
+	pn := info.PodName
+	ns := info.Namespace
+	cn := info.ContainerName
+
+	args := []string{"-n", ns, "exec", pn, "-c", cn, "ls", path}
+	cmd := exec.Command(kube.binPath, args...)
+	if err := cmd.Run(); err != nil {
+		logrus.Errorf("run cmd %s %s error: %s", kube.binPath, args, err)
+		return false
+	}
+	return true
+
+	// 	req := kube.restCli.Post().
+	// 		Resource("pods").
+	// 		Name(info.PodName).
+	// 		Namespace(info.Namespace).
+	// 		SubResource("exec").
+	// 		Param("container", info.ContainerName)
+
+	// 	req.VersionedParams(&api.PodExecOptions{
+	// 			Container: info.ContainerName,
+	// 			Command:   "ls "+path,
+	// 			Stdin:     p.Stdin,
+	// 			Stdout:    false,
+	// 			Stderr:    false,
+	// 			TTY:       t.Raw,
+	// }, legacyscheme.ParameterCodec)
 	// pod, err := kube.cli.CoreV1().Pods("").Get(podname, metav1.GetOptions{})
 	// if err != nil {
 	// 	logrus.Errorf("get pod [%s] error: %s", podname, err)
@@ -213,15 +234,15 @@ func (kube KubeCli) exist(ctx context.Context, podname, path string) bool {
 	// if err != nil {
 	// 	return false
 	// }
-	return true
 }
 
 func (kube KubeCli) GetShell(ctx context.Context, cid string) string {
+	logrus.Debugf("get container's shell path, cid: %s", cid)
 	for _, sh := range types.SHELL_LIST {
 		if kube.exist(ctx, cid, sh) {
 			return sh
 		}
 	}
-	// generally it would'n come here
-	return "sh"
+	// generally it won't come so far
+	return ""
 }
