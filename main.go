@@ -82,8 +82,7 @@ func main() {
 		&cli.StringFlag{
 			Name:    "extra-args",
 			EnvVars: envVars("extra-args"),
-			Value:   "-e HISTCONTROL=ignoredups -e TERM=xterm",
-			Usage:   "extra args for your backend",
+			Usage:   "pass extra args to the backend",
 		},
 		&cli.StringFlag{
 			Name:    "servers",
@@ -111,7 +110,17 @@ func main() {
 				return cli.ShowAppHelp(c)
 			}
 
-			conf.Backend.ExtraArgs = strings.Split(c.String("extra-args"), " ")
+			if eArgs := c.String("extra-args"); eArgs != "" {
+				conf.Backend.ExtraArgs = strings.Split(eArgs, " ")
+			} else {
+				switch conf.Backend.Type {
+				case "docker":
+					defaultArgs := "-e HISTCONTROL=ignoredups -e TERM=xterm"
+					conf.Backend.ExtraArgs = strings.Split(defaultArgs, " ")
+				case "kube":
+				}
+			}
+
 			conf.Servers = strings.Split(c.String("servers"), " ")
 			level, err := logrus.ParseLevel(conf.LogLevel)
 			if err != nil {
