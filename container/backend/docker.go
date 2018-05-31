@@ -8,6 +8,7 @@ import (
 	apiTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
+
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/types"
 )

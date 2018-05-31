@@ -19,7 +19,6 @@ import (
 	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/container"
-	"github.com/wrfly/container-web-tty/util"
 )
 
 // Server provides a webtty HTTP endpoint.
@@ -112,7 +111,6 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	gin.DefaultWriter = ioutil.Discard
-	router.Use(util.GinLogger())
 
 	h := http.FileServer(
 		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "static"},
