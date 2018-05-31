@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,23 +12,11 @@ import (
 	"github.com/wrfly/container-web-tty/config"
 )
 
-func dockerCliPath() string {
-	if runtime.GOOS == `darwin` {
-		return "/usr/local/bin/docker"
-	}
-	return "/usr/bin/docker"
-}
-
-func envVars(e string) []string {
-	e = strings.ToUpper(e)
-	return []string{"CWT_" + strings.Replace(e, "-", "_", -1)}
-}
-
 func main() {
 	conf := config.Config{
 		Backend: config.BackendConfig{
 			Docker: config.DockerConfig{},
-			Kube:   config.KuberConfig{},
+			Kube:   config.KubeConfig{},
 		},
 	}
 	appFlags := []cli.Flag{
@@ -54,7 +41,7 @@ func main() {
 			Aliases:     []string{"b"},
 			EnvVars:     envVars("backend"),
 			Value:       "docker",
-			Usage:       "backend type, docker or kubectl for now",
+			Usage:       "backend type, 'docker' or 'kube' for now",
 			Destination: &conf.Backend.Type,
 		},
 		&cli.StringFlag{
@@ -79,10 +66,16 @@ func main() {
 			Destination: &conf.Backend.Kube.KubectlPath,
 		},
 		&cli.StringFlag{
+			Name:        "kube-config",
+			EnvVars:     envVars("kube-config"),
+			Value:       kubeConfigPath(),
+			Usage:       "kube config path",
+			Destination: &conf.Backend.Kube.ConfigPath,
+		},
+		&cli.StringFlag{
 			Name:    "extra-args",
 			EnvVars: envVars("extra-args"),
-			Value:   "-e HISTCONTROL=ignoredups -e TERM=xterm",
-			Usage:   "extra args for your backend",
+			Usage:   "pass extra args to the backend",
 		},
 		&cli.StringFlag{
 			Name:    "servers",
@@ -110,7 +103,17 @@ func main() {
 				return cli.ShowAppHelp(c)
 			}
 
-			conf.Backend.ExtraArgs = strings.Split(c.String("extra-args"), " ")
+			if eArgs := c.String("extra-args"); eArgs != "" {
+				conf.Backend.ExtraArgs = strings.Split(eArgs, " ")
+			} else {
+				switch conf.Backend.Type {
+				case "docker":
+					defaultArgs := "-e HISTCONTROL=ignoredups -e TERM=xterm"
+					conf.Backend.ExtraArgs = strings.Split(defaultArgs, " ")
+				case "kube":
+				}
+			}
+
 			conf.Servers = strings.Split(c.String("servers"), " ")
 			level, err := logrus.ParseLevel(conf.LogLevel)
 			if err != nil {

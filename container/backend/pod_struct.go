@@ -1,0 +1,207 @@
+package backend
+
+/*
+
+{
+	TypeMeta:{Kind: APIVersion:}
+	ObjectMeta:{
+		Name:kube-scheduler-vmwareserver02
+		GenerateName:
+		Namespace:kube-system
+		SelfLink:/api/v1/namespaces/kube-system/pods/kube-scheduler-vmwareserver02
+		UID:8a539ebc-5813-11e8-b5ed-b82a72d9a2cd
+		ResourceVersion:322
+		Generation:0
+		CreationTimestamp:2018-05-15 15:42:38 +0800 CST
+		DeletionTimestamp:<nil>
+		DeletionGracePeriodSeconds:<nil>
+		Labels:map[component:kube-scheduler tier:control-plane]
+		Annotations:map[
+			kubernetes.io/config.hash:96944ce896a1ba4844bab386f40c0acc
+			kubernetes.io/config.mirror:96944ce896a1ba4844bab386f40c0acc
+			kubernetes.io/config.seen:2018-05-15T15:39:21.319090913+08:00
+			kubernetes.io/config.source:file
+			scheduler.alpha.kubernetes.io/critical-pod:]
+		OwnerReferences:[]
+		Initializers:nil
+		Finalizers:[]
+		ClusterName:
+		}
+	Spec:{
+		Volumes:[
+			{
+				Name:kubeconfig
+				VolumeSource:{
+					HostPath:&HostPathVolumeSource{
+						Path:/etc/kubernetes/scheduler.conf,
+						Type:*FileOrCreate,
+					}
+					EmptyDir:nil
+					GCEPersistentDisk:nil
+					AWSElasticBlockStore:nil
+					GitRepo:nil
+					Secret:nil
+					NFS:nil
+					ISCSI:nil
+					Glusterfs:nil
+					PersistentVolumeClaim:nil
+					RBD:nil
+					FlexVolume:nil
+					Cinder:nil
+					CephFS:nil
+					Flocker:nil
+					DownwardAPI:nil
+					FC:nil
+					AzureFile:nil
+					ConfigMap:nil
+					VsphereVolume:nil
+					Quobyte:nil
+					AzureDisk:nil
+					PhotonPersistentDisk:nil
+					Projected:nil
+					PortworxVolume:nil
+					ScaleIO:nil
+					StorageOS:nil
+					}
+				}
+			}
+		]
+		InitContainers:[]
+		Containers:[
+			{
+				Name:kube-scheduler
+				Image:gcr.io/google_containers/kube-scheduler-amd64:v1.9.7
+				Command:[
+					kube-scheduler --address=127.0.0.1 --leader-elect=true --kubeconfig=/etc/kubernetes/scheduler.conf
+				]
+				Args:[]
+				WorkingDir:
+				Ports:[]
+				EnvFrom:[]
+				Env:[]
+				Resources:{
+					Limits:map[]
+					Requests:map[cpu:{i:{value:100 scale:-3} d:{Dec:<nil>} s:100m Format:DecimalSI}]
+				}
+				VolumeMounts:[{Name:kubeconfig ReadOnly:true MountPath:/etc/kubernetes/scheduler.conf SubPath: MountPropagation:<nil>}]
+				VolumeDevices:[]
+				LivenessProbe:&Probe{
+					Handler:Handler{
+						Exec:nil,
+						HTTPGet:&HTTPGetAction{
+							Path:/healthz,
+							Port:10251,
+							Host:127.0.0.1,
+							Scheme:HTTP,
+							HTTPHeaders:[],
+						},
+						TCPSocket:nil,
+					},
+					InitialDelaySeconds:15,
+					TimeoutSeconds:15,
+					PeriodSeconds:10,
+					SuccessThreshold:1,
+					FailureThreshold:8,
+				}
+				ReadinessProbe:nil
+				Lifecycle:nil
+				TerminationMessagePath:/dev/termination-log
+				TerminationMessagePolicy:File
+				ImagePullPolicy:IfNotPresent
+				SecurityContext:nil
+				Stdin:false
+				StdinOnce:false
+				TTY:false
+			}
+		]
+		RestartPolicy:Always
+		TerminationGracePeriodSeconds:0xc4202299b8
+		ActiveDeadlineSeconds:<nil>
+		DNSPolicy:ClusterFirst
+		NodeSelector:map[]
+		ServiceAccountName:
+		DeprecatedServiceAccount:
+		AutomountServiceAccountToken:<nil>
+		NodeName:vmwareserver02
+		HostNetwork:true
+		HostPID:false
+		HostIPC:false
+		ShareProcessNamespace:<nil>
+		SecurityContext:&PodSecurityContext{SELinuxOptions:nil,RunAsUser:nil,RunAsNonRoot:nil,SupplementalGroups:[],FSGroup:nil,RunAsGroup:nil,}
+		ImagePullSecrets:[]
+		Hostname:
+		Subdomain:
+		Affinity:nil
+		SchedulerName:default-scheduler
+		Tolerations:[
+			{
+				Key:
+				Operator:Exists
+				Value:
+				Effect:NoExecute
+				TolerationSeconds:<nil>
+			}
+		]
+		HostAliases:[]
+		PriorityClassName:
+		Priority:<nil>
+		DNSConfig:nil
+	}
+	Status:{
+		Phase:Running
+		Conditions:[
+			{
+				Type:Initialized
+				Status:True
+				LastProbeTime:0001-01-01 00:00:00 +0000 UTC
+				LastTransitionTime:2018-05-15 15:39:26 +0800 CST
+				Reason:
+				Message:
+			}{
+				Type:Ready
+				Status:True
+				LastProbeTime:0001-01-01 00:00:00 +0000 UTC
+				LastTransitionTime:2018-05-15 15:39:56 +0800 CST
+				Reason:
+				Message:
+			}{
+				Type:PodScheduled
+				Status:True
+				LastProbeTime:0001-01-01 00:00:00 +0000 UTC
+				LastTransitionTime:2018-05-15 15:39:26 +0800 CST
+				Reason:
+				Message:
+			}
+		]
+		Message:
+		Reason:
+		NominatedNodeName:
+		HostIP:10.6.8.102
+		PodIP:10.6.8.102
+		StartTime:2018-05-15 15:39:26 +0800 CST
+		InitContainerStatuses:[]
+		ContainerStatuses:[
+			{
+				Name:kube-scheduler
+				State:{
+					Waiting:nil
+					Running:&ContainerStateRunning{StartedAt:2018-05-15 15:39:55 +0800 CST,}
+					Terminated:nil
+				}
+				LastTerminationState:{
+					Waiting:nil
+					Running:nil
+					Terminated:nil
+				}
+				Ready:true
+				RestartCount:0
+				Image:gcr.io/google_containers/kube-scheduler-amd64:v1.9.7
+				ImageID:docker-pullable://gcr.io/google_containers/kube-scheduler-amd64@sha256:9a8c3bd7eae5cd6e21be8cb7067843e9a0416e1d0b72c1e0fa53b30c2db518ba
+				ContainerID:docker://f9d632739a2bb5b8b91804c564d77b940fb5510aa8c9a6d1410ee08a2d7e0498
+			}
+		]
+	QOSClass:Burstable
+	}
+}
+
+*/

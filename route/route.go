@@ -132,11 +132,11 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		c.Redirect(301, c.Request.URL.String()+"/")
 	})
 	router.GET("/exec/:id/", func(c *gin.Context) {
-		containerInfo := server.containerCli.GetInfo(c.Param("id"))
+		containerInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
 		server.handleExec(c, containerInfo)
 	})
 	router.GET("/exec/:id/"+"ws", func(c *gin.Context) {
-		containerInfo := server.containerCli.GetInfo(c.Param("id"))
+		containerInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
 		server.generateHandleWS(cctx, counter, containerInfo).ServeHTTP(c.Writer, c.Request)
 	})
 

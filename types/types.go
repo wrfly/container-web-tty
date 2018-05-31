@@ -1,11 +1,14 @@
 package types
 
 type Container struct {
-	ID      string
-	Name    string
-	Image   string
-	Command string
-	IPs     []string
-	Status  string // "Up 13 minutes"
-	State   string // "running"
+	// common
+	ID, Name       string
+	Image, Command string
+	State, Status  string // "running"  "Up 13 minutes"
+	IPs            []string
+	// k8s
+	PodName, ContainerName string
+	Namespace, RunningNode string
 }
+
+var SHELL_LIST = []string{"/bin/bash", "/bin/sh"}

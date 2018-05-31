@@ -14,11 +14,10 @@ import (
 
 type Cli interface {
 	// GetInfo of a container
-	GetInfo(ID string) types.Container
+	GetInfo(ctx context.Context, containerID string) types.Container
 	// List all containers
 	List(context.Context) []types.Container
-	BashExist(ctx context.Context, containerID string) bool
-	ShExist(ctx context.Context, containerID string) bool
+	GetShell(ctx context.Context, containerID string) string
 }
 
 func NewCliBackend(conf config.BackendConfig) (cli Cli, factory *localcommand.Factory, err error) {
@@ -27,6 +26,8 @@ func NewCliBackend(conf config.BackendConfig) (cli Cli, factory *localcommand.Fa
 	switch conf.Type {
 	case "docker":
 		cli, args, err = backend.NewDockerCli(conf.Docker)
+	case "kube":
+		cli, args, err = backend.NewKubeCli(conf.Kube)
 	default:
 		err = fmt.Errorf("unknown backend type %s", conf.Type)
 	}

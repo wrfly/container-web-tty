@@ -105,13 +105,13 @@ text-align:left;
 }
 
 .column1 {
-    width: 20%;
+    width: 10%;
     padding-left: 40px;
     min-width: 120px;
 }
 
 .column2 {
-    width: 20%;
+    width: 30%;
     overflow: hidden;
     padding-left: 30px;
 }
@@ -132,8 +132,9 @@ text-align:left;
 }
 
 .column6 {
-    width: 15%;
+    width: 10%;
     overflow: hidden;
+    padding-right: 40px;
 }
 
 .table-head th {

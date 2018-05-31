@@ -17,14 +17,22 @@ import (
 
 func (server *Server) generateHandleWS(ctx context.Context, counter *counter, container types.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		cID := container.ID
+		sh := server.containerCli.GetShell(r.Context(), cID)
+
+		if sh == "" {
+			log.Errorf("cannot find a valid shell in container [%s]", cID)
+			return
+		}
+
 		num := counter.add(1)
 		closeReason := "unknown reason"
 
 		defer func() {
 			num := counter.done()
 			log.Infof(
-				"Connection closed by %s: %s, connections: %d/%d",
-				closeReason, r.RemoteAddr, num, server.options.MaxConnection,
+				"connection closed by %s: %s, connections: %d",
+				closeReason, r.RemoteAddr, num,
 			)
 		}()
 
@@ -35,7 +43,7 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 			}
 		}
 
-		log.Infof("New client connected: %s, connections: %d/%d", r.RemoteAddr, num, server.options.MaxConnection)
+		log.Infof("new client connected: %s, connections: %d", r.RemoteAddr, num)
 
 		if r.Method != "GET" {
 			http.Error(w, "Method not allowed", 405)
@@ -49,23 +57,14 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		}
 		defer conn.Close()
 
-		sh := ""
-		cID := container.ID
+		execArgs := []string{cID, sh}
 
-		if server.containerCli.BashExist(r.Context(), cID) {
-			sh = "bash"
-		} else if server.containerCli.ShExist(r.Context(), cID) {
-			sh = "sh"
+		// it's a kubernetes pod
+		if container.PodName != "" {
+			execArgs = []string{container.PodName, "-c", container.ContainerName, sh}
 		}
 
-		if sh == "" {
-			log.Errorf("cannot find sh or bash in container [%s]", cID)
-			return
-		}
-
-		args := []string{cID, sh}
-
-		err = server.processWSConn(ctx, conn, container, args)
+		err = server.processWSConn(ctx, conn, container, execArgs)
 
 		switch err {
 		case ctx.Err():
