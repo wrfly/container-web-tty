@@ -26,6 +26,12 @@ docker run --rm -ti --name web-tty \
     wrfly/container-web-tty
 ```
 
+## Keyboard Shortcuts (Linux)
+
+- Cut the word before the cursor `Ctrl+w` => **You cannot do it for now** (I'll working on it for `Ctrl+Backspace`, but I know little about js)
+- Copy:  `Ctrl+Shift+c` => `Ctrl+Insert`
+- Paste: `Ctrl+Shift+v` => `Shift+Insert`
+
 ## Features
 
 - [x] it works

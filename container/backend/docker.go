@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -63,17 +64,28 @@ func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
 	return ips
 }
 
-func (docker DockerCli) GetInfo(ctx context.Context, ID string) types.Container {
+func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
 	if len(docker.containers) == 0 {
 		docker.List(ctx)
 	}
 	docker.containersMutex.RLock()
-	info, ok := docker.containers[ID]
-	if !ok {
-		info = types.Container{}
-	}
+	containers := docker.containers
 	docker.containersMutex.RUnlock()
-	return info
+
+	if info, ok := containers[cid]; ok {
+		return info
+	}
+
+	for id, info := range containers {
+		if strings.HasPrefix(id, cid) {
+			docker.containersMutex.Lock()
+			docker.containers[cid] = info
+			docker.containersMutex.Unlock()
+			return info
+		}
+	}
+
+	return types.Container{}
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {
@@ -98,8 +110,7 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 	docker.containersMutex.Lock()
 	defer docker.containersMutex.Unlock()
 	for _, c := range containers {
-		// see list.html:31
-		docker.containers[c.ID[:12]] = c
+		docker.containers[c.ID] = c
 	}
 
 	return containers

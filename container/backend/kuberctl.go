@@ -75,9 +75,18 @@ func (kube KubeCli) GetInfo(ctx context.Context, cid string) types.Container {
 		kube.List(ctx)
 	}
 	kube.containersMutex.RLock()
-	defer kube.containersMutex.RUnlock()
-	for id, info := range kube.containers {
+	containers := kube.containers
+	kube.containersMutex.RUnlock()
+
+	if info, ok := containers[cid]; ok {
+		return info
+	}
+
+	for id, info := range containers {
 		if strings.HasPrefix(id, cid) {
+			kube.containersMutex.Lock()
+			kube.containers[cid] = info
+			kube.containersMutex.Unlock()
 			return info
 		}
 	}
