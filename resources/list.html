@@ -17,6 +17,7 @@
 						<th class="cell100 column4">Name</th>
 						<th class="cell100 column5">IP</th>
 						<th class="cell100 column6">Status</th>
+						<th class="cell100 column7">Actions</th>
 					</tr>
 				</thead>
 			</table>
@@ -35,6 +36,7 @@
                         <td class="cell100 column4" title="{{ .Name }}">{{ printf "%.20s" .Name }}</td>
                         <td class="cell100 column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
                         <td class="cell100 column6" title="{{ .Status }}">{{ .State }}</td>
+                        <td class="cell100 column7" title="buttons">A B C</td>
                     </tr>
                     {{ end }}
                 </tbody>
