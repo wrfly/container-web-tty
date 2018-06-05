@@ -199,7 +199,7 @@ func (kube KubeCli) exist(ctx context.Context, containerID, path string) bool {
 
 func (kube KubeCli) GetShell(ctx context.Context, cid string) string {
 	logrus.Debugf("get container's shell path, cid: %s", cid)
-	for _, sh := range types.SHELL_LIST {
+	for _, sh := range config.SHELL_LIST {
 		if kube.exist(ctx, cid, sh) {
 			return sh
 		}

@@ -10,5 +10,3 @@ type Container struct {
 	PodName, ContainerName string
 	Namespace, RunningNode string
 }
-
-var SHELL_LIST = []string{"/bin/bash", "/bin/sh"}

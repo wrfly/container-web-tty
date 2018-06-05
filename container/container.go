@@ -17,7 +17,11 @@ type Cli interface {
 	GetInfo(ctx context.Context, containerID string) types.Container
 	// List all containers
 	List(context.Context) []types.Container
+	// GetShell returns the shell name, bash>ash>sh
 	GetShell(ctx context.Context, containerID string) string
+	// Start(ctx context.Context, containerID string) error
+	// Stop(ctx context.Context, containerID string) error
+	// Restart(ctx context.Context, containerID string) error
 }
 
 func NewCliBackend(conf config.BackendConfig) (cli Cli, factory *localcommand.Factory, err error) {

@@ -125,11 +125,11 @@ func (docker DockerCli) exist(ctx context.Context, cid, path string) bool {
 }
 
 func (docker DockerCli) GetShell(ctx context.Context, cid string) string {
-	for _, sh := range types.SHELL_LIST {
+	for _, sh := range config.SHELL_LIST {
 		if docker.exist(ctx, cid, sh) {
 			return sh
 		}
 	}
-	// generally it would'n come here
+	// generally it won't come so far
 	return ""
 }
