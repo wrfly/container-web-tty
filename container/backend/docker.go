@@ -133,3 +133,18 @@ func (docker DockerCli) GetShell(ctx context.Context, cid string) string {
 	// generally it won't come so far
 	return ""
 }
+
+func (docker DockerCli) Start(ctx context.Context, cid string) error {
+	return docker.cli.ContainerStart(ctx, cid, apiTypes.ContainerStartOptions{})
+}
+
+func (docker DockerCli) Stop(ctx context.Context, cid string) error {
+	// Notice: is there a need to config this stop duration?
+	duration := time.Second * 5
+	return docker.cli.ContainerStop(ctx, cid, &duration)
+}
+
+func (docker DockerCli) Restart(ctx context.Context, cid string) error {
+	// restart immediately
+	return docker.cli.ContainerRestart(ctx, cid, nil)
+}

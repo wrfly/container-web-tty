@@ -207,3 +207,15 @@ func (kube KubeCli) GetShell(ctx context.Context, cid string) string {
 	// generally it won't come so far
 	return ""
 }
+
+func (kube KubeCli) Start(ctx context.Context, cid string) error {
+	return nil
+}
+
+func (kube KubeCli) Stop(ctx context.Context, cid string) error {
+	return nil
+}
+
+func (kube KubeCli) Restart(ctx context.Context, cid string) error {
+	return nil
+}

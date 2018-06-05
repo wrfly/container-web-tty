@@ -10,3 +10,9 @@ type Container struct {
 	PodName, ContainerName string
 	Namespace, RunningNode string
 }
+
+type ContainerActionMessage struct {
+	Error   string `json:"err"`
+	Code    int    `json:"code"`
+	Message string `json:"msg"`
+}

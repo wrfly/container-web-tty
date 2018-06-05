@@ -138,6 +138,14 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		server.generateHandleWS(cctx, counter, containerInfo).ServeHTTP(c.Writer, c.Request)
 	})
 
+	// container actions: start|stop|restart
+	containerG := router.Group("/container")
+	{
+		containerG.POST("/start/:id", server.handleStartContainer)
+		containerG.POST("/stop/:id", server.handleStopContainer)
+		containerG.POST("/restart/:id", server.handleRestartContainer)
+	}
+
 	hostPort := net.JoinHostPort(server.options.Address, server.options.Port)
 	srv := &http.Server{
 		Addr:    hostPort,
