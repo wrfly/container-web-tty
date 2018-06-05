@@ -127,6 +127,7 @@ func (docker DockerCli) exist(ctx context.Context, cid, path string) bool {
 func (docker DockerCli) GetShell(ctx context.Context, cid string) string {
 	for _, sh := range config.SHELL_LIST {
 		if docker.exist(ctx, cid, sh) {
+			logrus.Debugf("container [%s] us [%s]", cid, sh)
 			return sh
 		}
 	}

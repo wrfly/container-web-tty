@@ -16,5 +16,5 @@ bin/*
 vendor/
 
 # from gotty
-bindata
+static
 js/node_modules/*

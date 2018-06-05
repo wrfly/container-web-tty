@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -38,7 +37,7 @@ var (
 )
 
 func init() {
-	indexData, err := Asset("static/index.html")
+	indexData, err := Asset("index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,7 +46,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	listIndexData, err := Asset("static/list.html")
+	listIndexData, err := Asset("list.html")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -110,25 +109,25 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 
 	router := gin.New()
 	router.Use(gin.Recovery())
-	gin.DefaultWriter = ioutil.Discard
+	if gin.Mode() == gin.DebugMode {
+		router.Use(gin.Logger())
+	}
 
 	h := http.FileServer(
-		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "static"},
+		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "/"},
 	)
 	fh := gin.WrapH(http.StripPrefix("/", h))
 
 	// Routes
 	router.GET("/", server.handleListContainers)
-	router.GET("/js/:x", fh)
-	router.GET("/css/:x", fh)
-	router.GET("/favicon.png", fh)
-
 	router.GET("/auth_token.js", server.handleAuthToken)
 	router.GET("/config.js", server.handleConfig)
 
-	router.GET("/exec/:id", func(c *gin.Context) {
-		c.Redirect(301, c.Request.URL.String()+"/")
-	})
+	for _, fileName := range AssetNames() {
+		router.GET(fileName, fh)
+	}
+
+	// handle the websocket
 	router.GET("/exec/:id/", func(c *gin.Context) {
 		containerInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
 		server.handleExec(c, containerInfo)
