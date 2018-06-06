@@ -48,7 +48,7 @@ docker run --rm -ti --name web-tty \
 
 List the containers on your machine:
 
-<img src="images/list.png" width="1100" height="400">
+![list](images/list.png)
 
 It will execute `/bin/sh` if there is no `/bin/bash` inside the container:
 
