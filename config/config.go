@@ -1,5 +1,7 @@
 package config
 
+var SHELL_LIST = []string{"/bin/bash", "/bin/ash", "/bin/sh"}
+
 type DockerConfig struct {
 	DockerPath string // default is /usr/bin/docker
 	DockerHost string // default is /var/run/docker.sock
@@ -22,7 +24,6 @@ type ControlConfig struct {
 	Start   bool
 	Stop    bool
 	Restart bool
-	Kill    bool
 }
 
 type Config struct {

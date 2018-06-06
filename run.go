@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
-
+	"github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/utils"
 	"gopkg.in/urfave/cli.v2"
 
@@ -15,21 +14,23 @@ import (
 )
 
 func run(c *cli.Context, conf config.Config) {
-	appOptions := &route.Options{}
+	appOptions := &route.Options{
+		Control: conf.Control,
+	}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	appOptions.Port = fmt.Sprint(conf.Port)
 
 	containerCli, factory, err := container.NewCliBackend(conf.Backend)
 	if err != nil {
-		log.Fatalf("create backend client error: %s", err)
+		logrus.Fatalf("create backend client error: %s", err)
 	}
 
 	srv, err := route.New(factory, appOptions, containerCli)
 	if err != nil {
-		log.Fatalf("create server error: %s", err)
+		logrus.Fatalf("create server error: %s", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -43,6 +44,6 @@ func run(c *cli.Context, conf config.Config) {
 	err = waitSignals(errs, cancel, gCancel)
 
 	if err != nil && err != context.Canceled {
-		log.Fatalf("server exist with error: %s", err)
+		logrus.Fatalf("server exist with error: %s", err)
 	}
 }

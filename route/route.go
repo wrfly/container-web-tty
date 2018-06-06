@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -19,7 +18,6 @@ import (
 	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/container"
-	"github.com/wrfly/container-web-tty/util"
 )
 
 // Server provides a webtty HTTP endpoint.
@@ -39,7 +37,7 @@ var (
 )
 
 func init() {
-	indexData, err := Asset("static/index.html")
+	indexData, err := Asset("index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,7 +46,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	listIndexData, err := Asset("static/list.html")
+	listIndexData, err := Asset("list.html")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,26 +109,25 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 
 	router := gin.New()
 	router.Use(gin.Recovery())
-	gin.DefaultWriter = ioutil.Discard
-	router.Use(util.GinLogger())
+	if gin.Mode() == gin.DebugMode {
+		router.Use(gin.Logger())
+	}
 
 	h := http.FileServer(
-		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "static"},
+		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "/"},
 	)
 	fh := gin.WrapH(http.StripPrefix("/", h))
 
 	// Routes
 	router.GET("/", server.handleListContainers)
-	router.GET("/js/:x", fh)
-	router.GET("/css/:x", fh)
-	router.GET("/favicon.png", fh)
-
 	router.GET("/auth_token.js", server.handleAuthToken)
 	router.GET("/config.js", server.handleConfig)
 
-	router.GET("/exec/:id", func(c *gin.Context) {
-		c.Redirect(301, c.Request.URL.String()+"/")
-	})
+	for _, fileName := range AssetNames() {
+		router.GET(fileName, fh)
+	}
+
+	// handle the websocket
 	router.GET("/exec/:id/", func(c *gin.Context) {
 		containerInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
 		server.handleExec(c, containerInfo)
@@ -139,6 +136,21 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		containerInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
 		server.generateHandleWS(cctx, counter, containerInfo).ServeHTTP(c.Writer, c.Request)
 	})
+
+	ctl := server.options.Control
+	if ctl.Enable {
+		// container actions: start|stop|restart
+		containerG := router.Group("/container")
+		if ctl.Start {
+			containerG.POST("/start/:id", server.handleStartContainer)
+		}
+		if ctl.Stop {
+			containerG.POST("/stop/:id", server.handleStopContainer)
+		}
+		if ctl.Restart {
+			containerG.POST("/restart/:id", server.handleRestartContainer)
+		}
+	}
 
 	hostPort := net.JoinHostPort(server.options.Address, server.options.Port)
 	srv := &http.Server{

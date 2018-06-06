@@ -53,42 +53,42 @@ push-image:
 
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
-asset: bindata/static/js/gotty-bundle.js bindata/static/index.html bindata/static/favicon.png bindata/static/css/index.css bindata/static/css/xterm.css bindata/static/css/xterm_customize.css
-	go-bindata -prefix bindata -pkg route -ignore=\\.gitkeep -o route/asset.go bindata/...
+asset: clear static/js/gotty-bundle.js static/index.html static/favicon.png static/css/index.css static/css/xterm.css static/css/xterm_customize.css
+	go-bindata -prefix static -pkg route -ignore=\\.gitkeep -o route/asset.go static/...
 	gofmt -w route/asset.go
 
-bindata:
-	mkdir bindata
+clear:
+	rm -rf static
 
-bindata/static: bindata
-	mkdir bindata/static
+static:
+	mkdir -p static
 
-bindata/static/index.html: bindata/static resources/index.html resources/list.html
-	cp resources/index.html bindata/static/index.html
-	cp resources/list.html bindata/static/list.html
+static/index.html: static resources/index.html resources/list.html
+	cp resources/index.html static/index.html
+	cp resources/list.html static/list.html
 
-bindata/static/favicon.png: bindata/static resources/favicon.png
-	cp resources/favicon.png bindata/static/favicon.png
+static/favicon.png: static resources/favicon.png
+	cp resources/favicon.png static/favicon.png
 
-bindata/static/js: bindata/static
-	mkdir -p bindata/static/js
+static/js: static
+	mkdir -p static/js
 
+static/js/gotty-bundle.js: static/js js/dist/gotty-bundle.js
+	cp js/dist/gotty-bundle.js static/js/gotty-bundle.js
+	cp resources/control.js static/js/control.js
 
-bindata/static/js/gotty-bundle.js: bindata/static/js js/dist/gotty-bundle.js
-	cp js/dist/gotty-bundle.js bindata/static/js/gotty-bundle.js
+static/css: static
+	mkdir -p static/css
 
-bindata/static/css: bindata/static
-	mkdir -p bindata/static/css
+static/css/index.css: static/css resources/index.css resources/list.css
+	cp resources/index.css static/css/index.css
+	cp resources/list.css static/css/list.css
 
-bindata/static/css/index.css: bindata/static/css resources/index.css resources/list.css
-	cp resources/index.css bindata/static/css/index.css
-	cp resources/list.css bindata/static/css/list.css
+static/css/xterm_customize.css: static/css resources/xterm_customize.css
+	cp resources/xterm_customize.css static/css/xterm_customize.css
 
-bindata/static/css/xterm_customize.css: bindata/static/css resources/xterm_customize.css
-	cp resources/xterm_customize.css bindata/static/css/xterm_customize.css
-
-bindata/static/css/xterm.css: bindata/static/css js/node_modules/xterm/dist/xterm.css
-	cp js/node_modules/xterm/dist/xterm.css bindata/static/css/xterm.css
+static/css/xterm.css: static/css js/node_modules/xterm/dist/xterm.css
+	cp js/node_modules/xterm/dist/xterm.css static/css/xterm.css
 
 js/node_modules/xterm/dist/xterm.css:
 	cd js && \
@@ -101,7 +101,6 @@ js/dist/gotty-bundle.js: js/src/* js/node_modules/webpack
 js/node_modules/webpack:
 	cd js && \
 	npm install
-
 
 tools:
 	go get github.com/jteeuwen/go-bindata/...

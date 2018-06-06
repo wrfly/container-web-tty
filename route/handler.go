@@ -218,6 +218,7 @@ func (server *Server) handleListContainers(c *gin.Context) {
 	listVars := map[string]interface{}{
 		"title":      "List Containers",
 		"containers": server.containerCli.List(c.Request.Context()),
+		"control":    server.options.Control,
 	}
 
 	listBuf := new(bytes.Buffer)
@@ -227,4 +228,42 @@ func (server *Server) handleListContainers(c *gin.Context) {
 	}
 
 	c.Writer.Write(listBuf.Bytes())
+}
+
+func (server *Server) handleContainerActions(c *gin.Context, action string) {
+	cid := c.Param("id")
+	log.Debugf("client [%s] is going to [%s] container [%s]",
+		c.ClientIP(), action, cid)
+	var err error
+	switch action {
+	case "start":
+		err = server.containerCli.Start(c.Request.Context(), cid)
+	case "stop":
+		err = server.containerCli.Stop(c.Request.Context(), cid)
+	case "restart":
+		err = server.containerCli.Restart(c.Request.Context(), cid)
+	}
+	if err != nil {
+		c.JSON(500, types.ContainerActionMessage{
+			Code:  500,
+			Error: err.Error(),
+		})
+		return
+	}
+	c.JSON(0, types.ContainerActionMessage{
+		Code:    0,
+		Message: fmt.Sprintf("%s container %s successfully", action, cid),
+	})
+}
+
+func (server *Server) handleStartContainer(c *gin.Context) {
+	server.handleContainerActions(c, "start")
+}
+
+func (server *Server) handleStopContainer(c *gin.Context) {
+	server.handleContainerActions(c, "stop")
+}
+
+func (server *Server) handleRestartContainer(c *gin.Context) {
+	server.handleContainerActions(c, "restart")
 }

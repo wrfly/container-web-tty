@@ -2,12 +2,14 @@ package backend
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
 	apiTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
+
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/types"
 )
@@ -62,21 +64,34 @@ func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
 	return ips
 }
 
-func (docker DockerCli) GetInfo(ctx context.Context, ID string) types.Container {
+func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
 	if len(docker.containers) == 0 {
 		docker.List(ctx)
 	}
 	docker.containersMutex.RLock()
-	info, ok := docker.containers[ID]
-	if !ok {
-		info = types.Container{}
-	}
+	containers := docker.containers
 	docker.containersMutex.RUnlock()
-	return info
+
+	if info, ok := containers[cid]; ok {
+		return info
+	}
+
+	for id, info := range containers {
+		if strings.HasPrefix(id, cid) {
+			docker.containersMutex.Lock()
+			docker.containers[cid] = info
+			docker.containersMutex.Unlock()
+			return info
+		}
+	}
+
+	return types.Container{}
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {
-	cs, err := docker.cli.ContainerList(ctx, apiTypes.ContainerListOptions{})
+	cs, err := docker.cli.ContainerList(ctx, apiTypes.ContainerListOptions{
+		All: true,
+	})
 	if err != nil {
 		logrus.Errorf("list containers eror: %s", err)
 		return nil
@@ -97,8 +112,7 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 	docker.containersMutex.Lock()
 	defer docker.containersMutex.Unlock()
 	for _, c := range containers {
-		// see list.html:31
-		docker.containers[c.ID[:12]] = c
+		docker.containers[c.ID] = c
 	}
 
 	return containers
@@ -113,11 +127,27 @@ func (docker DockerCli) exist(ctx context.Context, cid, path string) bool {
 }
 
 func (docker DockerCli) GetShell(ctx context.Context, cid string) string {
-	for _, sh := range types.SHELL_LIST {
+	for _, sh := range config.SHELL_LIST {
 		if docker.exist(ctx, cid, sh) {
+			logrus.Debugf("container [%s] us [%s]", cid, sh)
 			return sh
 		}
 	}
-	// generally it would'n come here
+	// generally it won't come so far
 	return ""
+}
+
+func (docker DockerCli) Start(ctx context.Context, cid string) error {
+	return docker.cli.ContainerStart(ctx, cid, apiTypes.ContainerStartOptions{})
+}
+
+func (docker DockerCli) Stop(ctx context.Context, cid string) error {
+	// Notice: is there a need to config this stop duration?
+	duration := time.Second * 5
+	return docker.cli.ContainerStop(ctx, cid, &duration)
+}
+
+func (docker DockerCli) Restart(ctx context.Context, cid string) error {
+	// restart immediately
+	return docker.cli.ContainerRestart(ctx, cid, nil)
 }

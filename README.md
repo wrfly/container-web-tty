@@ -26,12 +26,19 @@ docker run --rm -ti --name web-tty \
     wrfly/container-web-tty
 ```
 
+## Keyboard Shortcuts (Linux)
+
+- Cut the word before the cursor `Ctrl+w` => **You cannot do it for now** (I'll working on it for `Ctrl+Backspace`, but I know little about js)
+- Copy:  `Ctrl+Shift+c` => `Ctrl+Insert`
+- Paste: `Ctrl+Shift+v` => `Shift+Insert`
+
 ## Features
 
 - [x] it works
 - [x] docker backend
 - [x] kubectl backend
 - [x] beautiful index
+- [x] start|stop|restart container(docker backend only)
 - [x] environment injection(extra params)
 - [ ] proxy mode(client -> server's containers)
 - [ ] auth
@@ -41,7 +48,7 @@ docker run --rm -ti --name web-tty \
 
 List the containers on your machine:
 
-<img src="images/list.png" width="1100" height="400">
+![list](images/list.png)
 
 It will execute `/bin/sh` if there is no `/bin/bash` inside the container:
 

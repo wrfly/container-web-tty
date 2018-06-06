@@ -20,12 +20,12 @@ a {
     -o-transition: all 0.4s;
     text-decoration: none;
     -moz-transition: all 0.4s;
-    color: burlywood;
+    color: rgb(119, 60, 168);
 }
 
 a:hover {
     outline: none !important;
-    color: chocolate;
+    color: #17e919;
 }
 
 
@@ -48,12 +48,12 @@ display: block;
 }
 
 textarea {
-display: block;
-outline: none;
+    display: block;
+    outline: none;
 }
 
 textarea:focus, input:focus {
-border-color: transparent !important;
+    border-color: transparent !important;
 }
 
 /* ------------------------------------ */
@@ -94,47 +94,60 @@ width: 1170px;
 
 
 table {
-width: 100%;
-border-collapse: collapse;
+    width: 100%;
+    border-collapse: collapse;
+    table-layout:fixed;
+}
+
+button{
+    color: #de901c;
 }
 
 th, td {
-font-weight: unset;
-padding-right: 10px;
-text-align:left;
+    font-weight: unset;
+    padding-right: 10px;
+    padding-left: 10px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
+/* ID */
 .column1 {
-    width: 10%;
+    width: 15%;
     padding-left: 40px;
-    min-width: 120px;
 }
 
+/* Image */
 .column2 {
-    width: 30%;
-    overflow: hidden;
-    padding-left: 30px;
+    width: 25%;
 }
 
+/* Command */
 .column3 {
-    width: 10%;
-    overflow: hidden;
+    width: 15%;
 }
 
+/* Name */
 .column4 {
-    width: 20%;
-    overflow: hidden;
+    width: 15%;
 }
 
+/* IP */
 .column5 {
-    width: 20%;
-    overflow: hidden;
+    width: 10%;
 }
 
+/* Status */
 .column6 {
     width: 10%;
-    overflow: hidden;
-    padding-right: 40px;
+    padding-right: 20px;
+}
+
+/* Buttons */
+.column7 {
+    width: 15%;
+    padding-right: 20px;
 }
 
 .table-head th {

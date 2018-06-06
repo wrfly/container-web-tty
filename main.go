@@ -18,6 +18,7 @@ func main() {
 			Docker: config.DockerConfig{},
 			Kube:   config.KubeConfig{},
 		},
+		Control: config.ControlConfig{},
 	}
 	appFlags := []cli.Flag{
 		&cli.IntFlag{
@@ -81,6 +82,30 @@ func main() {
 			Name:    "servers",
 			EnvVars: envVars("servers"),
 			Usage:   "upstream servers, for proxy mode",
+		},
+		&cli.BoolFlag{
+			Name:        "control",
+			Aliases:     []string{"ctl"},
+			Usage:       "enable container control",
+			Destination: &conf.Control.Enable,
+		},
+		&cli.BoolFlag{
+			Name:        "control-start",
+			Aliases:     []string{"ctl-s"},
+			Usage:       "enable start container",
+			Destination: &conf.Control.Start,
+		},
+		&cli.BoolFlag{
+			Name:        "control-stop",
+			Aliases:     []string{"ctl-t"},
+			Usage:       "enable stop container",
+			Destination: &conf.Control.Stop,
+		},
+		&cli.BoolFlag{
+			Name:        "control-restart",
+			Aliases:     []string{"ctl-r"},
+			Usage:       "enable restart container",
+			Destination: &conf.Control.Restart,
 		},
 		&cli.BoolFlag{
 			Name:    "help",

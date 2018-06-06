@@ -13,7 +13,6 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/wrfly/container-web-tty/config"
@@ -22,7 +21,6 @@ import (
 
 type KubeCli struct {
 	cli                 *kubernetes.Clientset
-	restCli             rest.Interface
 	containers          map[string]types.Container
 	containersMutex     *sync.RWMutex
 	binPath, configPath string
@@ -65,7 +63,6 @@ func NewKubeCli(conf config.KubeConfig) (*KubeCli, []string, error) {
 
 	return &KubeCli{
 		cli:             clientset,
-		restCli:         clientset.RESTClient(),
 		containers:      map[string]types.Container{},
 		containersMutex: &sync.RWMutex{},
 		binPath:         conf.KubectlPath,
@@ -78,9 +75,18 @@ func (kube KubeCli) GetInfo(ctx context.Context, cid string) types.Container {
 		kube.List(ctx)
 	}
 	kube.containersMutex.RLock()
-	defer kube.containersMutex.RUnlock()
-	for id, info := range kube.containers {
+	containers := kube.containers
+	kube.containersMutex.RUnlock()
+
+	if info, ok := containers[cid]; ok {
+		return info
+	}
+
+	for id, info := range containers {
 		if strings.HasPrefix(id, cid) {
+			kube.containersMutex.Lock()
+			kube.containers[cid] = info
+			kube.containersMutex.Unlock()
 			return info
 		}
 	}
@@ -189,60 +195,27 @@ func (kube KubeCli) exist(ctx context.Context, containerID, path string) bool {
 		return false
 	}
 	return true
-
-	// 	req := kube.restCli.Post().
-	// 		Resource("pods").
-	// 		Name(info.PodName).
-	// 		Namespace(info.Namespace).
-	// 		SubResource("exec").
-	// 		Param("container", info.ContainerName)
-
-	// 	req.VersionedParams(&api.PodExecOptions{
-	// 			Container: info.ContainerName,
-	// 			Command:   "ls "+path,
-	// 			Stdin:     p.Stdin,
-	// 			Stdout:    false,
-	// 			Stderr:    false,
-	// 			TTY:       t.Raw,
-	// }, legacyscheme.ParameterCodec)
-	// pod, err := kube.cli.CoreV1().Pods("").Get(podname, metav1.GetOptions{})
-	// if err != nil {
-	// 	logrus.Errorf("get pod [%s] error: %s", podname, err)
-	// 	return false
-	// }
-
-	// if pod.Status.Phase == api.PodSucceeded || pod.Status.Phase == api.PodFailed {
-	// 	return fmt.Errorf("cannot exec into a container in a completed pod; current phase is %s", pod.Status.Phase)
-	// }
-
-	// 	containerName := p.ContainerName
-	// 	if len(containerName) == 0 {
-	// 		if len(pod.Spec.Containers) > 1 {
-	// 			usageString := fmt.Sprintf("Defaulting container name to %s.", pod.Spec.Containers[0].Name)
-	// 			if len(p.SuggestedCmdUsage) > 0 {
-	// 				usageString = fmt.Sprintf("%s\n%s", usageString, p.SuggestedCmdUsage)
-	// 			}
-	// 			fmt.Fprintf(p.ErrOut, "%s\n", usageString)
-	// 		}
-	// 		containerName = pod.Spec.Containers[0].Name
-	// 	}
-
-	// 	// ensure we can recover the terminal while attached
-	// t := p.setupTTY()
-
-	// _, err := kube.cli.ContainerStatPath(ctx, cid, path)
-	// if err != nil {
-	// 	return false
-	// }
 }
 
 func (kube KubeCli) GetShell(ctx context.Context, cid string) string {
 	logrus.Debugf("get container's shell path, cid: %s", cid)
-	for _, sh := range types.SHELL_LIST {
+	for _, sh := range config.SHELL_LIST {
 		if kube.exist(ctx, cid, sh) {
 			return sh
 		}
 	}
 	// generally it won't come so far
 	return ""
+}
+
+func (kube KubeCli) Start(ctx context.Context, cid string) error {
+	return nil
+}
+
+func (kube KubeCli) Stop(ctx context.Context, cid string) error {
+	return nil
+}
+
+func (kube KubeCli) Restart(ctx context.Context, cid string) error {
+	return nil
 }
