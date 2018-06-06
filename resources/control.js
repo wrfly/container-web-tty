@@ -1,6 +1,4 @@
-// function container_Start(cid) {
-// console.info("start container "+cid)
-// }
+// container control
 
 try {
     var htmlBtns = document.getElementsByTagName('button');
@@ -8,9 +6,20 @@ try {
         htmlBtns[i].onclick = function () {
             var cid = this.parentElement.parentElement.querySelector('a').getAttribute('title');
             var action = this.title;
-            alert(action + cid);
+            var u = "/container/" + action + "/" + cid;
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("POST", u);
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4) {
+                    var j = JSON.parse(xmlhttp.responseText);
+                    console.debug(j);
+                    alert(xmlhttp.responseText);
+                }
+            };
+            console.debug("POST: "+u);
+            xmlhttp.send();
         };
     }
 } catch (error) {
-    alert(error);
+    console.error(error);
 }

@@ -89,7 +89,9 @@ func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {
-	cs, err := docker.cli.ContainerList(ctx, apiTypes.ContainerListOptions{})
+	cs, err := docker.cli.ContainerList(ctx, apiTypes.ContainerListOptions{
+		All: true,
+	})
 	if err != nil {
 		logrus.Errorf("list containers eror: %s", err)
 		return nil

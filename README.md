@@ -38,6 +38,7 @@ docker run --rm -ti --name web-tty \
 - [x] docker backend
 - [x] kubectl backend
 - [x] beautiful index
+- [x] start|stop|restart container(docker backend only)
 - [x] environment injection(extra params)
 - [ ] proxy mode(client -> server's containers)
 - [ ] auth

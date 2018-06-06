@@ -53,9 +53,12 @@ push-image:
 
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
-asset: static/js/gotty-bundle.js static/index.html static/favicon.png static/css/index.css static/css/xterm.css static/css/xterm_customize.css
+asset: clear static/js/gotty-bundle.js static/index.html static/favicon.png static/css/index.css static/css/xterm.css static/css/xterm_customize.css
 	go-bindata -prefix static -pkg route -ignore=\\.gitkeep -o route/asset.go static/...
 	gofmt -w route/asset.go
+
+clear:
+	rm -rf static
 
 static:
 	mkdir -p static
