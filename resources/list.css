@@ -20,12 +20,12 @@ a {
     -o-transition: all 0.4s;
     text-decoration: none;
     -moz-transition: all 0.4s;
-    color: burlywood;
+    color: rgb(119, 60, 168);
 }
 
 a:hover {
     outline: none !important;
-    color: chocolate;
+    color: #17e919;
 }
 
 
@@ -99,6 +99,10 @@ table {
     table-layout:fixed;
 }
 
+button{
+    color: #de901c;
+}
+
 th, td {
     font-weight: unset;
     padding-right: 10px;
@@ -137,6 +141,7 @@ th, td {
 /* Status */
 .column6 {
     width: 10%;
+    padding-right: 20px;
 }
 
 /* Buttons */

@@ -72,6 +72,7 @@ static/js: static
 
 static/js/gotty-bundle.js: static/js js/dist/gotty-bundle.js
 	cp js/dist/gotty-bundle.js static/js/gotty-bundle.js
+	cp resources/control.js static/js/control.js
 
 static/css: static
 	mkdir -p static/css

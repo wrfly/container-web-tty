@@ -218,6 +218,7 @@ func (server *Server) handleListContainers(c *gin.Context) {
 	listVars := map[string]interface{}{
 		"title":      "List Containers",
 		"containers": server.containerCli.List(c.Request.Context()),
+		"control":    server.options.Control,
 	}
 
 	listBuf := new(bytes.Buffer)

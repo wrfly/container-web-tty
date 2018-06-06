@@ -24,7 +24,6 @@ type ControlConfig struct {
 	Start   bool
 	Stop    bool
 	Restart bool
-	Kill    bool
 }
 
 type Config struct {

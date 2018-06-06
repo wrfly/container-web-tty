@@ -14,7 +14,9 @@ import (
 )
 
 func run(c *cli.Context, conf config.Config) {
-	appOptions := &route.Options{}
+	appOptions := &route.Options{
+		Control: conf.Control,
+	}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
 		logrus.Fatal(err)
 	}
