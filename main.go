@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -60,6 +61,13 @@ func main() {
 			Destination: &conf.Backend.Docker.DockerHost,
 		},
 		&cli.StringFlag{
+			Name:        "docker-ps",
+			EnvVars:     envVars("docker-ps"),
+			Value:       "-a",
+			Usage:       "docker ps options",
+			Destination: &conf.Backend.Docker.PsOptions,
+		},
+		&cli.StringFlag{
 			Name:        "kubectl-path",
 			EnvVars:     envVars("kubectl-path"),
 			Value:       "/usr/bin/kubectl",
@@ -92,19 +100,19 @@ func main() {
 		&cli.BoolFlag{
 			Name:        "control-start",
 			Aliases:     []string{"ctl-s"},
-			Usage:       "enable start container",
+			Usage:       "enable container start  ",
 			Destination: &conf.Control.Start,
 		},
 		&cli.BoolFlag{
 			Name:        "control-stop",
 			Aliases:     []string{"ctl-t"},
-			Usage:       "enable stop container",
+			Usage:       "enable container stop   ",
 			Destination: &conf.Control.Stop,
 		},
 		&cli.BoolFlag{
 			Name:        "control-restart",
 			Aliases:     []string{"ctl-r"},
-			Usage:       "enable restart container",
+			Usage:       "enable container restart",
 			Destination: &conf.Control.Restart,
 		},
 		&cli.BoolFlag{
@@ -113,6 +121,8 @@ func main() {
 			Usage:   "show help",
 		},
 	}
+
+	sort.Sort(cli.FlagsByName(appFlags))
 
 	app := &cli.App{
 		Name:      "container-web-tty",

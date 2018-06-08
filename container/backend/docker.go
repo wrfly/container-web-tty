@@ -2,11 +2,14 @@ package backend
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	apiTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
 
@@ -18,6 +21,7 @@ type DockerCli struct {
 	cli             *client.Client
 	containers      map[string]types.Container
 	containersMutex *sync.RWMutex
+	listOptions     apiTypes.ContainerListOptions
 }
 
 func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
@@ -35,6 +39,12 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 		return nil, nil, err
 	}
 
+	listOptions, err := buildListOptions(conf.PsOptions)
+	if err != nil {
+		return nil, nil, fmt.Errorf("build ps options error: %s", err)
+	}
+	logrus.Debugf("%+v", listOptions)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	ping, err := cli.Ping(ctx)
@@ -47,6 +57,7 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 		cli:             cli,
 		containers:      map[string]types.Container{},
 		containersMutex: &sync.RWMutex{},
+		listOptions:     listOptions,
 	}, []string{conf.DockerPath, "exec", "-ti"}, nil
 }
 
@@ -89,9 +100,7 @@ func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {
-	cs, err := docker.cli.ContainerList(ctx, apiTypes.ContainerListOptions{
-		All: true,
-	})
+	cs, err := docker.cli.ContainerList(ctx, docker.listOptions)
 	if err != nil {
 		logrus.Errorf("list containers eror: %s", err)
 		return nil
@@ -150,4 +159,38 @@ func (docker DockerCli) Stop(ctx context.Context, cid string) error {
 func (docker DockerCli) Restart(ctx context.Context, cid string) error {
 	// restart immediately
 	return docker.cli.ContainerRestart(ctx, cid, nil)
+}
+
+func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
+	// ["-a", "-f", "key=val"]
+	// https://docs.docker.com/engine/reference/commandline/ps/#filtering
+	listOptions := apiTypes.ContainerListOptions{Filters: filters.NewArgs()}
+	args := strings.Split(options, " ")
+	for i, arg := range args {
+		switch arg {
+		case "-a", "--all":
+			listOptions.All = true
+		case "-f", "--filter":
+			if i+1 < len(arg) {
+				f := args[i+1]
+				kv := strings.Split(f, "=")
+				if len(kv) != 2 {
+					return listOptions, fmt.Errorf("bad filter %s", f)
+				}
+				listOptions.Filters.Add(kv[0], kv[1])
+			}
+		case "-n", "--last":
+			if i+1 < len(arg) {
+				f := args[i+1]
+				intF, err := strconv.Atoi(f)
+				if err != nil {
+					return listOptions, err
+				}
+				listOptions.Limit = intF
+			}
+		case "-l", "--latest":
+			listOptions.Latest = true
+		}
+	}
+	return listOptions, nil
 }
