@@ -252,7 +252,7 @@ func (server *Server) handleContainerActions(c *gin.Context, action string) {
 	}
 	c.JSON(0, types.ContainerActionMessage{
 		Code:    0,
-		Message: fmt.Sprintf("%s container %s successfully", action, cid),
+		Message: fmt.Sprintf("%s container %s successfully", action, cid[:7]),
 	})
 }
 

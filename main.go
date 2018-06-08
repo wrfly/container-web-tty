@@ -92,10 +92,10 @@ func main() {
 			Usage:   "upstream servers, for proxy mode",
 		},
 		&cli.BoolFlag{
-			Name:        "control",
-			Aliases:     []string{"ctl"},
+			Name:        "control-all",
+			Aliases:     []string{"ctl-all"},
 			Usage:       "enable container control",
-			Destination: &conf.Control.Enable,
+			Destination: &conf.Control.All,
 		},
 		&cli.BoolFlag{
 			Name:        "control-start",
@@ -147,6 +147,11 @@ func main() {
 					conf.Backend.ExtraArgs = strings.Split(defaultArgs, " ")
 				case "kube":
 				}
+			}
+
+			ctl := conf.Control
+			if ctl.Start || ctl.Start || ctl.Restart || ctl.All {
+				conf.Control.Enable = true
 			}
 
 			conf.Servers = strings.Split(c.String("servers"), " ")

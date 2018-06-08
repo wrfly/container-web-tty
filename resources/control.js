@@ -13,10 +13,13 @@ try {
                 if (xmlhttp.readyState == 4) {
                     var j = JSON.parse(xmlhttp.responseText);
                     console.debug(j);
-                    alert(xmlhttp.responseText);
+                    if (xmlhttp.status != 200) {
+                        alert(xmlhttp.responseText);
+                    }
                 }
             };
-            console.debug("POST: "+u);
+            alert(action + " container " + cid.substring(0, 8));
+            console.debug("POST: " + u);
             xmlhttp.send();
         };
     }

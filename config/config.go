@@ -22,6 +22,7 @@ type BackendConfig struct {
 
 type ControlConfig struct {
 	Enable  bool
+	All     bool
 	Start   bool
 	Stop    bool
 	Restart bool

@@ -141,13 +141,13 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	if ctl.Enable {
 		// container actions: start|stop|restart
 		containerG := router.Group("/container")
-		if ctl.Start {
+		if ctl.Start || ctl.All {
 			containerG.POST("/start/:id", server.handleStartContainer)
 		}
-		if ctl.Stop {
+		if ctl.Stop || ctl.All {
 			containerG.POST("/stop/:id", server.handleStopContainer)
 		}
-		if ctl.Restart {
+		if ctl.Restart || ctl.All {
 			containerG.POST("/restart/:id", server.handleRestartContainer)
 		}
 	}
