@@ -30,13 +30,13 @@ func main() {
 			Value:       8080,
 			Destination: &conf.Port,
 		},
-		&cli.StringFlag{
-			Name:        "log-level",
-			Aliases:     []string{"l"},
-			Value:       "info",
-			EnvVars:     envVars("log-level"),
-			Usage:       "log level",
-			Destination: &conf.LogLevel,
+		&cli.BoolFlag{
+			Name:        "debug",
+			Aliases:     []string{"d"},
+			Value:       false,
+			EnvVars:     envVars("debug"),
+			Usage:       "debug mode",
+			Destination: &conf.Debug,
 		},
 		&cli.StringFlag{
 			Name:        "backend",
@@ -148,13 +148,8 @@ func main() {
 			}
 
 			conf.Servers = strings.Split(c.String("servers"), " ")
-			level, err := logrus.ParseLevel(conf.LogLevel)
-			if err != nil {
-				logrus.Error(err)
-				return err
-			}
-			logrus.SetLevel(level)
-			if level != logrus.DebugLevel {
+			if conf.Debug {
+				logrus.SetLevel(logrus.DebugLevel)
 				gin.SetMode(gin.ReleaseMode)
 			}
 			logrus.Debugf("got config: %+v", conf)

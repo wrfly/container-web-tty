@@ -30,7 +30,7 @@ func kubeConfigPath() string {
 
 func envVars(e string) []string {
 	e = strings.ToUpper(e)
-	return []string{"CWT_" + strings.Replace(e, "-", "_", -1)}
+	return []string{"WEB_TTY_" + strings.Replace(e, "-", "_", -1)}
 }
 
 func waitSignals(errs chan error, cancel context.CancelFunc, gracefullCancel context.CancelFunc) error {

@@ -28,9 +28,9 @@ type ControlConfig struct {
 }
 
 type Config struct {
-	Port     int
-	LogLevel string
-	Control  ControlConfig
-	Backend  BackendConfig
-	Servers  []string // for proxy mode
+	Port    int
+	Debug   bool
+	Control ControlConfig
+	Backend BackendConfig
+	Servers []string // for proxy mode
 }
