@@ -21,7 +21,6 @@ For docker:
 ```bash
 docker run --rm -ti --name web-tty \
     -p 8080:8080 \
-    -v /usr/bin/docker:/usr/bin/docker \
     -v /var/run/docker.sock:/var/run/docker.sock \
     wrfly/container-web-tty
 ```
@@ -36,7 +35,7 @@ docker run --rm -ti --name web-tty \
 
 - [x] it works
 - [x] docker backend
-- [x] kubectl backend
+- [ ] kubectl backend
 - [x] beautiful index
 - [x] start|stop|restart container(docker backend only)
 - [x] environment injection(extra params)

@@ -1,4 +1,4 @@
-package backend
+package kube
 
 import (
 	"context"
@@ -26,7 +26,7 @@ type KubeCli struct {
 	binPath, configPath string
 }
 
-func NewKubeCli(conf config.KubeConfig) (*KubeCli, []string, error) {
+func NewCli(conf config.KubeConfig) (*KubeCli, []string, error) {
 	// use the current context in kubeconfig
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", conf.ConfigPath)
 	if err != nil {
@@ -218,4 +218,8 @@ func (kube KubeCli) Stop(ctx context.Context, cid string) error {
 
 func (kube KubeCli) Restart(ctx context.Context, cid string) error {
 	return nil
+}
+
+func (kube KubeCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
+	return nil, nil
 }

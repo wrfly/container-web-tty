@@ -1,4 +1,4 @@
-package backend
+package docker
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type DockerCli struct {
 	listOptions     apiTypes.ContainerListOptions
 }
 
-func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
+func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 	host := conf.DockerHost
 	if host[:1] == "/" {
 		host = "unix://" + host
@@ -36,12 +36,12 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 	cli, err := client.NewClient(host, version, nil, UA)
 	if err != nil {
 		logrus.Errorf("create new docker client error: %s", err)
-		return nil, nil, err
+		return nil, err
 	}
 
 	listOptions, err := buildListOptions(conf.PsOptions)
 	if err != nil {
-		return nil, nil, fmt.Errorf("build ps options error: %s", err)
+		return nil, fmt.Errorf("build ps options error: %s", err)
 	}
 	logrus.Debugf("%+v", listOptions)
 
@@ -49,7 +49,7 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 	defer cancel()
 	ping, err := cli.Ping(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	logrus.Infof("New docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
 
@@ -58,7 +58,7 @@ func NewDockerCli(conf config.DockerConfig) (*DockerCli, []string, error) {
 		containers:      map[string]types.Container{},
 		containersMutex: &sync.RWMutex{},
 		listOptions:     listOptions,
-	}, []string{conf.DockerPath, "exec", "-ti"}, nil
+	}, nil
 }
 
 func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
@@ -115,6 +115,7 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 			IPs:     getContainerIP(container.NetworkSettings),
 			Status:  container.Status,
 			State:   container.State,
+			Shell:   docker.GetShell(ctx, container.ID),
 		})
 	}
 
@@ -193,4 +194,34 @@ func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
 		}
 	}
 	return listOptions, nil
+}
+
+func (docker DockerCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
+	execConfig := apiTypes.ExecConfig{
+		// User:         "string",
+		Privileged:   false,
+		Tty:          true,
+		AttachStdin:  true,
+		AttachStderr: true,
+		AttachStdout: true,
+		// Env:          []string,
+		Cmd: []string{container.Shell},
+	}
+
+	response, err := docker.cli.ContainerExecCreate(ctx, container.ID, execConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	execID := response.ID
+	if execID == "" {
+		return nil, fmt.Errorf("exec ID empty")
+	}
+
+	resp, err := docker.cli.ContainerExecAttach(ctx, execID, execConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return newExecInjector(resp), nil
 }

@@ -22,7 +22,6 @@ import (
 
 // Server provides a webtty HTTP endpoint.
 type Server struct {
-	factory      Factory
 	options      *Options
 	containerCli container.Cli
 	upgrader     *websocket.Upgrader
@@ -64,7 +63,7 @@ func init() {
 
 // New creates a new instance of Server.
 // Server will use the New() of the factory provided to handle each request.
-func New(factory Factory, options *Options, containerCli container.Cli) (*Server, error) {
+func New(containerCli container.Cli, options *Options) (*Server, error) {
 
 	var originChekcer func(r *http.Request) bool
 	if options.WSOrigin != "" {
@@ -79,7 +78,6 @@ func New(factory Factory, options *Options, containerCli container.Cli) (*Server
 
 	h, _ := os.Hostname()
 	return &Server{
-		factory:      factory,
 		options:      options,
 		containerCli: containerCli,
 		hostname:     h,

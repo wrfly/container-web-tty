@@ -23,12 +23,12 @@ func run(c *cli.Context, conf config.Config) {
 
 	appOptions.Port = fmt.Sprint(conf.Port)
 
-	containerCli, factory, err := container.NewCliBackend(conf.Backend)
+	containerCli, err := container.NewCliBackend(conf.Backend)
 	if err != nil {
 		logrus.Fatalf("create backend client error: %s", err)
 	}
 
-	srv, err := route.New(factory, appOptions, containerCli)
+	srv, err := route.New(containerCli, appOptions)
 	if err != nil {
 		logrus.Fatalf("create server error: %s", err)
 	}

@@ -4,11 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-	"github.com/yudai/gotty/backend/localcommand"
-
 	"github.com/wrfly/container-web-tty/config"
-	"github.com/wrfly/container-web-tty/container/backend"
+	"github.com/wrfly/container-web-tty/container/docker"
 	"github.com/wrfly/container-web-tty/types"
 )
 
@@ -22,34 +19,18 @@ type Cli interface {
 	Start(ctx context.Context, containerID string) error
 	Stop(ctx context.Context, containerID string) error
 	Restart(ctx context.Context, containerID string) error
+	// exec into container
+	Exec(ctx context.Context, container types.Container) (types.TTY, error)
 }
 
-func NewCliBackend(conf config.BackendConfig) (cli Cli, factory *localcommand.Factory, err error) {
-	args := []string{}
-
+func NewCliBackend(conf config.BackendConfig) (cli Cli, err error) {
 	switch conf.Type {
 	case "docker":
-		cli, args, err = backend.NewDockerCli(conf.Docker)
-	case "kube":
-		cli, args, err = backend.NewKubeCli(conf.Kube)
+		cli, err = docker.NewCli(conf.Docker, conf.ExtraArgs)
+	// case "kube":
+	// cli, args, err = kube.NewCli(conf.Kube)
 	default:
 		err = fmt.Errorf("unknown backend type %s", conf.Type)
-	}
-
-	if err != nil {
-		return
-	}
-
-	args = append(args, conf.ExtraArgs...)
-
-	backendOptions := &localcommand.Options{
-		CloseSignal:  1,
-		CloseTimeout: -1,
-	}
-	logrus.Infof("backend args: %v", args)
-	factory, err = localcommand.NewFactory(args[0], args[1:], backendOptions)
-	if err != nil {
-		return
 	}
 
 	return
