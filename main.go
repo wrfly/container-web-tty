@@ -47,13 +47,6 @@ func main() {
 			Destination: &conf.Backend.Type,
 		},
 		&cli.StringFlag{
-			Name:        "docker-path",
-			EnvVars:     envVars("docker-path"),
-			Value:       dockerCliPath(),
-			Usage:       "docker cli path",
-			Destination: &conf.Backend.Docker.DockerPath,
-		},
-		&cli.StringFlag{
 			Name:        "docker-host",
 			EnvVars:     envVars("docker-host"),
 			Value:       "/var/run/docker.sock",
