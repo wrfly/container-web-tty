@@ -56,7 +56,6 @@ func main() {
 		&cli.StringFlag{
 			Name:        "docker-ps",
 			EnvVars:     envVars("docker-ps"),
-			Value:       "-a",
 			Usage:       "docker ps options",
 			Destination: &conf.Backend.Docker.PsOptions,
 		},

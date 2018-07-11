@@ -61,18 +61,22 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 	}, nil
 }
 
-func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) []string {
-	ips := []string{}
+func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) (ips []string) {
+	defer func() {
+		if len(ips) == 0 {
+			ips = []string{"null"}
+		}
+	}()
 
 	if networkSettings == nil {
-		return ips
+		return
 	}
 
 	for net := range networkSettings.Networks {
 		ips = append(ips, networkSettings.Networks[net].IPAddress)
 	}
 
-	return ips
+	return
 }
 
 func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
@@ -148,6 +152,10 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 
 	docker.containersMutex.Lock()
 	for _, c := range containers {
+		old, exist := docker.containers[c.ID]
+		if exist {
+			c.Shell = old.Shell
+		}
 		docker.containers[c.ID] = c
 	}
 	docker.containersMutex.Unlock()
