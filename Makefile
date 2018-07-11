@@ -44,12 +44,24 @@ release:
 	GOOS=linux GOARCH=amd64 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME)_linux_amd64 .
 	GOOS=darwin GOARCH=amd64 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME)_darwin_amd64 .
 
-.PHONY: image push-image
+.PHONY: image
 image:
 	docker build -t $(IMAGE) .
+
+.PHONY: push-image
 push-image:
 	docker push $(IMAGE)
 
+
+.PHONY: push-develop
+push-develop:
+	docker tag $(IMAGE) $(IMAGE):develop
+	docker push $(IMAGE):develop
+
+.PHONY: push-tag
+push-tag:
+	docker tag $(IMAGE) $(IMAGE):$(VERSION)
+	docker push $(IMAGE):$(VERSION)
 
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
