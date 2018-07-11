@@ -139,7 +139,7 @@ func (docker DockerCli) exist(ctx context.Context, cid, path string) bool {
 func (docker DockerCli) GetShell(ctx context.Context, cid string) string {
 	for _, sh := range config.SHELL_LIST {
 		if docker.exist(ctx, cid, sh) {
-			logrus.Debugf("container [%s] us [%s]", cid, sh)
+			logrus.Debugf("container [%s] use [%s]", cid, sh)
 			return sh
 		}
 	}
@@ -223,5 +223,17 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 		return nil, err
 	}
 
-	return newExecInjector(resp), nil
+	resizeFunc := func(width int, height int) error {
+		err := docker.cli.ContainerExecResize(ctx, execID, apiTypes.ResizeOptions{
+			Width:  uint(width),
+			Height: uint(height),
+		})
+		if err != nil {
+			logrus.Errorf("resize exec %s (container %s) window size to %dx%d; err: %v",
+				container.ID, execID, width, height, err)
+		}
+		return err
+	}
+
+	return newExecInjector(resp, resizeFunc), nil
 }

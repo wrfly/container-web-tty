@@ -1,11 +1,6 @@
 package docker
 
 import (
-	"os"
-	"os/exec"
-	"syscall"
-	"time"
-
 	apiTypes "github.com/docker/docker/api/types"
 )
 
@@ -23,21 +18,16 @@ import (
 
 // execInjector implement webtty.Slave
 type execInjector struct {
-	hResp   apiTypes.HijackedResponse
-	command string
-	argv    []string
-
-	closeSignal  syscall.Signal
-	closeTimeout time.Duration
-
-	cmd       *exec.Cmd
-	pty       *os.File
-	ptyClosed chan struct{}
+	hResp  apiTypes.HijackedResponse
+	resize resizeFunction
 }
 
-func newExecInjector(resp apiTypes.HijackedResponse) *execInjector {
+type resizeFunction func(width int, height int) error
+
+func newExecInjector(resp apiTypes.HijackedResponse, resize resizeFunction) *execInjector {
 	return &execInjector{
-		hResp: resp,
+		hResp:  resp,
+		resize: resize,
 	}
 }
 
@@ -59,37 +49,11 @@ func (enj *execInjector) Exit() error {
 }
 
 func (enj *execInjector) WindowTitleVariables() map[string]interface{} {
-	return map[string]interface{}{
-		"command": enj.command,
-		"argv":    enj.argv,
-		"pid":     enj.cmd.Process.Pid,
-	}
+	return map[string]interface{}{}
 }
 
 func (enj *execInjector) ResizeTerminal(width int, height int) error {
-	// window := struct {
-	// 	row uint16
-	// 	col uint16
-	// 	x   uint16
-	// 	y   uint16
-	// }{
-	// 	uint16(height),
-	// 	uint16(width),
-	// 	0,
-	// 	0,
-	// }
-	// _, _, errno := syscall.Syscall(
-	// 	syscall.SYS_IOCTL,
-	// 	enj.hResp.Fd(),
-	// 	syscall.TIOCSWINSZ,
-	// 	uintptr(unsafe.Pointer(&window)),
-	// )
-	// if errno != 0 {
-	// 	return errno
-	// } else {
-	// 	return nil
-	// }
-	return nil
+	return enj.resize(width, height)
 }
 
 // func runExec(dockerCli *command.DockerCli, opts *execOptions, container string, execCmd []string) error {

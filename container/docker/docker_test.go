@@ -19,7 +19,7 @@ func TestDocker(t *testing.T) {
 		DockerHost: "/var/run/docker.sock",
 	}
 	t.Run("test new docker client", func(t *testing.T) {
-		cli, _, err := NewDockerCli(dockerConf)
+		cli, err := NewCli(dockerConf, nil)
 		if err != nil {
 			t.Error(err)
 		}
