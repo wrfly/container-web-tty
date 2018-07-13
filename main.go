@@ -142,7 +142,7 @@ func main() {
 			}
 
 			ctl := conf.Control
-			if ctl.Start || ctl.Start || ctl.Restart || ctl.All {
+			if ctl.Start || ctl.Stop || ctl.Restart || ctl.All {
 				conf.Control.Enable = true
 			}
 

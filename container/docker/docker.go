@@ -52,16 +52,19 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 		return nil, err
 	}
 	logrus.Infof("New docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
-
-	return &DockerCli{
+	dockerCli := &DockerCli{
 		cli:             cli,
 		containers:      map[string]types.Container{},
 		containersMutex: &sync.RWMutex{},
 		listOptions:     listOptions,
-	}, nil
+	}
+	logrus.Infof("Warm up containers info...")
+	dockerCli.List(ctx)
+
+	return dockerCli, nil
 }
 
-func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) (ips []string) {
+func getContainerIP(networkSettings interface{}) (ips []string) {
 	defer func() {
 		if len(ips) == 0 {
 			ips = []string{"null"}
@@ -71,35 +74,49 @@ func getContainerIP(networkSettings *apiTypes.SummaryNetworkSettings) (ips []str
 	if networkSettings == nil {
 		return
 	}
-
-	for net := range networkSettings.Networks {
-		ips = append(ips, networkSettings.Networks[net].IPAddress)
+	switch networkSettings.(type) {
+	case *apiTypes.SummaryNetworkSettings:
+		network := networkSettings.(*apiTypes.SummaryNetworkSettings)
+		for net := range network.Networks {
+			if network.Networks[net] == nil {
+				continue
+			}
+			ips = append(ips, network.Networks[net].IPAddress)
+		}
+	case *apiTypes.NetworkSettings:
+		network := networkSettings.(*apiTypes.NetworkSettings)
+		for net := range network.Networks {
+			if network.Networks[net] == nil {
+				continue
+			}
+			ips = append(ips, network.Networks[net].IPAddress)
+		}
 	}
 
 	return
 }
 
 func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
-	if len(docker.containers) == 0 {
+	docker.containersMutex.RLock()
+	containerLen := len(docker.containers)
+	docker.containersMutex.RUnlock()
+	if containerLen == 0 {
+		logrus.Debugf("zero containers, cid %s", cid)
 		docker.List(ctx)
 	}
 
 	docker.containersMutex.RLock()
 
 	if info, ok := docker.containers[cid]; ok {
+		// release read lock
+		docker.containersMutex.RUnlock()
 		if info.Shell == "" {
-			// release read lock
-			docker.containersMutex.RUnlock()
-
+			// get shell and write
 			docker.containersMutex.Lock()
-			// get shell
 			info.Shell = docker.getShell(ctx, info.ID)
 			docker.containers[cid] = info
 			docker.containersMutex.Unlock()
-		} else {
-			docker.containersMutex.RUnlock()
 		}
-
 		return info
 	}
 
@@ -107,25 +124,59 @@ func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container
 		if strings.HasPrefix(id, cid) {
 			// FIXME: container ID must be long enough, otherwise, the info cache
 			// can cause unexpect error
+			// release read lock
+			docker.containersMutex.RUnlock()
 			if info.Shell == "" {
-				// release read lock
-				docker.containersMutex.RUnlock()
-
+				// get shell and write
 				docker.containersMutex.Lock()
-				// get shell
-				info.Shell = docker.getShell(ctx, info.ID)
+				info.Shell = docker.getShell(ctx, cid)
 				docker.containers[cid] = info
 				docker.containersMutex.Unlock()
-			} else {
-				docker.containersMutex.RUnlock()
 			}
-
 			return info
 		}
 	}
 
+	// didn't get this container, this is rarelly happens
 	docker.containersMutex.RUnlock()
-	return types.Container{}
+
+	cjson, err := docker.cli.ContainerInspect(ctx, cid)
+	if err != nil {
+		return types.Container{}
+	}
+
+	c := docker.convertCjsonToContainre(cjson)
+	if c.ID != "" {
+		docker.containersMutex.Lock()
+		docker.containers[c.ID] = c
+		docker.containers[c.ID[:12]] = c
+		docker.containersMutex.Unlock()
+	}
+	return c
+}
+
+func (docker DockerCli) convertCjsonToContainre(cjson apiTypes.ContainerJSON) types.Container {
+	if cjson.Config == nil {
+		// WTF?
+		return types.Container{}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+	shell := docker.getShell(ctx, cjson.ID)
+
+	c := types.Container{
+		ID:      cjson.ID,
+		Name:    cjson.Name,
+		Image:   cjson.Image,
+		Command: fmt.Sprintf("%s", cjson.Config.Cmd),
+		IPs:     getContainerIP(cjson.NetworkSettings),
+		Status:  cjson.State.Status,
+		State:   cjson.State.Status,
+		Shell:   shell,
+	}
+
+	return c
 }
 
 func (docker DockerCli) List(ctx context.Context) []types.Container {
@@ -138,26 +189,36 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 	}
 	containers := make([]types.Container, len(cs))
 
+	var (
+		containerIPs   []string
+		containerShell string
+	)
 	for i, container := range cs {
+		if old, exist := docker.containers[container.ID]; exist {
+			containerShell = old.Shell
+			containerIPs = old.IPs
+		} else {
+			containerIPs = getContainerIP(container.NetworkSettings)
+		}
 		containers[i] = types.Container{
 			ID:      container.ID,
 			Name:    container.Names[0][1:],
 			Image:   container.Image,
 			Command: container.Command,
-			IPs:     getContainerIP(container.NetworkSettings),
+			IPs:     containerIPs,
 			Status:  container.Status,
 			State:   container.State,
+			Shell:   containerShell,
 		}
 	}
 
+	tempContainers := make(map[string]types.Container, len(containers)*2)
 	docker.containersMutex.Lock()
 	for _, c := range containers {
-		old, exist := docker.containers[c.ID]
-		if exist {
-			c.Shell = old.Shell
-		}
-		docker.containers[c.ID] = c
+		tempContainers[c.ID] = c
+		tempContainers[c.ID[:12]] = c
 	}
+	docker.containers = tempContainers
 	docker.containersMutex.Unlock()
 
 	logrus.Debugf("list %d containers, use %s", len(containers), time.Now().Sub(start))

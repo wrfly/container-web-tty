@@ -37,7 +37,7 @@ test:
 
 .PHONY: dev
 dev: asset build
-	./$(BIN)/$(NAME) -l debug
+	./$(BIN)/$(NAME) -d
 
 .PHONY: release
 release:
@@ -66,7 +66,7 @@ push-tag:
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
 asset: clear static/js/gotty-bundle.js static/index.html static/favicon.png static/css/index.css static/css/xterm.css static/css/xterm_customize.css
-	go-bindata -prefix static -pkg route -ignore=\\.gitkeep -o route/asset.go static/...
+	go-bindata -nometadata -prefix static -pkg route -ignore=\\.gitkeep -o route/asset.go static/...
 	gofmt -w route/asset.go
 
 clear:
