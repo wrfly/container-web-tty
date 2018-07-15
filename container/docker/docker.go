@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	apiTypes "github.com/docker/docker/api/types"
@@ -18,10 +17,9 @@ import (
 )
 
 type DockerCli struct {
-	cli             *client.Client
-	containers      map[string]types.Container
-	containersMutex *sync.RWMutex
-	listOptions     apiTypes.ContainerListOptions
+	cli         *client.Client
+	containers  *types.Containers
+	listOptions apiTypes.ContainerListOptions
 }
 
 func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
@@ -53,10 +51,9 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 	}
 	logrus.Infof("New docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
 	dockerCli := &DockerCli{
-		cli:             cli,
-		containers:      map[string]types.Container{},
-		containersMutex: &sync.RWMutex{},
-		listOptions:     listOptions,
+		cli:         cli,
+		containers:  &types.Containers{},
+		listOptions: listOptions,
 	}
 	logrus.Infof("Warm up containers info...")
 	dockerCli.List(ctx)
@@ -97,60 +94,30 @@ func getContainerIP(networkSettings interface{}) (ips []string) {
 }
 
 func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
-	docker.containersMutex.RLock()
-	containerLen := len(docker.containers)
-	docker.containersMutex.RUnlock()
-	if containerLen == 0 {
-		logrus.Debugf("zero containers, cid %s", cid)
+	if docker.containers.Len() == 0 {
+		logrus.Debugf("zero containers, get cid %s", cid)
 		docker.List(ctx)
 	}
 
-	docker.containersMutex.RLock()
-
-	if info, ok := docker.containers[cid]; ok {
-		// release read lock
-		docker.containersMutex.RUnlock()
-		if info.Shell == "" {
-			// get shell and write
-			docker.containersMutex.Lock()
-			info.Shell = docker.getShell(ctx, info.ID)
-			docker.containers[cid] = info
-			docker.containersMutex.Unlock()
+	// find in containers
+	if container := docker.containers.Find(cid); container != nil {
+		if container.Shell == "" {
+			shell := docker.getShell(ctx, cid)
+			docker.containers.SetShell(cid, shell)
 		}
-		return info
-	}
-
-	for id, info := range docker.containers {
-		if strings.HasPrefix(id, cid) {
-			// FIXME: container ID must be long enough, otherwise, the info cache
-			// can cause unexpect error
-			// release read lock
-			docker.containersMutex.RUnlock()
-			if info.Shell == "" {
-				// get shell and write
-				docker.containersMutex.Lock()
-				info.Shell = docker.getShell(ctx, cid)
-				docker.containers[cid] = info
-				docker.containersMutex.Unlock()
-			}
-			return info
-		}
+		return *container
 	}
 
 	// didn't get this container, this is rarelly happens
-	docker.containersMutex.RUnlock()
-
 	cjson, err := docker.cli.ContainerInspect(ctx, cid)
 	if err != nil {
+		logrus.Errorf("inspect container %s error: %s", cid, err)
 		return types.Container{}
 	}
 
 	c := docker.convertCjsonToContainre(cjson)
 	if c.ID != "" {
-		docker.containersMutex.Lock()
-		docker.containers[c.ID] = c
-		docker.containers[c.ID[:12]] = c
-		docker.containersMutex.Unlock()
+		docker.containers.Append(&c)
 	}
 	return c
 }
@@ -187,39 +154,32 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 		logrus.Errorf("list containers eror: %s", err)
 		return nil
 	}
-	containers := make([]types.Container, len(cs))
 
+	containers := make([]types.Container, len(cs))
 	var (
-		containerIPs   []string
-		containerShell string
+		ips   []string
+		shell string
 	)
 	for i, container := range cs {
-		if old, exist := docker.containers[container.ID]; exist {
-			containerShell = old.Shell
-			containerIPs = old.IPs
+		if old := docker.containers.Find(container.ID); old != nil {
+			shell = old.Shell
+			ips = old.IPs
 		} else {
-			containerIPs = getContainerIP(container.NetworkSettings)
+			ips = getContainerIP(container.NetworkSettings)
 		}
 		containers[i] = types.Container{
 			ID:      container.ID,
 			Name:    container.Names[0][1:],
 			Image:   container.Image,
 			Command: container.Command,
-			IPs:     containerIPs,
+			IPs:     ips,
 			Status:  container.Status,
 			State:   container.State,
-			Shell:   containerShell,
+			Shell:   shell,
 		}
 	}
 
-	tempContainers := make(map[string]types.Container, len(containers)*2)
-	docker.containersMutex.Lock()
-	for _, c := range containers {
-		tempContainers[c.ID] = c
-		tempContainers[c.ID[:12]] = c
-	}
-	docker.containers = tempContainers
-	docker.containersMutex.Unlock()
+	docker.containers.Set(containers)
 
 	logrus.Debugf("list %d containers, use %s", len(containers), time.Now().Sub(start))
 	return containers

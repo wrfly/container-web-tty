@@ -191,6 +191,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	conn := counter.count()
 	if conn > 0 {
 		log.Printf("Waiting for %d connections to be closed", conn)
+		fmt.Println("Ctl-C to force close")
 	}
 	counter.wait()
 
