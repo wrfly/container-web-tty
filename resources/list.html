@@ -33,9 +33,9 @@
             <td class="cell100 column1">
               <a href="/exec/{{ printf "%.12s" .ID }}" target="_blank" title="{{ .ID }}">{{ printf "%.12s" .ID }}</a>
             </td>
-            <td class="cell100 column2" title="{{ .Image }}">{{ printf "%.20s" .Image }}</td>
-            <td class="cell100 column3" title="{{ .Command }}">{{ printf "%.20s" .Command }}</td>
-            <td class="cell100 column4" title="{{ .Name }}">{{ printf "%.20s" .Name }}</td>
+            <td class="cell100 column2" title="{{ .Image }}">{{ printf .Image }}</td>
+            <td class="cell100 column3" title="{{ .Command }}">{{ printf .Command }}</td>
+            <td class="cell100 column4" title="{{ .Name }}">{{ printf .Name }}</td>
             <td class="cell100 column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
             <td class="cell100 column6" title="{{ .Status }}">{{ .State }}</td>
             {{ if $ctl.Enable }}
