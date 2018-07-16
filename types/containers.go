@@ -1,12 +1,13 @@
 package types
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 )
 
 type Containers struct {
-	c    map[string]*Container
+	c    map[string]Container
 	m    sync.RWMutex
 	once sync.Once
 }
@@ -23,21 +24,22 @@ func (cs *Containers) Len() int {
 func (cs *Containers) Set(containers []Container) {
 	cs.init()
 
-	tempContainers := make(map[string]*Container, len(containers)*2)
+	cs.m.Lock()
+	tempContainers := make(map[string]Container, len(containers)*2)
 	for _, c := range containers {
-		tempContainers[c.ID] = &c
+		tempContainers[c.ID] = c
 		if len(c.ID) >= 12 {
-			tempContainers[c.ID[:12]] = &c
+			tempContainers[c.ID[:12]] = c
 		}
 	}
-	cs.m.Lock()
 	cs.c = tempContainers
+	fmt.Printf("%v\n", cs.c)
 	cs.m.Unlock()
 }
 
-func (cs *Containers) Append(c *Container) {
+func (cs *Containers) Append(c Container) {
 	cs.init()
-	if c == nil {
+	if c.ID == "" {
 		return
 	}
 
@@ -49,14 +51,17 @@ func (cs *Containers) Append(c *Container) {
 	cs.m.Unlock()
 }
 
-func (cs *Containers) Find(cID string) *Container {
+func (cs *Containers) Find(cID string) Container {
 	cs.init()
+
+	cs.m.RLock()
+	defer cs.m.RUnlock()
 
 	if c, exist := cs.c[cID]; exist {
 		return c
 	}
 	// didn't find this cid
-	rC := &Container{}
+	rC := Container{}
 	l := 0
 	for id, info := range cs.c {
 		if strings.HasPrefix(id, cID) {
@@ -68,19 +73,22 @@ func (cs *Containers) Find(cID string) *Container {
 		return rC
 	}
 
-	return nil
+	return Container{}
 }
 
 func (cs *Containers) SetShell(cID, shell string) {
 	cs.init()
+	cs.m.Lock()
+	defer cs.m.Unlock()
 
 	if c, exist := cs.c[cID]; exist {
 		c.Shell = shell
+		cs.c[cID] = c
 	}
 }
 
 func (cs *Containers) init() {
 	cs.once.Do(func() {
-		cs.c = map[string]*Container{}
+		cs.c = make(map[string]Container, 100)
 	})
 }

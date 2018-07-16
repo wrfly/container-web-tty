@@ -6,6 +6,7 @@ import (
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container/docker"
+	"github.com/wrfly/container-web-tty/container/kube"
 	"github.com/wrfly/container-web-tty/types"
 )
 
@@ -25,8 +26,8 @@ func NewCliBackend(conf config.BackendConfig) (cli Cli, err error) {
 	switch conf.Type {
 	case "docker":
 		cli, err = docker.NewCli(conf.Docker, conf.ExtraArgs)
-	// case "kube":
-	// cli, args, err = kube.NewCli(conf.Kube)
+	case "kube":
+		cli, err = kube.NewCli(conf.Kube, conf.ExtraArgs)
 	default:
 		err = fmt.Errorf("unknown backend type %s", conf.Type)
 	}

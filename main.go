@@ -149,6 +149,7 @@ func main() {
 			conf.Servers = strings.Split(c.String("servers"), " ")
 			if conf.Debug {
 				logrus.SetLevel(logrus.DebugLevel)
+			} else {
 				gin.SetMode(gin.ReleaseMode)
 			}
 			logrus.Debugf("got config: %+v", conf)

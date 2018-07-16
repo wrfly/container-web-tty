@@ -100,12 +100,12 @@ func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container
 	}
 
 	// find in containers
-	if container := docker.containers.Find(cid); container != nil {
+	if container := docker.containers.Find(cid); container.ID != "" {
 		if container.Shell == "" {
 			shell := docker.getShell(ctx, cid)
 			docker.containers.SetShell(cid, shell)
 		}
-		return *container
+		return container
 	}
 
 	// didn't get this container, this is rarelly happens
@@ -117,7 +117,7 @@ func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container
 
 	c := docker.convertCjsonToContainre(cjson)
 	if c.ID != "" {
-		docker.containers.Append(&c)
+		docker.containers.Append(c)
 	}
 	return c
 }
@@ -161,7 +161,7 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 		shell string
 	)
 	for i, container := range cs {
-		if old := docker.containers.Find(container.ID); old != nil {
+		if old := docker.containers.Find(container.ID); old.ID != "" {
 			shell = old.Shell
 			ips = old.IPs
 		} else {
