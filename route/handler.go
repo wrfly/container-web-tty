@@ -54,30 +54,21 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		}
 		defer conn.Close()
 
-		execArgs := []string{}
-
-		// it's a kubernetes pod
-		if container.PodName != "" {
-			execArgs = []string{container.PodName, "-c", container.ContainerName, container.Shell}
-		}
-
-		err = server.processWSConn(ctx, conn, container, execArgs)
-
+		err = server.processWSConn(ctx, conn, container)
 		switch err {
 		case ctx.Err():
 			closeReason = "cancelation"
 		case webtty.ErrSlaveClosed:
-			closeReason = "error"
+			closeReason = "backend closed"
 		case webtty.ErrMasterClosed:
-			// tab closed
-			closeReason = "client"
+			closeReason = "tab closed"
 		default:
 			closeReason = fmt.Sprintf("an error: %s", err)
 		}
 	}
 }
 
-func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, container types.Container, args []string) error {
+func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, container types.Container) error {
 	typ, initLine, err := conn.ReadMessage()
 	if err != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
@@ -95,9 +86,10 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 	// 	return fmt.Errorf("failed to authenticate websocket connection")
 	// }
 
+	log.Debugf("exec container: %s", container.ID)
 	containerTTY, err := server.containerCli.Exec(ctx, container)
 	if err != nil {
-		return fmt.Errorf("failed to create backend: %s", err)
+		return fmt.Errorf("exec container error: %s", err)
 	}
 	defer containerTTY.Exit()
 

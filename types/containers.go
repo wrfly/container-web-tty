@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 )
@@ -33,7 +32,6 @@ func (cs *Containers) Set(containers []Container) {
 		}
 	}
 	cs.c = tempContainers
-	fmt.Printf("%v\n", cs.c)
 	cs.m.Unlock()
 }
 

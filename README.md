@@ -25,6 +25,17 @@ docker run --rm -ti --name web-tty \
     wrfly/container-web-tty
 ```
 
+For kubernetes:
+
+```bash
+docker run --rm -ti --name web-tty \
+    -p 8080:8080 \
+    -e WEB_TTY_BACKEND=kube \
+    -e WEB_TTY_KUBE_CONFIG=/kube.config \
+    -v ~/.kube/config:/kube.config \
+    wrfly/container-web-tty
+```
+
 ## Keyboard Shortcuts (Linux)
 
 - Cut the word before the cursor `Ctrl+w` => **You cannot do it for now** (I'll working on it for `Ctrl+Backspace`, but I know little about js)
@@ -35,7 +46,7 @@ docker run --rm -ti --name web-tty \
 
 - [x] it works
 - [x] docker backend
-- [ ] kubectl backend
+- [x] kubectl backend
 - [x] beautiful index
 - [x] start|stop|restart container(docker backend only)
 - [x] environment injection(extra params)

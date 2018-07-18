@@ -60,13 +60,6 @@ func main() {
 			Destination: &conf.Backend.Docker.PsOptions,
 		},
 		&cli.StringFlag{
-			Name:        "kubectl-path",
-			EnvVars:     envVars("kubectl-path"),
-			Value:       "/usr/bin/kubectl",
-			Usage:       "kubectl cli path",
-			Destination: &conf.Backend.Kube.KubectlPath,
-		},
-		&cli.StringFlag{
 			Name:        "kube-config",
 			EnvVars:     envVars("kube-config"),
 			Value:       kubeConfigPath(),

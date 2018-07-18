@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"k8s.io/api/core/v1"
 	api "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -53,21 +51,14 @@ func NewCli(conf config.KubeConfig, args []string) (*KubeCli, error) {
 	logrus.Infof("New kube client: host [%s], namespaces [%s]",
 		kubeConfig.Host, strings.Join(ns, ","))
 
-	// oriConfigPath, exist := os.LookupEnv("KUBECONFIG")
-	// if !exist {
-	// 	logrus.Debugf("original kube config path not exist, set to %s", conf.ConfigPath)
-	// 	os.Setenv("KUBECONFIG", conf.ConfigPath)
-	// } else if oriConfigPath != conf.ConfigPath {
-	// 	logrus.Debugf("original kube config path %s != %s", oriConfigPath, conf.ConfigPath)
-	// 	os.Setenv("KUBECONFIG", "$KUBECONFIG:"+conf.ConfigPath)
-	// }
-	// logrus.Infof("kube config path: %s", os.Getenv("KUBECONFIG"))
-
-	return &KubeCli{
+	k := &KubeCli{
 		cli:        clientset,
 		containers: &types.Containers{},
 		config:     kubeConfig,
-	}, nil
+	}
+	k.List(context.Background())
+
+	return k, nil
 }
 
 func (kube KubeCli) GetInfo(ctx context.Context, cid string) types.Container {
@@ -77,26 +68,17 @@ func (kube KubeCli) GetInfo(ctx context.Context, cid string) types.Container {
 	}
 
 	// find in containers
-	if container := kube.containers.Find(cid); container != nil {
+	logrus.Debugf("find cid: %s", cid)
+	container := kube.containers.Find(cid)
+	if container.ID != "" {
 		if container.Shell == "" {
 			shell := kube.getShell(ctx, cid)
 			kube.containers.SetShell(cid, shell)
+			container.Shell = shell
 		}
-		return *container
+		return container
 	}
 
-	// // didn't get this container, this is rarelly happens
-	// cjson, err := kube.cli.ContainerInspect(ctx, cid)
-	// if err != nil {
-	// 	logrus.Errorf("inspect container %s error: %s", cid, err)
-	// 	return types.Container{}
-	// }
-
-	// c := kube.convertCjsonToContainre(cjson)
-	// if c.ID != "" {
-	// 	kube.containers.Append(&c)
-	// }
-	// return c
 	return types.Container{}
 }
 
@@ -182,21 +164,43 @@ func (kube KubeCli) List(ctx context.Context) []types.Container {
 
 func (kube KubeCli) exist(ctx context.Context, containerID, path string) bool {
 	info := kube.containers.Find(containerID)
-	if info == nil {
+	if info.ID == "" {
 		return false
 	}
-	logrus.Debugf("container info: %v", info)
 
-	pn := info.PodName
-	ns := info.Namespace
-	cn := info.ContainerName
+	restClient := kube.cli.CoreV1().RESTClient()
 
-	args := []string{"-n", ns, "exec", pn, "-c", cn, "ls", path}
-	cmd := exec.Command("/usr/bin/kubectl", args...)
-	if err := cmd.Run(); err != nil {
+	req := restClient.Post().
+		Resource("pods").
+		Name(info.PodName).
+		Namespace(info.Namespace).
+		SubResource("exec").
+		Param("container", info.ContainerName).
+		Param("command", "ls").
+		Param("command", path).
+		Param("stdout", "true").
+		Param("stdin", "false").
+		Param("tty", "false")
+
+	logrus.Debugf("POST to %s", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(kube.config, "POST", req.URL())
+	if err != nil {
+		logrus.Errorf("exist exec: setup executor error: [%v]", err)
 		return false
 	}
+
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdout: new(bytes.Buffer),
+		Tty:    false,
+	})
+	if err != nil {
+		logrus.Debugf("exist exec error: [%v]", err)
+		return false
+	}
+
+	logrus.Debugf("container %s exist %s", containerID, path)
 	return true
+
 }
 
 func (kube KubeCli) getShell(ctx context.Context, cid string) string {
@@ -224,8 +228,9 @@ func (kube KubeCli) Restart(ctx context.Context, cid string) error {
 }
 
 func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, error) {
+	logrus.Debugf("exec pod: %v", c)
 	if c.PodName == "" || c.Namespace == "" {
-		return nil, fmt.Errorf("not found")
+		return nil, fmt.Errorf("PodName or Namespace is empty")
 	}
 	pod, err := kube.cli.CoreV1().Pods(c.Namespace).
 		Get(c.PodName, metav1.GetOptions{})
@@ -237,41 +242,43 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 			fmt.Errorf("cannot exec into a container in a completed pod; current phase is %s", pod.Status.Phase)
 	}
 
-	restClient := kube.cli.RESTClient()
+	restClient := kube.cli.CoreV1().RESTClient()
 
 	req := restClient.Post().
 		Resource("pods").
 		Name(c.PodName).
 		Namespace(c.Namespace).
 		SubResource("exec").
-		Param("container", c.ContainerName)
+		Param("container", c.ContainerName).
+		Param("command", c.Shell).
+		Param("stdin", "true").
+		Param("stdout", "true").
+		Param("tty", "true")
 
-	req.VersionedParams(&api.PodExecOptions{
-		Container: c.ContainerName,
-		Command:   []string{c.Shell},
-		Stdin:     true,
-		Stdout:    true,
-		Stderr:    true,
-		TTY:       true,
-	}, runtime.NewParameterCodec(runtime.NewScheme()))
+	enj := newInjector(ctx)
 
-	r, w := new(bytes.Buffer), new(bytes.Buffer)
-	enj := newInjector(ctx, r, w)
-
+	logrus.Debugf("POST to %s", req.URL())
 	exec, err := remotecommand.NewSPDYExecutor(kube.config, "POST", req.URL())
 	if err != nil {
 		return nil, err
 	}
-	if err := exec.Stream(remotecommand.StreamOptions{
-		Stdin:             r,
-		Stdout:            w,
-		Stderr:            w,
-		Tty:               true,
-		TerminalSizeQueue: enj.sq,
-	}); err != nil {
-		logrus.Errorf("create stream error: [%v]", err)
-		// return nil, err
-	}
 
+	go func() {
+		err = exec.Stream(remotecommand.StreamOptions{
+			Stdin:             enj.ttyIn,
+			Stdout:            enj.ttyOut,
+			Tty:               true,
+			TerminalSizeQueue: enj.sq,
+		})
+		if err != nil {
+			logrus.Errorf("exec error: [%v]", err)
+		}
+		logrus.Debug("exec done")
+		// close in and out
+		enj.ttyIn.Close()
+		enj.ttyOut.Close()
+	}()
+
+	logrus.Debug("return enj")
 	return &enj, nil
 }

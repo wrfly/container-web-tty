@@ -10,16 +10,25 @@ import (
 )
 
 type execInjector struct {
-	r      io.Reader
-	w      io.Writer
+	r      io.ReadCloser
+	w      io.WriteCloser
+	ttyIn  io.ReadCloser
+	ttyOut io.WriteCloser
+
 	resize resizeFunction
 	sq     remotecommand.TerminalSizeQueue
 }
 
-func newInjector(ctx context.Context, r io.Reader, w io.Writer) execInjector {
+func newInjector(ctx context.Context) execInjector {
+
+	r, out := io.Pipe()
+	in, w := io.Pipe()
+
 	enj := execInjector{
-		r: r,
-		w: w,
+		r:      r,
+		w:      w,
+		ttyIn:  in,
+		ttyOut: out,
 		sq: &sizeQueue{
 			ctx:        ctx,
 			resizeChan: make(chan remotecommand.TerminalSize),
@@ -27,17 +36,16 @@ func newInjector(ctx context.Context, r io.Reader, w io.Writer) execInjector {
 	}
 	enj.resize = func(width int, height int) error {
 		defer func() {
-			x := recover()
-			logrus.Errorf("got a panic in resize func: %v", x)
+			recover()
 		}()
-
-		enj.sq.(*sizeQueue).resizeChan <- remotecommand.TerminalSize{
+		size := remotecommand.TerminalSize{
 			Width:  uint16(width),
 			Height: uint16(height),
 		}
-
+		enj.sq.(*sizeQueue).resizeChan <- size
 		return nil
 	}
+
 	return enj
 }
 
@@ -52,8 +60,17 @@ func (enj *execInjector) Write(p []byte) (n int, err error) {
 }
 
 func (enj *execInjector) Exit() error {
+	// exit the shell
 	enj.Write([]byte("exit\n"))
-	close(enj.sq.(*sizeQueue).resizeChan)
+
+	// close the size queue
+	enj.sq.(*sizeQueue).close()
+
+	enj.r.Close()
+	enj.w.Close()
+	enj.ttyIn.Close()
+	enj.ttyOut.Close()
+
 	return nil
 }
 
@@ -62,8 +79,7 @@ func (enj *execInjector) WindowTitleVariables() map[string]interface{} {
 }
 
 func (enj *execInjector) ResizeTerminal(width int, height int) error {
-	// since the process may not up so fast, give it 15ms
-	// retry 3 times
+	logrus.Debugf("resize terminal to: %dx%d", width, height)
 	var err error
 	for i := 0; i < 3; i++ {
 		if err = enj.resize(width, height); err == nil {
@@ -85,4 +101,8 @@ func (s *sizeQueue) Next() *remotecommand.TerminalSize {
 		return nil
 	}
 	return &size
+}
+
+func (s *sizeQueue) close() {
+	close(s.resizeChan)
 }

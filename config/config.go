@@ -8,8 +8,7 @@ type DockerConfig struct {
 }
 
 type KubeConfig struct {
-	KubectlPath string // default is /usr/bin/kubectl
-	ConfigPath  string // normally is $HOME/.kube/config
+	ConfigPath string // normally is $HOME/.kube/config
 }
 
 type BackendConfig struct {
