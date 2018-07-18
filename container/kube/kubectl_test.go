@@ -15,8 +15,7 @@ func TestKubeCli(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 
 	k, err := NewCli(config.KubeConfig{
-		KubectlPath: "/usr/bin/kubectl",
-		ConfigPath:  "/home/mr/.kube/config",
+		ConfigPath: "/home/mr/.kube/config",
 	}, nil)
 	if err != nil {
 		t.Error(err)
