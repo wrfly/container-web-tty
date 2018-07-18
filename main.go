@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -29,13 +30,13 @@ func main() {
 			Value:       8080,
 			Destination: &conf.Port,
 		},
-		&cli.StringFlag{
-			Name:        "log-level",
-			Aliases:     []string{"l"},
-			Value:       "info",
-			EnvVars:     envVars("log-level"),
-			Usage:       "log level",
-			Destination: &conf.LogLevel,
+		&cli.BoolFlag{
+			Name:        "debug",
+			Aliases:     []string{"d"},
+			Value:       false,
+			EnvVars:     envVars("debug"),
+			Usage:       "debug mode",
+			Destination: &conf.Debug,
 		},
 		&cli.StringFlag{
 			Name:        "backend",
@@ -46,13 +47,6 @@ func main() {
 			Destination: &conf.Backend.Type,
 		},
 		&cli.StringFlag{
-			Name:        "docker-path",
-			EnvVars:     envVars("docker-path"),
-			Value:       dockerCliPath(),
-			Usage:       "docker cli path",
-			Destination: &conf.Backend.Docker.DockerPath,
-		},
-		&cli.StringFlag{
 			Name:        "docker-host",
 			EnvVars:     envVars("docker-host"),
 			Value:       "/var/run/docker.sock",
@@ -60,11 +54,10 @@ func main() {
 			Destination: &conf.Backend.Docker.DockerHost,
 		},
 		&cli.StringFlag{
-			Name:        "kubectl-path",
-			EnvVars:     envVars("kubectl-path"),
-			Value:       "/usr/bin/kubectl",
-			Usage:       "kubectl cli path",
-			Destination: &conf.Backend.Kube.KubectlPath,
+			Name:        "docker-ps",
+			EnvVars:     envVars("docker-ps"),
+			Usage:       "docker ps options",
+			Destination: &conf.Backend.Docker.PsOptions,
 		},
 		&cli.StringFlag{
 			Name:        "kube-config",
@@ -84,27 +77,27 @@ func main() {
 			Usage:   "upstream servers, for proxy mode",
 		},
 		&cli.BoolFlag{
-			Name:        "control",
-			Aliases:     []string{"ctl"},
+			Name:        "control-all",
+			Aliases:     []string{"ctl-all"},
 			Usage:       "enable container control",
-			Destination: &conf.Control.Enable,
+			Destination: &conf.Control.All,
 		},
 		&cli.BoolFlag{
 			Name:        "control-start",
 			Aliases:     []string{"ctl-s"},
-			Usage:       "enable start container",
+			Usage:       "enable container start  ",
 			Destination: &conf.Control.Start,
 		},
 		&cli.BoolFlag{
 			Name:        "control-stop",
 			Aliases:     []string{"ctl-t"},
-			Usage:       "enable stop container",
+			Usage:       "enable container stop   ",
 			Destination: &conf.Control.Stop,
 		},
 		&cli.BoolFlag{
 			Name:        "control-restart",
 			Aliases:     []string{"ctl-r"},
-			Usage:       "enable restart container",
+			Usage:       "enable container restart",
 			Destination: &conf.Control.Restart,
 		},
 		&cli.BoolFlag{
@@ -113,6 +106,8 @@ func main() {
 			Usage:   "show help",
 		},
 	}
+
+	sort.Sort(cli.FlagsByName(appFlags))
 
 	app := &cli.App{
 		Name:      "container-web-tty",
@@ -139,14 +134,15 @@ func main() {
 				}
 			}
 
-			conf.Servers = strings.Split(c.String("servers"), " ")
-			level, err := logrus.ParseLevel(conf.LogLevel)
-			if err != nil {
-				logrus.Error(err)
-				return err
+			ctl := conf.Control
+			if ctl.Start || ctl.Stop || ctl.Restart || ctl.All {
+				conf.Control.Enable = true
 			}
-			logrus.SetLevel(level)
-			if level != logrus.DebugLevel {
+
+			conf.Servers = strings.Split(c.String("servers"), " ")
+			if conf.Debug {
+				logrus.SetLevel(logrus.DebugLevel)
+			} else {
 				gin.SetMode(gin.ReleaseMode)
 			}
 			logrus.Debugf("got config: %+v", conf)

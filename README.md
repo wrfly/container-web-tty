@@ -21,8 +21,18 @@ For docker:
 ```bash
 docker run --rm -ti --name web-tty \
     -p 8080:8080 \
-    -v /usr/bin/docker:/usr/bin/docker \
     -v /var/run/docker.sock:/var/run/docker.sock \
+    wrfly/container-web-tty
+```
+
+For kubernetes:
+
+```bash
+docker run --rm -ti --name web-tty \
+    -p 8080:8080 \
+    -e WEB_TTY_BACKEND=kube \
+    -e WEB_TTY_KUBE_CONFIG=/kube.config \
+    -v ~/.kube/config:/kube.config \
     wrfly/container-web-tty
 ```
 

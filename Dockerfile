@@ -7,12 +7,9 @@ ENV SRC=/go/src/github.com/wrfly/${BIN}
 COPY . ${SRC}
 RUN cd ${SRC} && \
     make prepare && \
-    make test && \
     make build && \
     mv bin/${BIN} /root
 
 FROM alpine
 COPY --from=0 /root/container-web-tty /bin/
 CMD [ "container-web-tty" ]
-
-

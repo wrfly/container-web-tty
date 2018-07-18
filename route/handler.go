@@ -17,11 +17,8 @@ import (
 
 func (server *Server) generateHandleWS(ctx context.Context, counter *counter, container types.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cID := container.ID
-		sh := server.containerCli.GetShell(r.Context(), cID)
-
-		if sh == "" {
-			log.Errorf("cannot find a valid shell in container [%s]", cID)
+		if container.Shell == "" {
+			log.Errorf("cannot find a valid shell in container [%s]", container.ID)
 			return
 		}
 
@@ -36,12 +33,12 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 			)
 		}()
 
-		if int64(server.options.MaxConnection) != 0 {
-			if num > server.options.MaxConnection {
-				closeReason = "exceeding max number of connections"
-				return
-			}
-		}
+		// if int64(server.options.MaxConnection) != 0 {
+		// 	if num > server.options.MaxConnection {
+		// 		closeReason = "exceeding max number of connections"
+		// 		return
+		// 	}
+		// }
 
 		log.Infof("new client connected: %s, connections: %d", r.RemoteAddr, num)
 
@@ -57,31 +54,21 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		}
 		defer conn.Close()
 
-		execArgs := []string{cID, sh}
-
-		// it's a kubernetes pod
-		if container.PodName != "" {
-			execArgs = []string{container.PodName, "-c", container.ContainerName, sh}
-		}
-
-		err = server.processWSConn(ctx, conn, container, execArgs)
-
+		err = server.processWSConn(ctx, conn, container)
 		switch err {
 		case ctx.Err():
 			closeReason = "cancelation"
 		case webtty.ErrSlaveClosed:
-			closeReason = server.factory.Name()
+			closeReason = "backend closed"
 		case webtty.ErrMasterClosed:
-			// tab closed
-			closeReason = "client"
+			closeReason = "tab closed"
 		default:
 			closeReason = fmt.Sprintf("an error: %s", err)
 		}
 	}
 }
 
-func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
-	container types.Container, args []string) error {
+func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, container types.Container) error {
 	typ, initLine, err := conn.ReadMessage()
 	if err != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
@@ -90,7 +77,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 		return fmt.Errorf("failed to authenticate websocket connection: invalid message type")
 	}
 
-	var init InitMessage
+	var init types.InitMessage
 	err = json.Unmarshal(initLine, &init)
 	if err != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
@@ -99,18 +86,12 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 	// 	return fmt.Errorf("failed to authenticate websocket connection")
 	// }
 
-	var slave Slave
-	slave, err = server.factory.New(map[string][]string{
-		"arg": args,
-	})
+	log.Debugf("exec container: %s", container.ID)
+	containerTTY, err := server.containerCli.Exec(ctx, container)
 	if err != nil {
-		return fmt.Errorf("failed to create backend: %s", err)
+		return fmt.Errorf("exec container error: %s", err)
 	}
-	defer func() {
-		// exit every shell before close slave
-		slave.Write([]byte("exit\n"))
-		slave.Close()
-	}()
+	defer containerTTY.Exit()
 
 	cIP := "127.0.0.1"
 	if len(container.IPs) > 0 {
@@ -140,7 +121,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn,
 	}
 
 	wrapper := &wsWrapper{conn}
-	tty, err := webtty.New(wrapper, slave, opts...)
+	tty, err := webtty.New(wrapper, containerTTY, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create webtty: %s", err)
 	}
@@ -252,7 +233,7 @@ func (server *Server) handleContainerActions(c *gin.Context, action string) {
 	}
 	c.JSON(0, types.ContainerActionMessage{
 		Code:    0,
-		Message: fmt.Sprintf("%s container %s successfully", action, cid),
+		Message: fmt.Sprintf("%s container %s successfully", action, cid[:7]),
 	})
 }
 

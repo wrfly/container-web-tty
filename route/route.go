@@ -22,7 +22,6 @@ import (
 
 // Server provides a webtty HTTP endpoint.
 type Server struct {
-	factory      Factory
 	options      *Options
 	containerCli container.Cli
 	upgrader     *websocket.Upgrader
@@ -64,7 +63,7 @@ func init() {
 
 // New creates a new instance of Server.
 // Server will use the New() of the factory provided to handle each request.
-func New(factory Factory, options *Options, containerCli container.Cli) (*Server, error) {
+func New(containerCli container.Cli, options *Options) (*Server, error) {
 
 	var originChekcer func(r *http.Request) bool
 	if options.WSOrigin != "" {
@@ -79,7 +78,6 @@ func New(factory Factory, options *Options, containerCli container.Cli) (*Server
 
 	h, _ := os.Hostname()
 	return &Server{
-		factory:      factory,
 		options:      options,
 		containerCli: containerCli,
 		hostname:     h,
@@ -141,13 +139,13 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	if ctl.Enable {
 		// container actions: start|stop|restart
 		containerG := router.Group("/container")
-		if ctl.Start {
+		if ctl.Start || ctl.All {
 			containerG.POST("/start/:id", server.handleStartContainer)
 		}
-		if ctl.Stop {
+		if ctl.Stop || ctl.All {
 			containerG.POST("/stop/:id", server.handleStopContainer)
 		}
-		if ctl.Restart {
+		if ctl.Restart || ctl.All {
 			containerG.POST("/restart/:id", server.handleRestartContainer)
 		}
 	}
@@ -193,6 +191,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	conn := counter.count()
 	if conn > 0 {
 		log.Printf("Waiting for %d connections to be closed", conn)
+		fmt.Println("Ctl-C to force close")
 	}
 	counter.wait()
 

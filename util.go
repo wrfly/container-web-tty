@@ -30,7 +30,7 @@ func kubeConfigPath() string {
 
 func envVars(e string) []string {
 	e = strings.ToUpper(e)
-	return []string{"CWT_" + strings.Replace(e, "-", "_", -1)}
+	return []string{"WEB_TTY_" + strings.Replace(e, "-", "_", -1)}
 }
 
 func waitSignals(errs chan error, cancel context.CancelFunc, gracefullCancel context.CancelFunc) error {
@@ -49,7 +49,6 @@ func waitSignals(errs chan error, cancel context.CancelFunc, gracefullCancel con
 		switch s {
 		case syscall.SIGINT:
 			gracefullCancel()
-			fmt.Println("C-C to force close")
 			select {
 			case err := <-errs:
 				return err

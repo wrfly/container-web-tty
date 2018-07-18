@@ -37,24 +37,36 @@ test:
 
 .PHONY: dev
 dev: asset build
-	./$(BIN)/$(NAME) -l debug
+	./$(BIN)/$(NAME) -d
 
 .PHONY: release
 release:
 	GOOS=linux GOARCH=amd64 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME)_linux_amd64 .
 	GOOS=darwin GOARCH=amd64 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME)_darwin_amd64 .
 
-.PHONY: image push-image
+.PHONY: image
 image:
 	docker build -t $(IMAGE) .
+
+.PHONY: push-image
 push-image:
 	docker push $(IMAGE)
 
 
+.PHONY: push-develop
+push-develop:
+	docker tag $(IMAGE) $(IMAGE):develop
+	docker push $(IMAGE):develop
+
+.PHONY: push-tag
+push-tag:
+	docker tag $(IMAGE) $(IMAGE):$(VERSION)
+	docker push $(IMAGE):$(VERSION)
+
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
 asset: clear static/js/gotty-bundle.js static/index.html static/favicon.png static/css/index.css static/css/xterm.css static/css/xterm_customize.css
-	go-bindata -prefix static -pkg route -ignore=\\.gitkeep -o route/asset.go static/...
+	go-bindata -nometadata -prefix static -pkg route -ignore=\\.gitkeep -o route/asset.go static/...
 	gofmt -w route/asset.go
 
 clear:
