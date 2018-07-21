@@ -7,6 +7,9 @@ services:
       - 8080:8080
     environment:
       - WEB_TTY_DEBUG=false
-      - WEB_TTY_DOCKER_HOST=/var/run/docker.sock
+      - DOCKER_HOST=/var/run/docker.sock
+      # - WEB_TTY_DOCKER_HOST=/var/run/docker.sock
+      # both the env key is OK, first is WEB_TTY_DOCKER_HOST
+      # if WEB_TTY_DOCKER_HOST not found, then try to use DOCKER_HOST
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

@@ -15,35 +15,23 @@ type execInjector struct {
 	ttyIn  io.ReadCloser
 	ttyOut io.WriteCloser
 
-	resize resizeFunction
-	sq     remotecommand.TerminalSizeQueue
+	sq *sizeQueue
 }
 
 func newInjector(ctx context.Context) execInjector {
 
 	r, out := io.Pipe()
 	in, w := io.Pipe()
-
+	sq := &sizeQueue{
+		ctx:        ctx,
+		resizeChan: make(chan remotecommand.TerminalSize),
+	}
 	enj := execInjector{
 		r:      r,
 		w:      w,
 		ttyIn:  in,
 		ttyOut: out,
-		sq: &sizeQueue{
-			ctx:        ctx,
-			resizeChan: make(chan remotecommand.TerminalSize),
-		},
-	}
-	enj.resize = func(width int, height int) error {
-		defer func() {
-			recover()
-		}()
-		size := remotecommand.TerminalSize{
-			Width:  uint16(width),
-			Height: uint16(height),
-		}
-		enj.sq.(*sizeQueue).resizeChan <- size
-		return nil
+		sq:     sq,
 	}
 
 	return enj
@@ -63,13 +51,11 @@ func (enj *execInjector) Exit() error {
 	// exit the shell
 	enj.Write([]byte("exit\n"))
 
-	// close the size queue
-	enj.sq.(*sizeQueue).close()
-
 	enj.r.Close()
 	enj.w.Close()
 	enj.ttyIn.Close()
 	enj.ttyOut.Close()
+	enj.sq.close()
 
 	return nil
 }
@@ -82,10 +68,10 @@ func (enj *execInjector) ResizeTerminal(width int, height int) error {
 	logrus.Debugf("resize terminal to: %dx%d", width, height)
 	var err error
 	for i := 0; i < 3; i++ {
-		if err = enj.resize(width, height); err == nil {
+		if err = enj.sq.resize(width, height); err == nil {
 			break
 		}
-		time.Sleep(time.Millisecond * 5)
+		time.Sleep(time.Millisecond * 50)
 	}
 	return err
 }
@@ -105,4 +91,15 @@ func (s *sizeQueue) Next() *remotecommand.TerminalSize {
 
 func (s *sizeQueue) close() {
 	close(s.resizeChan)
+}
+
+func (s *sizeQueue) resize(width int, height int) error {
+	defer func() {
+		recover()
+	}()
+	s.resizeChan <- remotecommand.TerminalSize{
+		Width:  uint16(width),
+		Height: uint16(height),
+	}
+	return nil
 }

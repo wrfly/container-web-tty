@@ -48,7 +48,7 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:        "docker-host",
-			EnvVars:     envVars("docker-host"),
+			EnvVars:     append(envVars("docker-host"), "DOCKER_HOST"),
 			Value:       "/var/run/docker.sock",
 			Usage:       "docker host path",
 			Destination: &conf.Backend.Docker.DockerHost,
