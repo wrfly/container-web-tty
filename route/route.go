@@ -103,7 +103,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		opt(opts)
 	}
 
-	counter := newCounter(time.Duration(server.options.Timeout) * time.Second)
+	counter := newCounter(server.options.Timeout)
 
 	router := gin.New()
 	router.Use(gin.Recovery())

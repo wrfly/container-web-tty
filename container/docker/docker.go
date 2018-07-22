@@ -30,7 +30,7 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 		host = "tcp://" + host
 	}
 	version := "v1.24"
-	logrus.Infof("docker connecting to %s", host)
+	logrus.Infof("Docker connecting to %s", host)
 	UA := map[string]string{"User-Agent": "engine-api-cli-1.0"}
 	cli, err := client.NewClient(host, version, nil, UA)
 	if err != nil {
@@ -50,13 +50,13 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infof("new docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
+	logrus.Infof("New docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
 	dockerCli := &DockerCli{
 		cli:         cli,
 		containers:  &types.Containers{},
 		listOptions: listOptions,
 	}
-	logrus.Infof("warm up containers info...")
+	logrus.Infof("Warm up containers info...")
 	dockerCli.List(ctx)
 
 	return dockerCli, nil

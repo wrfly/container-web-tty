@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 var SHELL_LIST = []string{"/bin/bash", "/bin/ash", "/bin/sh"}
 
 type DockerConfig struct {
@@ -26,10 +28,28 @@ type ControlConfig struct {
 	Restart bool
 }
 
+type ServerConfig struct {
+	Port    string
+	Timeout time.Duration
+	Servers []string // for proxy mode
+}
+
 type Config struct {
-	Port    int
 	Debug   bool
 	Control ControlConfig
 	Backend BackendConfig
-	Servers []string // for proxy mode
+	Server  ServerConfig
+}
+
+func New() *Config {
+	return &Config{
+		Backend: BackendConfig{
+			Docker: DockerConfig{},
+			Kube:   KubeConfig{},
+		},
+		Server: ServerConfig{
+			Servers: []string{},
+		},
+		Control: ControlConfig{},
+	}
 }

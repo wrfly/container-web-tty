@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -27,20 +28,19 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 
 		defer func() {
 			num := counter.done()
-			log.Infof(
-				"connection closed by %s: %s, connections: %d",
+			log.Infof("Connection closed by %s: %s, connections: %d",
 				closeReason, r.RemoteAddr, num,
 			)
 		}()
 
-		// if int64(server.options.MaxConnection) != 0 {
-		// 	if num > server.options.MaxConnection {
-		// 		closeReason = "exceeding max number of connections"
-		// 		return
-		// 	}
-		// }
+		if int64(server.options.MaxConnection) != 0 {
+			if num > server.options.MaxConnection {
+				closeReason = "exceeding max number of connections"
+				return
+			}
+		}
 
-		log.Infof("new client connected: %s, connections: %d", r.RemoteAddr, num)
+		log.Infof("New client connected: %s, connections: %d", r.RemoteAddr, num)
 
 		if r.Method != "GET" {
 			http.Error(w, "Method not allowed", 405)
@@ -54,10 +54,23 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		}
 		defer conn.Close()
 
-		err = server.processWSConn(ctx, conn, container)
+		cctx, timeoutCancel := context.WithCancel(ctx)
+		defer timeoutCancel()
+		if server.options.Timeout.Seconds() != 0 {
+			go func() {
+				timer := time.NewTimer(server.options.Timeout)
+				<-timer.C
+				timer.Stop()
+				timeoutCancel()
+			}()
+		}
+
+		err = server.processWSConn(cctx, conn, container)
 		switch err {
 		case ctx.Err():
 			closeReason = "cancelation"
+		case cctx.Err():
+			closeReason = "time out"
 		case webtty.ErrSlaveClosed:
 			closeReason = "backend closed"
 		case webtty.ErrMasterClosed:
@@ -118,6 +131,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 	opts := []webtty.Option{
 		webtty.WithWindowTitle(titleBuf.Bytes()),
 		webtty.WithPermitWrite(),
+		// webtty.WithReconnect(10), // not work....
 	}
 
 	wrapper := &wsWrapper{conn}

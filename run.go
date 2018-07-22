@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/utils"
@@ -16,21 +15,21 @@ import (
 func run(c *cli.Context, conf config.Config) {
 	appOptions := &route.Options{
 		Control: conf.Control,
+		Port:    conf.Server.Port,
+		Timeout: conf.Server.Timeout,
 	}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
 		logrus.Fatal(err)
 	}
 
-	appOptions.Port = fmt.Sprint(conf.Port)
-
 	containerCli, err := container.NewCliBackend(conf.Backend)
 	if err != nil {
-		logrus.Fatalf("create backend client error: %s", err)
+		logrus.Fatalf("Create backend client error: %s", err)
 	}
 
 	srv, err := route.New(containerCli, appOptions)
 	if err != nil {
-		logrus.Fatalf("create server error: %s", err)
+		logrus.Fatalf("Create server error: %s", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -44,6 +43,6 @@ func run(c *cli.Context, conf config.Config) {
 	err = waitSignals(errs, cancel, gCancel)
 
 	if err != nil && err != context.Canceled {
-		logrus.Fatalf("server exist with error: %s", err)
+		logrus.Fatalf("Server exist with error: %s", err)
 	}
 }

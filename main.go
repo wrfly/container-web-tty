@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -14,21 +15,15 @@ import (
 )
 
 func main() {
-	conf := config.Config{
-		Backend: config.BackendConfig{
-			Docker: config.DockerConfig{},
-			Kube:   config.KubeConfig{},
-		},
-		Control: config.ControlConfig{},
-	}
+	conf := config.New()
 	appFlags := []cli.Flag{
-		&cli.IntFlag{
+		&cli.StringFlag{
 			Name:        "port",
 			Aliases:     []string{"p"},
 			EnvVars:     envVars("port"),
 			Usage:       "server port",
-			Value:       8080,
-			Destination: &conf.Port,
+			Value:       "8080",
+			Destination: &conf.Server.Port,
 		},
 		&cli.BoolFlag{
 			Name:        "debug",
@@ -76,6 +71,11 @@ func main() {
 			EnvVars: envVars("servers"),
 			Usage:   "upstream servers, for proxy mode",
 		},
+		&cli.StringFlag{
+			Name:    "time-out",
+			EnvVars: envVars("time-out"),
+			Usage:   "max time for a connection",
+		},
 		&cli.BoolFlag{
 			Name:        "control-all",
 			Aliases:     []string{"ctl-all"},
@@ -122,6 +122,14 @@ func main() {
 			if c.Bool("help") {
 				return cli.ShowAppHelp(c)
 			}
+			// parse timeout
+			t := c.String("time-out")
+			timeout, err := time.ParseDuration(t)
+			if err != nil && t != "" {
+				logrus.Fatalf("parse time-out error: %s", err)
+			} else {
+				conf.Server.Timeout = timeout
+			}
 
 			if eArgs := c.String("extra-args"); eArgs != "" {
 				conf.Backend.ExtraArgs = strings.Split(eArgs, " ")
@@ -139,7 +147,7 @@ func main() {
 				conf.Control.Enable = true
 			}
 
-			conf.Servers = strings.Split(c.String("servers"), " ")
+			conf.Server.Servers = strings.Split(c.String("servers"), " ")
 			if conf.Debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			} else {
@@ -147,7 +155,7 @@ func main() {
 			}
 			logrus.Debugf("got config: %+v", conf)
 
-			run(c, conf)
+			run(c, *conf)
 			return nil
 		},
 	}

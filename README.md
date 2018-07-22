@@ -52,7 +52,7 @@ docker run --rm -ti --name web-tty \
 - [x] environment injection(extra params)
 - [ ] proxy mode(client -> server's containers)
 - [ ] auth
-- [ ] TTY timeout
+- [x] TTY timeout
 
 ## Show-off
 

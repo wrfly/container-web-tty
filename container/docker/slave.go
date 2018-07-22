@@ -50,7 +50,7 @@ func (enj *execInjector) ResizeTerminal(width int, height int) error {
 		if err = enj.resize(width, height); err == nil {
 			break
 		}
-		time.Sleep(time.Millisecond * 5)
+		time.Sleep(time.Millisecond * 50)
 	}
 	return err
 }
