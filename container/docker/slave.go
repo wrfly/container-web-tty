@@ -42,15 +42,14 @@ func (enj *execInjector) WindowTitleVariables() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
-func (enj *execInjector) ResizeTerminal(width int, height int) error {
-	// since the process may not up so fast, give it 15ms
+func (enj *execInjector) ResizeTerminal(width int, height int) (err error) {
+	// since the process may not up so fast, give it 150ms
 	// retry 3 times
-	var err error
 	for i := 0; i < 3; i++ {
 		if err = enj.resize(width, height); err == nil {
-			break
+			return
 		}
 		time.Sleep(time.Millisecond * 50)
 	}
-	return err
+	return
 }

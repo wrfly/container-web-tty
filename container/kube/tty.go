@@ -64,16 +64,15 @@ func (enj *execInjector) WindowTitleVariables() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
-func (enj *execInjector) ResizeTerminal(width int, height int) error {
+func (enj *execInjector) ResizeTerminal(width int, height int) (err error) {
 	logrus.Debugf("resize terminal to: %dx%d", width, height)
-	var err error
 	for i := 0; i < 3; i++ {
 		if err = enj.sq.resize(width, height); err == nil {
-			break
+			return
 		}
 		time.Sleep(time.Millisecond * 50)
 	}
-	return err
+	return
 }
 
 type sizeQueue struct {

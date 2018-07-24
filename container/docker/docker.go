@@ -282,15 +282,11 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 	}
 
 	resizeFunc := func(width int, height int) error {
-		err := docker.cli.ContainerExecResize(ctx, execID, apiTypes.ResizeOptions{
-			Width:  uint(width),
-			Height: uint(height),
-		})
-		if err != nil {
-			logrus.Errorf("resize exec %s (container %s) window size to %dx%d; err: %v",
-				container.ID, execID, width, height, err)
-		}
-		return err
+		return docker.cli.ContainerExecResize(ctx, execID,
+			apiTypes.ResizeOptions{
+				Width:  uint(width),
+				Height: uint(height),
+			})
 	}
 
 	return newExecInjector(resp, resizeFunc), nil
