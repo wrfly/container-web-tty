@@ -2,6 +2,7 @@ package types
 
 import "github.com/yudai/gotty/webtty"
 
+// Container instance
 type Container struct {
 	// common
 	ID, Name       string
@@ -12,18 +13,25 @@ type Container struct {
 	// k8s
 	PodName, ContainerName string
 	Namespace, RunningNode string
+	// remote location server address
+	// use this to locate the container
+	// in the proxy mode
+	LocServer string
 }
 
+// ContainerActionMessage tells the web browser the action's status
 type ContainerActionMessage struct {
 	Error   string `json:"err"`
 	Code    int    `json:"code"`
 	Message string `json:"msg"`
 }
 
-// Slave is webtty.Slave with some additional methods.
+// TTY is webtty.Slave with some additional methods.
 type TTY interface {
 	webtty.Slave
 	Exit() error
+	// ActiveChan is to notify that the connection is active
+	ActiveChan() <-chan struct{}
 }
 
 type InitMessage struct {

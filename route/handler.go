@@ -56,16 +56,8 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 
 		cctx, timeoutCancel := context.WithCancel(ctx)
 		defer timeoutCancel()
-		if server.options.Timeout.Seconds() != 0 {
-			go func() {
-				timer := time.NewTimer(server.options.Timeout)
-				<-timer.C
-				timer.Stop()
-				timeoutCancel()
-			}()
-		}
 
-		err = server.processWSConn(cctx, conn, container)
+		err = server.processWSConn(cctx, timeoutCancel, conn, container)
 		switch err {
 		case ctx.Err():
 			closeReason = "cancelation"
@@ -81,7 +73,8 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 	}
 }
 
-func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, container types.Container) error {
+func (server *Server) processWSConn(ctx context.Context, timeoutCancel context.CancelFunc,
+	conn *websocket.Conn, container types.Container) error {
 	typ, initLine, err := conn.ReadMessage()
 	if err != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
@@ -91,13 +84,12 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 	}
 
 	var init types.InitMessage
-	err = json.Unmarshal(initLine, &init)
-	if err != nil {
+	if json.Unmarshal(initLine, &init) != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
 	}
-	// if init.AuthToken != server.options.Credential {
-	// 	return fmt.Errorf("failed to authenticate websocket connection")
-	// }
+	if server.options.Credential != "" && init.AuthToken != server.options.Credential {
+		return fmt.Errorf("failed to authenticate websocket connection")
+	}
 
 	log.Debugf("exec container: %s", container.ID)
 	containerTTY, err := server.containerCli.Exec(ctx, container)
@@ -105,6 +97,27 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 		return fmt.Errorf("exec container error: %s", err)
 	}
 	defer containerTTY.Exit()
+
+	// handle timeout
+	tout := server.options.Timeout
+	if tout.Seconds() != 0 {
+		go func() {
+			timer := time.NewTimer(tout)
+			activeChan := containerTTY.ActiveChan()
+			for {
+				select {
+				case <-timer.C:
+					timer.Stop()
+					timeoutCancel()
+					return
+				case <-activeChan:
+					// the connection is active, reset the timer
+					timer.Reset(tout)
+				}
+			}
+
+		}()
+	}
 
 	cIP := "127.0.0.1"
 	if len(container.IPs) > 0 {
@@ -140,9 +153,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 		return fmt.Errorf("failed to create webtty: %s", err)
 	}
 
-	err = tty.Run(ctx)
-
-	return err
+	return tty.Run(ctx)
 }
 
 func (server *Server) handleExec(c *gin.Context, cInfo types.Container) {

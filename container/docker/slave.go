@@ -8,20 +8,28 @@ import (
 
 // execInjector implement webtty.Slave
 type execInjector struct {
-	hResp  apiTypes.HijackedResponse
-	resize resizeFunction
+	hResp      apiTypes.HijackedResponse
+	resize     resizeFunction
+	activeChan chan struct{}
 }
 
 type resizeFunction func(width int, height int) error
 
 func newExecInjector(resp apiTypes.HijackedResponse, resize resizeFunction) *execInjector {
 	return &execInjector{
-		hResp:  resp,
-		resize: resize,
+		hResp:      resp,
+		resize:     resize,
+		activeChan: make(chan struct{}, 5),
 	}
 }
 
 func (enj *execInjector) Read(p []byte) (n int, err error) {
+	go func() {
+		if len(enj.activeChan) != 0 {
+			return
+		}
+		enj.activeChan <- struct{}{}
+	}()
 	return enj.hResp.Reader.Read(p)
 }
 
@@ -35,7 +43,12 @@ func (enj *execInjector) Close() error {
 
 func (enj *execInjector) Exit() error {
 	enj.Write([]byte("exit\n"))
+	close(enj.activeChan)
 	return enj.hResp.Conn.Close()
+}
+
+func (enj *execInjector) ActiveChan() <-chan struct{} {
+	return enj.activeChan
 }
 
 func (enj *execInjector) WindowTitleVariables() map[string]interface{} {

@@ -29,9 +29,9 @@ type ControlConfig struct {
 }
 
 type ServerConfig struct {
-	Port    string
-	Timeout time.Duration
-	Servers []string // for proxy mode
+	Port     string
+	IdleTime time.Duration
+	Servers  []string // for proxy mode
 }
 
 type Config struct {

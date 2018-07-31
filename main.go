@@ -72,9 +72,9 @@ func main() {
 			Usage:   "upstream servers, for proxy mode",
 		},
 		&cli.StringFlag{
-			Name:    "time-out",
-			EnvVars: envVars("time-out"),
-			Usage:   "max time for a connection",
+			Name:    "idle-time",
+			EnvVars: envVars("idle-time"),
+			Usage:   "time out of an idle connection",
 		},
 		&cli.BoolFlag{
 			Name:        "control-all",
@@ -122,13 +122,13 @@ func main() {
 			if c.Bool("help") {
 				return cli.ShowAppHelp(c)
 			}
-			// parse timeout
-			t := c.String("time-out")
-			timeout, err := time.ParseDuration(t)
+			// parse idleTime
+			t := c.String("idle-time")
+			idleTime, err := time.ParseDuration(t)
 			if err != nil && t != "" {
-				logrus.Fatalf("parse time-out error: %s", err)
+				logrus.Fatalf("parse idle-time error: %s", err)
 			} else {
-				conf.Server.Timeout = timeout
+				conf.Server.IdleTime = idleTime
 			}
 
 			if eArgs := c.String("extra-args"); eArgs != "" {

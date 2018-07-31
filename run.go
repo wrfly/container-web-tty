@@ -16,7 +16,7 @@ func run(c *cli.Context, conf config.Config) {
 	appOptions := &route.Options{
 		Control: conf.Control,
 		Port:    conf.Server.Port,
-		Timeout: conf.Server.Timeout,
+		Timeout: conf.Server.IdleTime,
 	}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
 		logrus.Fatal(err)
