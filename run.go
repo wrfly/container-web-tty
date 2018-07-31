@@ -16,6 +16,7 @@ func run(c *cli.Context, conf config.Config) {
 	appOptions := &route.Options{
 		Control: conf.Control,
 		Port:    conf.Server.Port,
+		Address: conf.Server.Addr,
 		Timeout: conf.Server.IdleTime,
 	}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {

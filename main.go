@@ -18,6 +18,13 @@ func main() {
 	conf := config.New()
 	appFlags := []cli.Flag{
 		&cli.StringFlag{
+			Name:        "addr",
+			EnvVars:     envVars("address"),
+			Usage:       "server binding address",
+			Value:       "0.0.0.0",
+			Destination: &conf.Server.Addr,
+		},
+		&cli.StringFlag{
 			Name:        "port",
 			Aliases:     []string{"p"},
 			EnvVars:     envVars("port"),

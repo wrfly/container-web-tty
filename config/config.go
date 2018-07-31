@@ -29,6 +29,7 @@ type ControlConfig struct {
 }
 
 type ServerConfig struct {
+	Addr     string
 	Port     string
 	IdleTime time.Duration
 	Servers  []string // for proxy mode
