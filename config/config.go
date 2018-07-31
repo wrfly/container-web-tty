@@ -13,10 +13,16 @@ type KubeConfig struct {
 	ConfigPath string // normally is $HOME/.kube/config
 }
 
+type RemoteConfig struct {
+	Servers []string
+	Auth    string
+}
+
 type BackendConfig struct {
 	Type      string // docker or kubectl (for now)
 	Docker    DockerConfig
 	Kube      KubeConfig
+	Remote    RemoteConfig
 	ExtraArgs []string // extra args pass to docker or kubectl
 }
 
@@ -30,7 +36,8 @@ type ControlConfig struct {
 
 type ServerConfig struct {
 	Addr     string
-	Port     string
+	Port     int
+	GrpcPort int
 	IdleTime time.Duration
 	Servers  []string // for proxy mode
 }

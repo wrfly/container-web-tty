@@ -3,6 +3,7 @@ package types
 import "github.com/yudai/gotty/webtty"
 
 // Container instance
+//proteus:generate
 type Container struct {
 	// common
 	ID, Name       string

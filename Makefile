@@ -63,6 +63,15 @@ push-tag:
 	docker tag $(IMAGE) $(IMAGE):$(VERSION)
 	docker push $(IMAGE):$(VERSION)
 
+.PHONY: api
+api:
+	protoc -I proxy/grpc proxy/grpc/api.proto --go_out=plugins=grpc:proxy/grpc/
+
+.PHONY: proto
+proto:
+	proteus proto -f /tmp -p github.com/wrfly/container-web-tty/types --verbose
+	cp /tmp/github.com/wrfly/container-web-tty/types/generated.proto proxy/grpc
+
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
 asset: clear static/js/gotty-bundle.js static/index.html static/favicon.png static/css/index.css static/css/xterm.css static/css/xterm_customize.css

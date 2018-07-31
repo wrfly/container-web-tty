@@ -24,13 +24,20 @@ func main() {
 			Value:       "0.0.0.0",
 			Destination: &conf.Server.Addr,
 		},
-		&cli.StringFlag{
+		&cli.IntFlag{
 			Name:        "port",
 			Aliases:     []string{"p"},
 			EnvVars:     envVars("port"),
 			Usage:       "server port",
-			Value:       "8080",
+			Value:       8080,
 			Destination: &conf.Server.Port,
+		},
+		&cli.IntFlag{
+			Name:        "grpc-port",
+			EnvVars:     envVars("port"),
+			Usage:       "grpc server port",
+			Value:       -1,
+			Destination: &conf.Server.GrpcPort,
 		},
 		&cli.BoolFlag{
 			Name:        "debug",

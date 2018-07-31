@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/utils"
@@ -9,13 +10,14 @@ import (
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"
+	"github.com/wrfly/container-web-tty/proxy"
 	"github.com/wrfly/container-web-tty/route"
 )
 
 func run(c *cli.Context, conf config.Config) {
 	appOptions := &route.Options{
 		Control: conf.Control,
-		Port:    conf.Server.Port,
+		Port:    fmt.Sprintf("%d", conf.Server.Port),
 		Address: conf.Server.Addr,
 		Timeout: conf.Server.IdleTime,
 	}
@@ -36,10 +38,17 @@ func run(c *cli.Context, conf config.Config) {
 	ctx, cancel := context.WithCancel(context.Background())
 	gCtx, gCancel := context.WithCancel(context.Background())
 
-	errs := make(chan error, 1)
+	errs := make(chan error, 2)
 	go func() {
 		errs <- srv.Run(ctx, route.WithGracefullContext(gCtx))
 	}()
+
+	if conf.Server.GrpcPort > 0 {
+		grpcServer := proxy.New(conf.Server.GrpcPort, containerCli)
+		go func() {
+			errs <- grpcServer.Run(ctx)
+		}()
+	}
 
 	err = waitSignals(errs, cancel, gCancel)
 

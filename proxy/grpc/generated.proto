@@ -1,0 +1,28 @@
+syntax = "proto3";
+package github.com.wrfly.containerwebtty.types;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.protosizer_all) = true;
+option (gogoproto.sizer_all) = false;
+option go_package = "types";
+
+// Container instance
+message Container {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	string id = 1 [(gogoproto.customname) = "ID"];
+	string name = 2;
+	string image = 3;
+	string command = 4;
+	string state = 5;
+	string status = 6;
+	repeated string ips = 7 [(gogoproto.customname) = "IPs"];
+	string shell = 8;
+	string pod_name = 9;
+	string container_name = 10;
+	string namespace = 11;
+	string running_node = 12;
+	string loc_server = 13;
+}
+

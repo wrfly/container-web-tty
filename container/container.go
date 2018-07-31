@@ -10,6 +10,7 @@ import (
 	"github.com/wrfly/container-web-tty/types"
 )
 
+// Cli is a docker backend client
 type Cli interface {
 	// GetInfo of a container
 	GetInfo(ctx context.Context, containerID string) types.Container
@@ -22,6 +23,7 @@ type Cli interface {
 	Exec(ctx context.Context, container types.Container) (types.TTY, error)
 }
 
+// NewCliBackend returns the client backend
 func NewCliBackend(conf config.BackendConfig) (cli Cli, err error) {
 	switch conf.Type {
 	case "docker":

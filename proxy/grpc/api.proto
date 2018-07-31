@@ -1,0 +1,57 @@
+syntax = "proto3";
+package pbrpc;
+
+service containerServer {
+    rpc GetInfo (ContainerID) returns (Container) {}
+    rpc List (empty) returns (Containers) {}
+    rpc Start (ContainerID) returns (err) {}
+    rpc Stop (ContainerID) returns (err) {}
+    rpc Restart (ContainerID) returns (err) {}
+    rpc Exec(stream execOptions) returns (stream execOptions) {}
+}
+
+message empty{
+	string auth = 1;
+}
+
+message err{
+    string err = 1;
+}
+
+message ContainerID {
+	string id = 1;
+	string auth = 2;
+}
+
+// Container instance
+message Container {
+	string id = 1;
+	string name = 2;
+	string image = 3;
+	string command = 4;
+	string state = 5;
+	string status = 6;
+	repeated string ips = 7;
+	string shell = 8;
+	string pod_name = 9;
+	string container_name = 10;
+	string namespace = 11;
+	string running_node = 12;
+	string loc_server = 13;
+}
+
+message Containers {
+    repeated Container cs = 1;
+}
+
+message io {
+	bytes in = 1;
+	bytes out = 2;
+}
+
+message execOptions {
+	io cmd = 1;
+    Container c = 2;
+    string err = 3;
+	string auth = 4;
+}
