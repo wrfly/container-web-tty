@@ -39,7 +39,6 @@ type ServerConfig struct {
 	Port     int
 	GrpcPort int
 	IdleTime time.Duration
-	Servers  []string // for proxy mode
 }
 
 type Config struct {
@@ -54,10 +53,11 @@ func New() *Config {
 		Backend: BackendConfig{
 			Docker: DockerConfig{},
 			Kube:   KubeConfig{},
+			Remote: RemoteConfig{
+				Servers: []string{},
+			},
 		},
-		Server: ServerConfig{
-			Servers: []string{},
-		},
+		Server:  ServerConfig{},
 		Control: ControlConfig{},
 	}
 }
