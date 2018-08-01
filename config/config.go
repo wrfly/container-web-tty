@@ -13,7 +13,7 @@ type KubeConfig struct {
 	ConfigPath string // normally is $HOME/.kube/config
 }
 
-type RemoteConfig struct {
+type GRPCConfig struct {
 	Servers []string
 	Auth    string
 }
@@ -22,7 +22,7 @@ type BackendConfig struct {
 	Type      string // docker or kubectl (for now)
 	Docker    DockerConfig
 	Kube      KubeConfig
-	Remote    RemoteConfig
+	GRPC      GRPCConfig
 	ExtraArgs []string // extra args pass to docker or kubectl
 }
 
@@ -53,7 +53,7 @@ func New() *Config {
 		Backend: BackendConfig{
 			Docker: DockerConfig{},
 			Kube:   KubeConfig{},
-			Remote: RemoteConfig{
+			GRPC: GRPCConfig{
 				Servers: []string{},
 			},
 		},

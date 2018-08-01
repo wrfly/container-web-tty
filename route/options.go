@@ -7,13 +7,13 @@ import (
 )
 
 type Options struct {
-	Address         string `default:"0.0.0.0"`
-	Port            string `default:"8080"`
-	Credential      string `default:""`
-	EnableReconnect bool   `default:"false"`
-	ReconnectTime   int    `default:"10"`
-	MaxConnection   int    `default:"0"`
-	WSOrigin        string `default:""`
+	Address         string
+	Port            string
+	Credential      string
+	EnableReconnect bool
+	ReconnectTime   int
+	MaxConnection   int
+	WSOrigin        string
 	Term            string `default:"xterm"`
 	Timeout         time.Duration
 	Control         config.ControlConfig

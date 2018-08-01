@@ -6,6 +6,7 @@ import (
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container/docker"
+	grpc "github.com/wrfly/container-web-tty/container/grpc"
 	"github.com/wrfly/container-web-tty/container/kube"
 	"github.com/wrfly/container-web-tty/types"
 )
@@ -30,6 +31,8 @@ func NewCliBackend(conf config.BackendConfig) (cli Cli, err error) {
 		cli, err = docker.NewCli(conf.Docker, conf.ExtraArgs)
 	case "kube":
 		cli, err = kube.NewCli(conf.Kube, conf.ExtraArgs)
+	case "grpc":
+		cli, err = grpc.NewCli(conf.GRPC)
 	default:
 		err = fmt.Errorf("unknown backend type %s", conf.Type)
 	}

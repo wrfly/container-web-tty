@@ -52,7 +52,7 @@ func main() {
 			Aliases:     []string{"b"},
 			EnvVars:     envVars("backend"),
 			Value:       "docker",
-			Usage:       "backend type, 'docker' or 'kube' for now",
+			Usage:       "backend type, 'docker' or 'kube' or 'grpc'(remote)",
 			Destination: &conf.Backend.Type,
 		},
 		&cli.StringFlag{
@@ -161,7 +161,7 @@ func main() {
 				conf.Control.Enable = true
 			}
 
-			conf.Server.Servers = strings.Split(c.String("servers"), " ")
+			conf.Backend.GRPC.Servers = strings.Split(c.String("servers"), " ")
 			if conf.Debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			} else {

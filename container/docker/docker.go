@@ -104,8 +104,10 @@ func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container
 	if container := docker.containers.Find(cid); container.ID != "" {
 		if container.Shell == "" {
 			shell := docker.getShell(ctx, cid)
+			container.Shell = shell
 			docker.containers.SetShell(cid, shell)
 		}
+		logrus.Debugf("found valid container: %s (%s)", container.ID, container.Shell)
 		return container
 	}
 
