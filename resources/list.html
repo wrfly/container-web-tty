@@ -1,7 +1,9 @@
+{{- $ctl := .control -}}
+{{- $showLocation := .loc -}}
 <!doctype html>
 <html>
   <head>
-    <title>{{ .title }}</title>{{ $ctl := .control }}
+    <title>{{ .title }}</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="stylesheet" href="/css/list.css" />
   </head>
@@ -15,11 +17,14 @@
 						<th class="cell100 column2">Image</th>
 						<th class="cell100 column3">Command</th>
 						<th class="cell100 column4">Name</th>
-						<th class="cell100 column5">IP</th>
-            <th class="cell100 column6">Status</th>
-            {{ if $ctl.Enable }}            
-            <th class="cell100 column7">Actions</th>
-            {{ end }}
+            <th class="cell100 column5">IP</th>
+            {{ if $showLocation -}}            
+            <th class="cell100 column6">Location</th>
+            {{ end -}}
+            <th class="cell100 column7">Status</th>
+            {{ if $ctl.Enable -}}            
+            <th class="cell100 column8">Actions</th>
+            {{ end -}}
 					</tr>
 				</thead>
 			</table>
@@ -37,14 +42,17 @@
             <td class="cell100 column3" title="{{ .Command }}">{{ printf .Command }}</td>
             <td class="cell100 column4" title="{{ .Name }}">{{ printf .Name }}</td>
             <td class="cell100 column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
-            <td class="cell100 column6" title="{{ .Status }}">{{ .State }}</td>
-            {{ if $ctl.Enable }}
-            <td class="cell100 column7">
+            {{ if $showLocation -}}
+            <td class="cell100 column6" title="{{ .LocServer }}">{{ printf .LocServer }}</td>
+            {{ end -}}
+            <td class="cell100 column7" title="{{ .Status }}">{{ .State }}</td>
+            {{ if $ctl.Enable -}}
+            <td class="cell100 column8">
               {{ if or $ctl.Start $ctl.All }}<button title="start" >Start</button>{{ end }}
               {{ if or $ctl.Stop $ctl.All }}<button title="stop" >Stop</button>{{ end }}
               {{ if or $ctl.Restart $ctl.All}}<button title="restart" >Restart</button>{{ end }}
             </td>
-            {{ end }}
+            {{ end -}}
           </tr>
           {{ end }}
         </tbody>

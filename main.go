@@ -172,7 +172,10 @@ func main() {
 				conf.Control.Enable = true
 			}
 
-			conf.Backend.GRPC.Servers = strings.Split(c.String("grpc-servers"), ",")
+			servers := strings.Split(c.String("grpc-servers"), ",")
+			if servers[0] != "" {
+				conf.Backend.GRPC.Servers = servers
+			}
 			if conf.Debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			} else {

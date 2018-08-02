@@ -119,16 +119,16 @@ func (server *Server) processWSConn(ctx context.Context, timeoutCancel context.C
 		}()
 	}
 
-	cIP := "127.0.0.1"
-	if len(container.IPs) > 0 {
-		cIP = container.IPs[0]
+	location := "127.0.0.1"
+	if container.LocServer != "" {
+		location = container.LocServer
 	}
 
 	titleVars := server.titleVariables(
 		[]string{"server"},
 		map[string]map[string]interface{}{
 			"server": map[string]interface{}{
-				"containerIP":   cIP,
+				"containerLoc":  location,
 				"containerName": container.Name,
 				"containerID":   container.ID,
 			},
@@ -225,6 +225,7 @@ func (server *Server) handleListContainers(c *gin.Context) {
 		"title":      "List Containers",
 		"containers": server.containerCli.List(c.Request.Context()),
 		"control":    server.options.Control,
+		"loc":        server.options.ShowLocation,
 	}
 
 	listBuf := new(bytes.Buffer)

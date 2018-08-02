@@ -15,11 +15,15 @@ import (
 )
 
 func run(c *cli.Context, conf config.Config) {
+
 	appOptions := &route.Options{
 		Control: conf.Control,
 		Port:    fmt.Sprintf("%d", conf.Server.Port),
 		Address: conf.Server.Addr,
 		Timeout: conf.Server.IdleTime,
+	}
+	if len(conf.Backend.GRPC.Servers) > 0 {
+		appOptions.ShowLocation = true
 	}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
 		logrus.Fatal(err)
@@ -44,7 +48,8 @@ func run(c *cli.Context, conf config.Config) {
 	}()
 
 	if conf.Server.GrpcPort > 0 {
-		grpcServer := proxy.New(conf.Backend.GRPC.Auth, conf.Server.GrpcPort, containerCli)
+		grpcServer := proxy.New(conf.Backend.GRPC.Auth,
+			conf.Server.GrpcPort, containerCli)
 		go func() {
 			errs <- grpcServer.Run(ctx)
 		}()

@@ -17,6 +17,7 @@ type Options struct {
 	Term            string `default:"xterm"`
 	Timeout         time.Duration
 	Control         config.ControlConfig
+	ShowLocation    bool
 
 	// EnableBasicAuth bool `default:"false"`
 	// Once            bool `default:"false"`

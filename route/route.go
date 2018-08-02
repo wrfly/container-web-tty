@@ -54,7 +54,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	titleFormat := "{{ .containerName }} - {{ printf \"%.8s\" .containerID }}@{{ .containerIP }}"
+	titleFormat := "{{ .containerName }} - {{ printf \"%.8s\" .containerID }}@{{ .containerLoc }}"
 	titleTemplate, err = noesctmpl.New("title").Parse(titleFormat)
 	if err != nil {
 		log.Fatal(err)
