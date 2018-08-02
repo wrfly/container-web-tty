@@ -28,16 +28,9 @@ func main() {
 			Name:        "port",
 			Aliases:     []string{"p"},
 			EnvVars:     envVars("port"),
-			Usage:       "server port",
+			Usage:       "HTTP server port, -1 for disable the HTTP server",
 			Value:       8080,
 			Destination: &conf.Server.Port,
-		},
-		&cli.IntFlag{
-			Name:        "grpc-port",
-			EnvVars:     envVars("port"),
-			Usage:       "grpc server port",
-			Value:       -1,
-			Destination: &conf.Server.GrpcPort,
 		},
 		&cli.BoolFlag{
 			Name:        "debug",
@@ -80,10 +73,24 @@ func main() {
 			EnvVars: envVars("extra-args"),
 			Usage:   "pass extra args to the backend",
 		},
+		&cli.IntFlag{
+			Name:        "grpc-port",
+			EnvVars:     envVars("grpc-port"),
+			Usage:       "grpc server port, -1 for disable the grpc server",
+			Value:       -1,
+			Destination: &conf.Server.GrpcPort,
+		},
 		&cli.StringFlag{
-			Name:    "servers",
-			EnvVars: envVars("servers"),
-			Usage:   "upstream servers, for proxy mode",
+			Name:    "grpc-servers",
+			EnvVars: envVars("grpc-servers"),
+			Usage:   "upstream servers, for proxy mode(grpc address and port), use comma for split",
+		},
+		&cli.StringFlag{
+			Name:        "grpc-auth",
+			EnvVars:     envVars("grpc-auth"),
+			Usage:       "grpc auth token",
+			Value:       "password",
+			Destination: &conf.Backend.GRPC.Auth,
 		},
 		&cli.StringFlag{
 			Name:    "idle-time",
@@ -92,25 +99,29 @@ func main() {
 		},
 		&cli.BoolFlag{
 			Name:        "control-all",
-			Aliases:     []string{"ctl-all"},
+			Aliases:     []string{"ctl-a"},
+			EnvVars:     envVars("ctl-a"),
 			Usage:       "enable container control",
 			Destination: &conf.Control.All,
 		},
 		&cli.BoolFlag{
 			Name:        "control-start",
 			Aliases:     []string{"ctl-s"},
+			EnvVars:     envVars("ctl-s"),
 			Usage:       "enable container start  ",
 			Destination: &conf.Control.Start,
 		},
 		&cli.BoolFlag{
 			Name:        "control-stop",
 			Aliases:     []string{"ctl-t"},
+			EnvVars:     envVars("ctl-t"),
 			Usage:       "enable container stop   ",
 			Destination: &conf.Control.Stop,
 		},
 		&cli.BoolFlag{
 			Name:        "control-restart",
 			Aliases:     []string{"ctl-r"},
+			EnvVars:     envVars("ctl-r"),
 			Usage:       "enable container restart",
 			Destination: &conf.Control.Restart,
 		},
@@ -161,7 +172,7 @@ func main() {
 				conf.Control.Enable = true
 			}
 
-			conf.Backend.GRPC.Servers = strings.Split(c.String("servers"), ",")
+			conf.Backend.GRPC.Servers = strings.Split(c.String("grpc-servers"), ",")
 			if conf.Debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			} else {

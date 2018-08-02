@@ -85,7 +85,8 @@ func (gCli GrpcCli) GetInfo(ctx context.Context, cid string) types.Container {
 		logrus.Errorf("no remote client: %s", remoteAddr)
 		return types.Container{}
 	}
-	pbContainer, err := remoteClient.client.GetInfo(ctx, &pb.ContainerID{Id: cid})
+	pbContainer, err := remoteClient.client.GetInfo(ctx,
+		&pb.ContainerID{Id: cid, Auth: gCli.auth})
 	if err != nil {
 		logrus.Errorf("grpc get container error: %s", err)
 		return types.Container{}
@@ -97,7 +98,7 @@ func (gCli GrpcCli) GetInfo(ctx context.Context, cid string) types.Container {
 func (gCli GrpcCli) List(ctx context.Context) []types.Container {
 	allContainers := make([]types.Container, 0)
 	for addr, cli := range gCli.clients {
-		cs, err := cli.client.List(ctx, &pb.Empty{})
+		cs, err := cli.client.List(ctx, &pb.Empty{Auth: gCli.auth})
 		if err != nil {
 			logrus.Errorf("get container info error: %s", err)
 			continue
@@ -124,19 +125,17 @@ func (gCli GrpcCli) containerAction(ctx context.Context, action, containerID str
 	if cli, exist := gCli.clients[info.LocServer]; exist {
 		var err1 *pb.Err
 		var err2 error
+		pbCID := &pb.ContainerID{
+			Id:   containerID,
+			Auth: gCli.auth,
+		}
 		switch action {
 		case "start":
-			err1, err2 = cli.client.Start(ctx, &pb.ContainerID{
-				Id: containerID,
-			})
-		case "stpp":
-			err1, err2 = cli.client.Stop(ctx, &pb.ContainerID{
-				Id: containerID,
-			})
+			err1, err2 = cli.client.Start(ctx, pbCID)
+		case "stop":
+			err1, err2 = cli.client.Stop(ctx, pbCID)
 		case "restart":
-			err1, err2 = cli.client.Restart(ctx, &pb.ContainerID{
-				Id: containerID,
-			})
+			err1, err2 = cli.client.Restart(ctx, pbCID)
 		default:
 			return fmt.Errorf("unknown action: %s", action)
 		}
@@ -183,7 +182,8 @@ func (gCli GrpcCli) Exec(ctx context.Context, container types.Container) (types.
 	// send container info to server,
 	// server will use another cli to exec into the container
 	if err := execClient.Send(&pb.ExecOptions{
-		C: util.ConvertTpContainer(container),
+		C:    util.ConvertTpContainer(container),
+		Auth: gCli.auth,
 	}); err != nil {
 		return nil, err
 	}

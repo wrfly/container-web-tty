@@ -44,7 +44,7 @@ func run(c *cli.Context, conf config.Config) {
 	}()
 
 	if conf.Server.GrpcPort > 0 {
-		grpcServer := proxy.New(conf.Server.GrpcPort, containerCli)
+		grpcServer := proxy.New(conf.Backend.GRPC.Auth, conf.Server.GrpcPort, containerCli)
 		go func() {
 			errs <- grpcServer.Run(ctx)
 		}()

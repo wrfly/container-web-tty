@@ -50,8 +50,8 @@ docker run --rm -ti --name web-tty \
 - [x] beautiful index
 - [x] start|stop|restart container(docker backend only)
 - [x] environment injection(extra params)
-- [ ] proxy mode(client -> server's containers)
-- [ ] auth
+- [x] proxy mode(client -> server's containers)
+- [x] auth
 - [x] TTY timeout
 
 ## Show-off

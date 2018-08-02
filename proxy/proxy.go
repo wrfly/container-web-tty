@@ -18,14 +18,16 @@ type GrpcServer interface {
 }
 
 type grpcServer struct {
+	auth string
 	port int
 	cli  container.Cli
 }
 
 // New proxy grpc server
-func New(port int, cli container.Cli) GrpcServer {
+func New(auth string, port int, cli container.Cli) GrpcServer {
 	logrus.Infof("New grpc server with port %d", port)
 	return &grpcServer{
+		auth: auth,
 		port: port,
 		cli:  cli,
 	}
@@ -39,7 +41,7 @@ func (gsrv *grpcServer) Run(ctx context.Context) error {
 	}
 	srv := grpc.NewServer()
 
-	cs := newContainerService(gsrv.cli)
+	cs := newContainerService(gsrv.cli, gsrv.auth)
 	pbrpc.RegisterContainerServerServer(srv, cs)
 
 	// serve

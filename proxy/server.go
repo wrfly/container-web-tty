@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -14,14 +13,27 @@ import (
 	"github.com/wrfly/container-web-tty/util"
 )
 
+const (
+	rpcCanceld = "rpc error: code = Canceled desc = context canceled"
+)
+
 type containerService struct {
-	cli container.Cli
+	cli  container.Cli
+	auth string
 }
 
-func newContainerService(cli container.Cli) pb.ContainerServerServer {
+func newContainerService(cli container.Cli, auth string) pb.ContainerServerServer {
 	return &containerService{
-		cli: cli,
+		cli:  cli,
+		auth: auth,
 	}
+}
+
+func (svc *containerService) checkAuth(auth string) error {
+	if auth != svc.auth {
+		return fmt.Errorf("auth failed")
+	}
+	return nil
 }
 
 func (svc *containerService) wrapContainer(cs ...types.Container) []*pb.Container {
@@ -33,18 +45,30 @@ func (svc *containerService) wrapContainer(cs ...types.Container) []*pb.Containe
 }
 
 func (svc *containerService) GetInfo(ctx context.Context, cid *pb.ContainerID) (*pb.Container, error) {
+	if err := svc.checkAuth(cid.Auth); err != nil {
+		return nil, err
+	}
+
 	c := svc.wrapContainer(svc.cli.GetInfo(ctx, cid.Id))[0]
 	logrus.Debugf("get info of container: %s (%s)", c.Id, c.Shell)
 	return c, nil
 }
 
-func (svc *containerService) List(ctx context.Context, _ *pb.Empty) (*pb.Containers, error) {
+func (svc *containerService) List(ctx context.Context, e *pb.Empty) (*pb.Containers, error) {
+	if err := svc.checkAuth(e.Auth); err != nil {
+		return nil, err
+	}
+
 	return &pb.Containers{
 		Cs: svc.wrapContainer(svc.cli.List(ctx)...),
 	}, nil
 }
 
 func (svc *containerService) Start(ctx context.Context, cid *pb.ContainerID) (*pb.Err, error) {
+	if err := svc.checkAuth(cid.Auth); err != nil {
+		return nil, err
+	}
+
 	logrus.Debugf("start container: %s", cid.Id)
 	err := svc.cli.Start(ctx, cid.Id)
 	if err == nil {
@@ -56,6 +80,10 @@ func (svc *containerService) Start(ctx context.Context, cid *pb.ContainerID) (*p
 }
 
 func (svc *containerService) Stop(ctx context.Context, cid *pb.ContainerID) (*pb.Err, error) {
+	if err := svc.checkAuth(cid.Auth); err != nil {
+		return nil, err
+	}
+
 	logrus.Debugf("stop container: %s", cid.Id)
 	err := svc.cli.Stop(ctx, cid.Id)
 	if err == nil {
@@ -67,6 +95,10 @@ func (svc *containerService) Stop(ctx context.Context, cid *pb.ContainerID) (*pb
 }
 
 func (svc *containerService) Restart(ctx context.Context, cid *pb.ContainerID) (*pb.Err, error) {
+	if err := svc.checkAuth(cid.Auth); err != nil {
+		return nil, err
+	}
+
 	logrus.Debugf("restart container: %s", cid.Id)
 	err := svc.cli.Restart(ctx, cid.Id)
 	if err == nil {
@@ -78,9 +110,12 @@ func (svc *containerService) Restart(ctx context.Context, cid *pb.ContainerID) (
 }
 
 func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
-	// get the initial command
+	// get the initial command and auth and container info
 	execOpts, err := stream.Recv()
 	if err != nil {
+		return err
+	}
+	if err := svc.checkAuth(execOpts.Auth); err != nil {
 		return err
 	}
 	if execOpts.C == nil {
@@ -98,18 +133,14 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 	}
 	defer tty.Exit()
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-
 	go func() {
-		defer wg.Done()
-		defer logrus.Debugf("grpc server receive done, break")
 		for {
 			execOpts, err := stream.Recv()
 			if err != nil {
-				if err != io.EOF {
-					logrus.Debugf("grpc receive outputs error: %s", err)
+				if err.Error() == rpcCanceld || err == io.EOF {
+					break
 				}
+				logrus.Debugf("grpc receive outputs error: %s", err)
 				break
 			}
 			if execOpts == nil {
@@ -131,34 +162,33 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 				break
 			}
 		}
+		logrus.Debugf("grpc server receive done, break")
 	}()
 
-	go func() {
-		defer wg.Done()
-		defer logrus.Debugf("tty read done, break")
-		bs := make([]byte, 1024)
-		for {
-			n, err := tty.Read(bs)
-			if err == io.EOF {
-				break
-			}
-			// logrus.Debugf("tty read: %s", bs[:n])
-			err = stream.Send(&pb.ExecOptions{
-				Cmd: &pb.Io{
-					Out: bs[:n],
-				},
-			})
-			if err == io.EOF {
-				continue
-			}
-			if err != nil {
-				logrus.Debugf("grpc send command error: %s", err)
-				break
-			}
+	bs := make([]byte, 1024)
+	for {
+		n, err := tty.Read(bs)
+		if err == io.EOF {
+			break
 		}
-	}()
+		// logrus.Debugf("tty read: %s", bs[:n])
+		err = stream.Send(&pb.ExecOptions{
+			Cmd: &pb.Io{
+				Out: bs[:n],
+			},
+		})
+		if err == io.EOF {
+			continue
+		}
+		if err != nil {
+			if err.Error() != rpcCanceld {
+				logrus.Debugf("grpc send command error: %s", err)
+			}
+			break
+		}
+	}
+	logrus.Debugf("tty read done, break")
 
-	wg.Wait()
 	logrus.Debugf("grpc exec done")
 	return nil
 }
