@@ -16,7 +16,12 @@ Both `docker` and `kubectl` are supported.
 
 ## Usage
 
-For docker:
+Ofcause you can run it by downloading the binary, but thare are some
+`Copy-and-Paste` ways.
+
+### Using docker
+
+You can start `container-web-tty` inside a container by mounting `docker.sock`:
 
 ```bash
 docker run --rm -ti --name web-tty \
@@ -25,7 +30,9 @@ docker run --rm -ti --name web-tty \
     wrfly/container-web-tty
 ```
 
-For kubernetes:
+### Using kubernetes
+
+Or you can mount the kubernetes config file:
 
 ```bash
 docker run --rm -ti --name web-tty \
@@ -35,6 +42,46 @@ docker run --rm -ti --name web-tty \
     -v ~/.kube/config:/kube.config \
     wrfly/container-web-tty
 ```
+
+### Using local <-> remote (gRPC)
+
+And you can deploy `container-web-tty` in remote servers, and connect
+to it via a local `container-web-tty`. They use gRPC for communication.
+
+This is useful when you cannot get the remote servers or there are more
+than one server that you need to connect to.
+
+#### Remote (192.168.66.1)
+
+Host `192.168.66.1` and `192.168.66.2` both running:
+
+```bash
+docker run --rm -ti --name web-tty \
+    -p 8080:8080 \
+    -p 8090:8090 \
+    -e WEB_TTY_GRPC_PORT=8090 \
+    -e WEB_TTY_GRPC_AUTH=96ssW0rd \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wrfly/container-web-tty
+```
+
+Notes:
+
+- You can disable the HTTP server by setting `WEB_TTY_PORT=-1`
+- The `WEB_TTY_GRPC_AUTH` must be the same between all hosts
+
+#### Local (127.0.0.1)
+
+```bash
+docker run --rm -ti --name web-tty \
+    -p 8080:8080 \
+    -e WEB_TTY_BACKEND=grpc \
+    -e WEB_TTY_GRPC_AUTH=96ssW0rd \
+    -e WEB_TTY_GRPC_SERVERS=192.168.66.1:8090,192.168.66.2:8090 \
+    wrfly/container-web-tty
+```
+
+Now you will see all the containers in all the servers via *http://localhost:8080*
 
 ## Keyboard Shortcuts (Linux)
 
