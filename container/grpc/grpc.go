@@ -182,20 +182,6 @@ func (gCli GrpcCli) Exec(ctx context.Context, container types.Container) (types.
 		return nil, err
 	}
 
-	// start to read and write
-	enj := newExecInjector(execClient)
-
-	// // web input
-	// go func(){
-	// 	buff := make([]byte, 2048)
-	// 	enj.ttyIn
-	// 	}()
-
-	// // web output
-	// go func(){
-	// 	buff := make([]byte, 2048)
-	// 	enj.ttyOut
-	// }()
-
-	return enj, nil
+	// start to read and write using this exec wrapper
+	return newExecWrapper(execClient), nil
 }

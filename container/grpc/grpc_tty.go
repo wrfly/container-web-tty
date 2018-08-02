@@ -1,43 +1,28 @@
 package remote
 
 import (
-	"io"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	pb "github.com/wrfly/container-web-tty/proxy/grpc"
 )
 
-// execInjector implement webtty.Slave
-type execInjector struct {
-	exec pb.ContainerServer_ExecClient
-
-	r      io.ReadCloser
-	w      io.WriteCloser
-	ttyIn  io.ReadCloser
-	ttyOut io.WriteCloser
-
+// execWrapper implement webtty.Slave
+type execWrapper struct {
+	exec       pb.ContainerServer_ExecClient
 	activeChan chan struct{}
 }
 
 type resizeFunction func(width int, height int) error
 
-func newExecInjector(client pb.ContainerServer_ExecClient) *execInjector {
-	r, out := io.Pipe()
-	in, w := io.Pipe()
-	return &execInjector{
-		exec: client,
-
-		r:      r,
-		w:      w,
-		ttyIn:  in,
-		ttyOut: out,
-
+func newExecWrapper(client pb.ContainerServer_ExecClient) *execWrapper {
+	return &execWrapper{
+		exec:       client,
 		activeChan: make(chan struct{}, 5),
 	}
 }
 
-func (enj *execInjector) Read(p []byte) (n int, err error) {
+func (enj *execWrapper) Read(p []byte) (n int, err error) {
 	go func() {
 		if len(enj.activeChan) != 0 {
 			return
@@ -55,7 +40,7 @@ func (enj *execInjector) Read(p []byte) (n int, err error) {
 
 }
 
-func (enj *execInjector) Write(p []byte) (n int, err error) {
+func (enj *execWrapper) Write(p []byte) (n int, err error) {
 	logrus.Debugf("input: %s\n", p)
 	return len(p), enj.exec.Send(&pb.ExecOptions{
 		Cmd: &pb.Io{
@@ -64,26 +49,21 @@ func (enj *execInjector) Write(p []byte) (n int, err error) {
 	})
 }
 
-func (enj *execInjector) Exit() error {
+func (enj *execWrapper) Exit() error {
 	enj.Write([]byte("exit\n"))
-	enj.r.Close()
-	enj.w.Close()
-	enj.ttyIn.Close()
-	enj.ttyOut.Close()
-
 	close(enj.activeChan)
 	return enj.exec.CloseSend()
 }
 
-func (enj *execInjector) ActiveChan() <-chan struct{} {
+func (enj *execWrapper) ActiveChan() <-chan struct{} {
 	return enj.activeChan
 }
 
-func (enj *execInjector) WindowTitleVariables() map[string]interface{} {
+func (enj *execWrapper) WindowTitleVariables() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
-func (enj *execInjector) ResizeTerminal(width int, height int) (err error) {
+func (enj *execWrapper) ResizeTerminal(width int, height int) (err error) {
 	// since the process may not up so fast, give it 150ms
 	// retry 3 times
 	for i := 0; i < 3; i++ {
@@ -94,7 +74,7 @@ func (enj *execInjector) ResizeTerminal(width int, height int) (err error) {
 	}
 	return
 }
-func (enj *execInjector) resize(width int, height int) error {
+func (enj *execWrapper) resize(width int, height int) error {
 	return enj.exec.Send(&pb.ExecOptions{
 		Ws: &pb.WindowSize{
 			Height: int32(height),
