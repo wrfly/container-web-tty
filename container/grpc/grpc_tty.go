@@ -94,11 +94,11 @@ func (enj *execInjector) ResizeTerminal(width int, height int) (err error) {
 	}
 	return
 }
-func (enj *execInjector) resize(width int, height int) (err error) {
-	// nj.exec.Send(&pb.ExecOptions{
-	// 	Cmd: &pb.Io{
-	// 		In: p,
-	// 	},
-	// })
-	return nil
+func (enj *execInjector) resize(width int, height int) error {
+	return enj.exec.Send(&pb.ExecOptions{
+		Ws: &pb.WindowSize{
+			Height: int32(height),
+			Width:  int32(width),
+		},
+	})
 }

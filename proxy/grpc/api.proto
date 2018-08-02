@@ -49,9 +49,15 @@ message io {
 	bytes out = 2;
 }
 
+message windowSize {
+	int32 height = 1;
+	int32 width = 2;
+}
+
 message execOptions {
 	io cmd = 1;
     Container c = 2;
     string err = 3;
 	string auth = 4;
+	windowSize ws = 5;
 }

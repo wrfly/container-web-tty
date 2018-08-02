@@ -143,6 +143,12 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 			if execOpts == nil {
 				continue
 			}
+			// resize terminal
+			if ws := execOpts.Ws; ws != nil {
+				logrus.Debugf("resize window to %dx%d", ws.Width, ws.Height)
+				tty.ResizeTerminal(int(ws.Width), int(ws.Height))
+				continue
+			}
 			logrus.Debugf("tty write: %s", execOpts.Cmd.In)
 			_, err = tty.Write(execOpts.Cmd.In)
 			if err == io.EOF {
