@@ -3,7 +3,6 @@ package remote
 import (
 	"time"
 
-	"github.com/sirupsen/logrus"
 	pb "github.com/wrfly/container-web-tty/proxy/grpc"
 )
 
@@ -34,14 +33,14 @@ func (enj *execWrapper) Read(p []byte) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
-	logrus.Debugf("output: %s\n", execOpts.Cmd.Out)
+	// logrus.Debugf("output: %s\n", execOpts.Cmd.Out)
 	copy(p, execOpts.Cmd.Out)
 	return len(execOpts.Cmd.Out), nil
 
 }
 
 func (enj *execWrapper) Write(p []byte) (n int, err error) {
-	logrus.Debugf("input: %s\n", p)
+	// logrus.Debugf("input: %s\n", p)
 	return len(p), enj.exec.Send(&pb.ExecOptions{
 		Cmd: &pb.Io{
 			In: p,

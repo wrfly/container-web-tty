@@ -10,6 +10,7 @@ import (
 	"github.com/wrfly/container-web-tty/config"
 	pb "github.com/wrfly/container-web-tty/proxy/grpc"
 	"github.com/wrfly/container-web-tty/types"
+	"github.com/wrfly/container-web-tty/util"
 )
 
 // grpc client, connect to the remote server
@@ -27,6 +28,8 @@ type GrpcCli struct {
 }
 
 func NewCli(conf config.GRPCConfig) (*GrpcCli, error) {
+	logrus.Infof("New gRPC client connect to %v with auth [%s]",
+		conf.Servers, conf.Auth)
 	gCli := &GrpcCli{
 		servers:    conf.Servers,
 		auth:       conf.Auth,
@@ -88,7 +91,7 @@ func (gCli GrpcCli) GetInfo(ctx context.Context, cid string) types.Container {
 		return types.Container{}
 	}
 	gCli.containers.SetShell(cid, pbContainer.GetShell())
-	return convertToContainer(pbContainer)
+	return util.ConvertPbContainer(pbContainer)
 }
 
 func (gCli GrpcCli) List(ctx context.Context) []types.Container {
@@ -102,7 +105,7 @@ func (gCli GrpcCli) List(ctx context.Context) []types.Container {
 		containers := make([]types.Container, len(cs.Cs))
 		for i, c := range cs.Cs {
 			c.LocServer = addr
-			containers[i] = convertToContainer(c)
+			containers[i] = util.ConvertPbContainer(c)
 		}
 		allContainers = append(allContainers, containers...)
 	}
@@ -177,8 +180,11 @@ func (gCli GrpcCli) Exec(ctx context.Context, container types.Container) (types.
 		return nil, err
 	}
 
-	// send container info to server, server will use another cli to exec into the container
-	if err := execClient.Send(&pb.ExecOptions{C: convertToPB(container)}); err != nil {
+	// send container info to server,
+	// server will use another cli to exec into the container
+	if err := execClient.Send(&pb.ExecOptions{
+		C: util.ConvertTpContainer(container),
+	}); err != nil {
 		return nil, err
 	}
 

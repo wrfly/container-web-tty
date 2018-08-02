@@ -11,6 +11,7 @@ import (
 	"github.com/wrfly/container-web-tty/container"
 	pb "github.com/wrfly/container-web-tty/proxy/grpc"
 	"github.com/wrfly/container-web-tty/types"
+	"github.com/wrfly/container-web-tty/util"
 )
 
 type containerService struct {
@@ -26,41 +27,9 @@ func newContainerService(cli container.Cli) pb.ContainerServerServer {
 func (svc *containerService) wrapContainer(cs ...types.Container) []*pb.Container {
 	pbContainers := make([]*pb.Container, 0, len(cs))
 	for _, c := range cs {
-		pbContainers = append(pbContainers, &pb.Container{
-			Id:            c.ID,
-			Name:          c.Name,
-			Image:         c.Image,
-			Command:       c.Command,
-			State:         c.State,
-			Status:        c.Status,
-			Ips:           c.IPs,
-			Shell:         c.Shell,
-			PodName:       c.PodName,
-			ContainerName: c.ContainerName,
-			Namespace:     c.Namespace,
-			RunningNode:   c.RunningNode,
-			LocServer:     c.LocServer,
-		})
+		pbContainers = append(pbContainers, util.ConvertTpContainer(c))
 	}
 	return pbContainers
-}
-
-func (svc *containerService) wrapPbContainer(c *pb.Container) types.Container {
-	return types.Container{
-		ID:            c.Id,
-		Name:          c.Name,
-		Image:         c.Image,
-		Command:       c.Command,
-		State:         c.State,
-		Status:        c.Status,
-		IPs:           c.Ips,
-		Shell:         c.Shell,
-		PodName:       c.PodName,
-		ContainerName: c.ContainerName,
-		Namespace:     c.Namespace,
-		RunningNode:   c.RunningNode,
-		LocServer:     c.LocServer,
-	}
 }
 
 func (svc *containerService) GetInfo(ctx context.Context, cid *pb.ContainerID) (*pb.Container, error) {
@@ -120,9 +89,9 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 	logrus.Debugf("grpc server exec into container: %s", execOpts.C.Id)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	containerInfo := svc.wrapPbContainer(execOpts.C)
-	logrus.Debugf("container info: %v", containerInfo)
-	tty, err := svc.cli.Exec(ctx, containerInfo)
+	container := util.ConvertPbContainer(execOpts.C)
+	logrus.Debugf("container info: %v", container)
+	tty, err := svc.cli.Exec(ctx, container)
 	if err != nil {
 		logrus.Errorf("grpc server exec error: %s", err)
 		return err
@@ -137,7 +106,10 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 		defer logrus.Debugf("grpc server receive done, break")
 		for {
 			execOpts, err := stream.Recv()
-			if err == io.EOF {
+			if err != nil {
+				if err != io.EOF {
+					logrus.Debugf("grpc receive outputs error: %s", err)
+				}
 				break
 			}
 			if execOpts == nil {
@@ -149,13 +121,13 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 				tty.ResizeTerminal(int(ws.Width), int(ws.Height))
 				continue
 			}
-			logrus.Debugf("tty write: %s", execOpts.Cmd.In)
+			// logrus.Debugf("tty write: %s", execOpts.Cmd.In)
 			_, err = tty.Write(execOpts.Cmd.In)
 			if err == io.EOF {
 				continue
 			}
 			if err != nil {
-				logrus.Debugf("grpc exec got error: %s", err)
+				logrus.Debugf("tty write error: %s", err)
 				break
 			}
 		}
@@ -170,7 +142,7 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 			if err == io.EOF {
 				break
 			}
-			logrus.Debugf("tty read: %s", bs[:n])
+			// logrus.Debugf("tty read: %s", bs[:n])
 			err = stream.Send(&pb.ExecOptions{
 				Cmd: &pb.Io{
 					Out: bs[:n],
@@ -180,7 +152,7 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 				continue
 			}
 			if err != nil {
-				logrus.Debugf("grpc exec got error: %s", err)
+				logrus.Debugf("grpc send command error: %s", err)
 				break
 			}
 		}
