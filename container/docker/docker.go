@@ -293,3 +293,7 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 
 	return newExecInjector(resp, resizeFunc), nil
 }
+
+func (docker DockerCli) Close() error {
+	return docker.cli.Close()
+}

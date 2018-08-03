@@ -8,10 +8,15 @@ service containerServer {
     rpc Stop (ContainerID) returns (err) {}
     rpc Restart (ContainerID) returns (err) {}
     rpc Exec(stream execOptions) returns (stream execOptions) {}
+    rpc Ping(empty) returns (pong) {}
 }
 
 message empty{
 	string auth = 1;
+}
+
+message pong {
+	string msg = 1;
 }
 
 message err{

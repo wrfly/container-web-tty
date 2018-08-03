@@ -22,6 +22,8 @@ type Cli interface {
 	Restart(ctx context.Context, containerID string) error
 	// exec into container
 	Exec(ctx context.Context, container types.Container) (types.TTY, error)
+	// close the connections
+	Close() error
 }
 
 // NewCliBackend returns the client backend

@@ -44,7 +44,31 @@ func (svc *containerService) wrapContainer(cs ...types.Container) []*pb.Containe
 	return pbContainers
 }
 
+func checkNil(x interface{}) error {
+	if x == nil {
+		return fmt.Errorf("nil pointer")
+	}
+	return nil
+}
+
+func (svc *containerService) Ping(ctx context.Context, e *pb.Empty) (*pb.Pong, error) {
+	if err := checkNil(e); err != nil {
+		return nil, err
+	}
+	if err := svc.checkAuth(e.Auth); err != nil {
+		return nil, err
+	}
+
+	return &pb.Pong{
+		Msg: "pong",
+	}, nil
+}
+
 func (svc *containerService) GetInfo(ctx context.Context, cid *pb.ContainerID) (*pb.Container, error) {
+	if err := checkNil(cid); err != nil {
+		return nil, err
+	}
+
 	if err := svc.checkAuth(cid.Auth); err != nil {
 		return nil, err
 	}
@@ -55,6 +79,10 @@ func (svc *containerService) GetInfo(ctx context.Context, cid *pb.ContainerID) (
 }
 
 func (svc *containerService) List(ctx context.Context, e *pb.Empty) (*pb.Containers, error) {
+	if err := checkNil(e); err != nil {
+		return nil, err
+	}
+
 	if err := svc.checkAuth(e.Auth); err != nil {
 		return nil, err
 	}
@@ -65,6 +93,10 @@ func (svc *containerService) List(ctx context.Context, e *pb.Empty) (*pb.Contain
 }
 
 func (svc *containerService) Start(ctx context.Context, cid *pb.ContainerID) (*pb.Err, error) {
+	if err := checkNil(cid); err != nil {
+		return nil, err
+	}
+
 	if err := svc.checkAuth(cid.Auth); err != nil {
 		return nil, err
 	}
@@ -80,6 +112,10 @@ func (svc *containerService) Start(ctx context.Context, cid *pb.ContainerID) (*p
 }
 
 func (svc *containerService) Stop(ctx context.Context, cid *pb.ContainerID) (*pb.Err, error) {
+	if err := checkNil(cid); err != nil {
+		return nil, err
+	}
+
 	if err := svc.checkAuth(cid.Auth); err != nil {
 		return nil, err
 	}
@@ -95,6 +131,10 @@ func (svc *containerService) Stop(ctx context.Context, cid *pb.ContainerID) (*pb
 }
 
 func (svc *containerService) Restart(ctx context.Context, cid *pb.ContainerID) (*pb.Err, error) {
+	if err := checkNil(cid); err != nil {
+		return nil, err
+	}
+
 	if err := svc.checkAuth(cid.Auth); err != nil {
 		return nil, err
 	}

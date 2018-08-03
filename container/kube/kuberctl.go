@@ -282,3 +282,8 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 	logrus.Debug("return enj")
 	return &enj, nil
 }
+
+func (kube KubeCli) Close() error {
+	// no need to close
+	return nil
+}

@@ -33,6 +33,7 @@ func run(c *cli.Context, conf config.Config) {
 	if err != nil {
 		logrus.Fatalf("Create backend client error: %s", err)
 	}
+	defer containerCli.Close()
 
 	srv, err := route.New(containerCli, appOptions)
 	if err != nil {
@@ -47,6 +48,7 @@ func run(c *cli.Context, conf config.Config) {
 		errs <- srv.Run(ctx, route.WithGracefullContext(gCtx))
 	}()
 
+	// run grpc server if port > 0
 	if conf.Server.GrpcPort > 0 {
 		grpcServer := proxy.New(conf.Backend.GRPC.Auth,
 			conf.Server.GrpcPort, containerCli)
@@ -56,7 +58,6 @@ func run(c *cli.Context, conf config.Config) {
 	}
 
 	err = waitSignals(errs, cancel, gCancel)
-
 	if err != nil && err != context.Canceled {
 		logrus.Fatalf("Server exist with error: %s", err)
 	}

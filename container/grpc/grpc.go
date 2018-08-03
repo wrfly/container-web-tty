@@ -6,6 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 
 	"github.com/wrfly/container-web-tty/config"
 	pb "github.com/wrfly/container-web-tty/proxy/grpc"
@@ -14,16 +15,35 @@ import (
 )
 
 type grpcCli struct {
-	addr   string
+	addr, auth string
+
 	conn   *grpc.ClientConn
 	client pb.ContainerServerClient
 }
 
-func (g *grpcCli) reconnect() {
-	// TODO: reconnect to the server
+func (g *grpcCli) close() error {
+	return g.conn.Close()
 }
 
-// GrpcCli, connect to the remote server
+func (g *grpcCli) waitForAvaliable(ctx context.Context) {
+	g.conn.WaitForStateChange(ctx, connectivity.TransientFailure)
+}
+
+func (g *grpcCli) alive() bool {
+	pong, err := g.client.Ping(context.Background(), &pb.Empty{Auth: g.auth})
+	if err != nil {
+		logrus.Errorf("connot connect to [%s], %s", g.addr, err)
+		return false
+	}
+	logrus.Debugf("pong from %s: %s", g.addr, pong.GetMsg())
+	return true
+}
+
+func (g *grpcCli) state() connectivity.State {
+	return g.conn.GetState()
+}
+
+// GrpcCli connect to the remote server
 type GrpcCli struct {
 	servers    []string
 	auth       string
@@ -31,6 +51,7 @@ type GrpcCli struct {
 	containers *types.Containers
 }
 
+// NewCli returns the GrpcCli
 func NewCli(conf config.GRPCConfig) (*GrpcCli, error) {
 	logrus.Infof("New gRPC client connect to %v with auth [%s]",
 		conf.Servers, conf.Auth)
@@ -59,12 +80,27 @@ func NewCli(conf config.GRPCConfig) (*GrpcCli, error) {
 			logrus.Errorf("fail to dial: %v", err)
 			continue
 		}
+
 		gCli.clients[serverAddr] = grpcCli{
+			auth:   conf.Auth,
 			addr:   serverAddr,
 			conn:   conn,
 			client: pb.NewContainerServerClient(conn),
 		}
 	}
+
+	delLists := make([]string, 0, len(gCli.clients))
+	for addr, cli := range gCli.clients {
+		if cli.alive() {
+			continue
+		}
+		delLists = append(delLists, addr)
+	}
+	for _, addr := range delLists {
+		logrus.Infof("connot ping remote server %s, remove it from clients", addr)
+		delete(gCli.clients, addr)
+	}
+
 	return gCli, nil
 }
 
@@ -103,6 +139,10 @@ func (gCli GrpcCli) GetInfo(ctx context.Context, cid string) types.Container {
 func (gCli GrpcCli) List(ctx context.Context) []types.Container {
 	allContainers := make([]types.Container, 0)
 	for addr, cli := range gCli.clients {
+		if !cli.alive() {
+			logrus.Warnf("remote server %s is not ready: %s", addr, cli.state())
+			continue
+		}
 		cs, err := cli.client.List(ctx, &pb.Empty{Auth: gCli.auth})
 		if err != nil {
 			logrus.Errorf("get container info error: %s", err)
@@ -178,6 +218,9 @@ func (gCli GrpcCli) Exec(ctx context.Context, container types.Container) (types.
 	if !exist {
 		return nil, fmt.Errorf("location server [%s] not found", container.LocServer)
 	}
+	if !cli.alive() {
+		return nil, fmt.Errorf("remote server %s is not ready: %s", container.LocServer, cli.state())
+	}
 
 	execClient, err := cli.client.Exec(ctx)
 	if err != nil {
@@ -195,4 +238,13 @@ func (gCli GrpcCli) Exec(ctx context.Context, container types.Container) (types.
 
 	// start to read and write using this exec wrapper
 	return newExecWrapper(execClient), nil
+}
+
+func (gCli GrpcCli) Close() error {
+	for addr, cli := range gCli.clients {
+		if err := cli.close(); err != nil {
+			logrus.Errorf("close %s error: %s", addr, err)
+		}
+	}
+	return nil
 }
