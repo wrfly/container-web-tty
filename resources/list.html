@@ -1,66 +1,68 @@
-{{- $ctl := .control -}}
-{{- $showLocation := .loc -}}
+{{- $ctl := .control -}} {{- $showLocation := .loc -}}
 <!doctype html>
 <html>
-  <head>
-    <title>{{ .title }}</title>
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link rel="stylesheet" href="/css/list.css" />
-  </head>
-  <body>
-	<div class="table ver3 m-b-110">
-		<div class="table-head">
-			<table>
-				<thead>
-					<tr class="row100 head">
-						<th class="cell100 column1">Container ID</th>
-						<th class="cell100 column2">Image</th>
-						<th class="cell100 column3">Command</th>
-						<th class="cell100 column4">Name</th>
-            <th class="cell100 column5">IP</th>
-            {{ if $showLocation -}}
-            <th class="cell100 column6">Location</th>
-            {{ end -}}
-            <th class="cell100 column7">Status</th>
-            {{ if $ctl.Enable -}}
-            <th class="cell100 column8">Actions</th>
-            {{ end -}}
-					</tr>
-				</thead>
-			</table>
-		</div>
 
-		<div class="table-body">
-			<table>
+<head>
+  <title>{{ .title }}</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/css/list.css" />
+</head>
+
+<body>
+  <div class="table ver3 m-b-110">
+    <div class="table-head">
+      <table>
+        <thead>
+          <tr class="row100 head">
+            <th class="cell100 column1">Container ID</th>
+            <th class="cell100 column2">Image</th>
+            <th class="cell100 column3">Command</th>
+            <th class="cell100 column4">Name</th>
+            <th class="cell100 column5">IP</th>
+            {{- if $showLocation }}
+            <th class="cell100 column6">Location</th>
+            {{- end }}
+            <th class="cell100 column7">Status</th>
+            {{- if $ctl.Enable }}
+            <th class="cell100 column8">Actions</th>
+            {{- end -}}
+          </tr>
+        </thead>
+      </table>
+    </div>
+
+    <div class="table-body">
+      <table>
         <tbody>
           {{ range .containers }}
           <tr class="row100 body">
             <td class="cell100 column1">
-              <a href="/exec/{{ printf "%.12s" .ID }}" target="_blank" title="{{ .ID }}">{{ printf "%.12s" .ID }}</a>
+              <a href="/exec/{{ printf " %.12s " .ID }}" target="_blank" title="{{ .ID }}">{{ printf "%.12s" .ID }}</a>
             </td>
             <td class="cell100 column2" title="{{ .Image }}">{{ printf .Image }}</td>
             <td class="cell100 column3" title="{{ .Command }}">{{ printf .Command }}</td>
             <td class="cell100 column4" title="{{ .Name }}">{{ printf .Name }}</td>
             <td class="cell100 column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
-            {{ if $showLocation -}}
+            {{- if $showLocation -}}
             <td class="cell100 column6" title="{{ .LocServer }}">{{ printf .LocServer }}</td>
-            {{ end -}}
+            {{- end -}}
             <td class="cell100 column7" title="{{ .Status }}">{{ .State }}</td>
             {{ if $ctl.Enable -}}
             <td class="cell100 column8">
-              {{ if or $ctl.Start $ctl.All }}<button title="start" >Start</button>{{ end }}
-              {{ if or $ctl.Stop $ctl.All }}<button title="stop" >Stop</button>{{ end }}
-              {{ if or $ctl.Restart $ctl.All}}<button title="restart" >Restart</button>{{ end }}
+              {{ if or $ctl.Start $ctl.All }}
+              <button title="start">Start</button>{{ end }} {{ if or $ctl.Stop $ctl.All }}
+              <button title="stop">Stop</button>{{ end }} {{ if or $ctl.Restart $ctl.All}}
+              <button title="restart">Restart</button>{{ end }}
             </td>
             {{ end -}}
           </tr>
           {{ end }}
         </tbody>
-			</table>
-		</div>
-	</div>
-  </body>
-  <foot>
-    <script src="/js/control.js"></script>
-  </foot>
+      </table>
+    </div>
+  </div>
+
+  <script src="/js/control.js"></script>
+</body>
+
 </html>
