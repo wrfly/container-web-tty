@@ -37,7 +37,7 @@ func main() {
 			Aliases:     []string{"d"},
 			Value:       false,
 			EnvVars:     envVars("debug"),
-			Usage:       "debug mode",
+			Usage:       "debug mode (log-level=debug enable pprof)",
 			Destination: &conf.Debug,
 		},
 		&cli.StringFlag{

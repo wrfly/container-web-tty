@@ -13,13 +13,17 @@ import (
 	"github.com/wrfly/container-web-tty/util"
 )
 
-// grpc client, connect to the remote server
-
 type grpcCli struct {
+	addr   string
 	conn   *grpc.ClientConn
 	client pb.ContainerServerClient
 }
 
+func (g *grpcCli) reconnect() {
+	// TODO: reconnect to the server
+}
+
+// GrpcCli, connect to the remote server
 type GrpcCli struct {
 	servers    []string
 	auth       string
@@ -56,6 +60,7 @@ func NewCli(conf config.GRPCConfig) (*GrpcCli, error) {
 			continue
 		}
 		gCli.clients[serverAddr] = grpcCli{
+			addr:   serverAddr,
 			conn:   conn,
 			client: pb.NewContainerServerClient(conn),
 		}

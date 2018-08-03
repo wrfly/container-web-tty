@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	pprof "net/http/pprof"
 	"os"
 	"regexp"
 	noesctmpl "text/template"
@@ -150,10 +151,21 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		}
 	}
 
+	// pprof
+	rootMux := http.NewServeMux()
+	if log.GetLevel() == log.DebugLevel {
+		rootMux.HandleFunc("/debug/pprof/", pprof.Index)
+		rootMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		rootMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		rootMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		rootMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
+	rootMux.Handle("/", router)
+
 	hostPort := net.JoinHostPort(server.options.Address, server.options.Port)
 	srv := &http.Server{
 		Addr:    hostPort,
-		Handler: router,
+		Handler: rootMux,
 	}
 
 	srvErr := make(chan error, 1)
