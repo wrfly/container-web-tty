@@ -10,40 +10,55 @@ import (
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"
+	"github.com/wrfly/container-web-tty/proxy"
 	"github.com/wrfly/container-web-tty/route"
 )
 
 func run(c *cli.Context, conf config.Config) {
+
 	appOptions := &route.Options{
 		Control: conf.Control,
+		Port:    fmt.Sprintf("%d", conf.Server.Port),
+		Address: conf.Server.Addr,
+		Timeout: conf.Server.IdleTime,
+	}
+	if len(conf.Backend.GRPC.Servers) > 0 {
+		appOptions.ShowLocation = true
 	}
 	if err := utils.ApplyDefaultValues(appOptions); err != nil {
 		logrus.Fatal(err)
 	}
 
-	appOptions.Port = fmt.Sprint(conf.Port)
-
 	containerCli, err := container.NewCliBackend(conf.Backend)
 	if err != nil {
-		logrus.Fatalf("create backend client error: %s", err)
+		logrus.Fatalf("Create backend client error: %s", err)
 	}
+	defer containerCli.Close()
 
 	srv, err := route.New(containerCli, appOptions)
 	if err != nil {
-		logrus.Fatalf("create server error: %s", err)
+		logrus.Fatalf("Create server error: %s", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	gCtx, gCancel := context.WithCancel(context.Background())
 
-	errs := make(chan error, 1)
+	errs := make(chan error, 2)
 	go func() {
 		errs <- srv.Run(ctx, route.WithGracefullContext(gCtx))
 	}()
 
-	err = waitSignals(errs, cancel, gCancel)
+	// run grpc server if port > 0
+	if conf.Server.GrpcPort > 0 {
+		grpcServer := proxy.New(conf.Backend.GRPC.Auth,
+			conf.Server.GrpcPort, containerCli)
+		go func() {
+			errs <- grpcServer.Run(ctx)
+		}()
+	}
 
+	err = waitSignals(errs, cancel, gCancel)
 	if err != nil && err != context.Canceled {
-		logrus.Fatalf("server exist with error: %s", err)
+		logrus.Fatalf("Server exist with error: %s", err)
 	}
 }

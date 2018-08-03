@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -27,20 +28,19 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 
 		defer func() {
 			num := counter.done()
-			log.Infof(
-				"connection closed by %s: %s, connections: %d",
+			log.Infof("Connection closed by %s: %s, connections: %d",
 				closeReason, r.RemoteAddr, num,
 			)
 		}()
 
-		// if int64(server.options.MaxConnection) != 0 {
-		// 	if num > server.options.MaxConnection {
-		// 		closeReason = "exceeding max number of connections"
-		// 		return
-		// 	}
-		// }
+		if int64(server.options.MaxConnection) != 0 {
+			if num > server.options.MaxConnection {
+				closeReason = "exceeding max number of connections"
+				return
+			}
+		}
 
-		log.Infof("new client connected: %s, connections: %d", r.RemoteAddr, num)
+		log.Infof("New client connected: %s, connections: %d", r.RemoteAddr, num)
 
 		if r.Method != "GET" {
 			http.Error(w, "Method not allowed", 405)
@@ -54,10 +54,15 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		}
 		defer conn.Close()
 
-		err = server.processWSConn(ctx, conn, container)
+		cctx, timeoutCancel := context.WithCancel(ctx)
+		defer timeoutCancel()
+
+		err = server.processWSConn(cctx, timeoutCancel, conn, container)
 		switch err {
 		case ctx.Err():
 			closeReason = "cancelation"
+		case cctx.Err():
+			closeReason = "time out"
 		case webtty.ErrSlaveClosed:
 			closeReason = "backend closed"
 		case webtty.ErrMasterClosed:
@@ -68,7 +73,8 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 	}
 }
 
-func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, container types.Container) error {
+func (server *Server) processWSConn(ctx context.Context, timeoutCancel context.CancelFunc,
+	conn *websocket.Conn, container types.Container) error {
 	typ, initLine, err := conn.ReadMessage()
 	if err != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
@@ -78,13 +84,12 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 	}
 
 	var init types.InitMessage
-	err = json.Unmarshal(initLine, &init)
-	if err != nil {
+	if json.Unmarshal(initLine, &init) != nil {
 		return fmt.Errorf("failed to authenticate websocket connection")
 	}
-	// if init.AuthToken != server.options.Credential {
-	// 	return fmt.Errorf("failed to authenticate websocket connection")
-	// }
+	if server.options.Credential != "" && init.AuthToken != server.options.Credential {
+		return fmt.Errorf("failed to authenticate websocket connection")
+	}
 
 	log.Debugf("exec container: %s", container.ID)
 	containerTTY, err := server.containerCli.Exec(ctx, container)
@@ -93,16 +98,37 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 	}
 	defer containerTTY.Exit()
 
-	cIP := "127.0.0.1"
-	if len(container.IPs) > 0 {
-		cIP = container.IPs[0]
+	// handle timeout
+	tout := server.options.Timeout
+	if tout.Seconds() != 0 {
+		go func() {
+			timer := time.NewTimer(tout)
+			activeChan := containerTTY.ActiveChan()
+			for {
+				select {
+				case <-timer.C:
+					timer.Stop()
+					timeoutCancel()
+					return
+				case <-activeChan:
+					// the connection is active, reset the timer
+					timer.Reset(tout)
+				}
+			}
+
+		}()
+	}
+
+	location := "127.0.0.1"
+	if container.LocServer != "" {
+		location = container.LocServer
 	}
 
 	titleVars := server.titleVariables(
 		[]string{"server"},
 		map[string]map[string]interface{}{
 			"server": map[string]interface{}{
-				"containerIP":   cIP,
+				"containerLoc":  location,
 				"containerName": container.Name,
 				"containerID":   container.ID,
 			},
@@ -118,6 +144,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 	opts := []webtty.Option{
 		webtty.WithWindowTitle(titleBuf.Bytes()),
 		webtty.WithPermitWrite(),
+		// webtty.WithReconnect(10), // not work....
 	}
 
 	wrapper := &wsWrapper{conn}
@@ -126,9 +153,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 		return fmt.Errorf("failed to create webtty: %s", err)
 	}
 
-	err = tty.Run(ctx)
-
-	return err
+	return tty.Run(ctx)
 }
 
 func (server *Server) handleExec(c *gin.Context, cInfo types.Container) {
@@ -200,6 +225,7 @@ func (server *Server) handleListContainers(c *gin.Context) {
 		"title":      "List Containers",
 		"containers": server.containerCli.List(c.Request.Context()),
 		"control":    server.options.Control,
+		"loc":        server.options.ShowLocation,
 	}
 
 	listBuf := new(bytes.Buffer)

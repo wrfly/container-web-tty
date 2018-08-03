@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	pprof "net/http/pprof"
 	"os"
 	"regexp"
 	noesctmpl "text/template"
@@ -54,7 +55,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	titleFormat := "{{ .containerName }} - {{ printf \"%.8s\" .containerID }}@{{ .containerIP }}"
+	titleFormat := "{{ .containerName }} - {{ printf \"%.8s\" .containerID }}@{{ .containerLoc }}"
 	titleTemplate, err = noesctmpl.New("title").Parse(titleFormat)
 	if err != nil {
 		log.Fatal(err)
@@ -103,7 +104,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		opt(opts)
 	}
 
-	counter := newCounter(time.Duration(server.options.Timeout) * time.Second)
+	counter := newCounter(server.options.Timeout)
 
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -150,10 +151,21 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		}
 	}
 
+	// pprof
+	rootMux := http.NewServeMux()
+	if log.GetLevel() == log.DebugLevel {
+		rootMux.HandleFunc("/debug/pprof/", pprof.Index)
+		rootMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		rootMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		rootMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		rootMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
+	rootMux.Handle("/", router)
+
 	hostPort := net.JoinHostPort(server.options.Address, server.options.Port)
 	srv := &http.Server{
 		Addr:    hostPort,
-		Handler: router,
+		Handler: rootMux,
 	}
 
 	srvErr := make(chan error, 1)

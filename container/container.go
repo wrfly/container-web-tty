@@ -6,10 +6,12 @@ import (
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container/docker"
+	grpc "github.com/wrfly/container-web-tty/container/grpc"
 	"github.com/wrfly/container-web-tty/container/kube"
 	"github.com/wrfly/container-web-tty/types"
 )
 
+// Cli is a docker backend client
 type Cli interface {
 	// GetInfo of a container
 	GetInfo(ctx context.Context, containerID string) types.Container
@@ -20,14 +22,19 @@ type Cli interface {
 	Restart(ctx context.Context, containerID string) error
 	// exec into container
 	Exec(ctx context.Context, container types.Container) (types.TTY, error)
+	// close the connections
+	Close() error
 }
 
+// NewCliBackend returns the client backend
 func NewCliBackend(conf config.BackendConfig) (cli Cli, err error) {
 	switch conf.Type {
 	case "docker":
 		cli, err = docker.NewCli(conf.Docker, conf.ExtraArgs)
 	case "kube":
 		cli, err = kube.NewCli(conf.Kube, conf.ExtraArgs)
+	case "grpc":
+		cli, err = grpc.NewCli(conf.GRPC)
 	default:
 		err = fmt.Errorf("unknown backend type %s", conf.Type)
 	}

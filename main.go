@@ -5,6 +5,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -14,28 +15,29 @@ import (
 )
 
 func main() {
-	conf := config.Config{
-		Backend: config.BackendConfig{
-			Docker: config.DockerConfig{},
-			Kube:   config.KubeConfig{},
-		},
-		Control: config.ControlConfig{},
-	}
+	conf := config.New()
 	appFlags := []cli.Flag{
+		&cli.StringFlag{
+			Name:        "addr",
+			EnvVars:     envVars("address"),
+			Usage:       "server binding address",
+			Value:       "0.0.0.0",
+			Destination: &conf.Server.Addr,
+		},
 		&cli.IntFlag{
 			Name:        "port",
 			Aliases:     []string{"p"},
 			EnvVars:     envVars("port"),
-			Usage:       "server port",
+			Usage:       "HTTP server port, -1 for disable the HTTP server",
 			Value:       8080,
-			Destination: &conf.Port,
+			Destination: &conf.Server.Port,
 		},
 		&cli.BoolFlag{
 			Name:        "debug",
 			Aliases:     []string{"d"},
 			Value:       false,
 			EnvVars:     envVars("debug"),
-			Usage:       "debug mode",
+			Usage:       "debug mode (log-level=debug enable pprof)",
 			Destination: &conf.Debug,
 		},
 		&cli.StringFlag{
@@ -43,7 +45,7 @@ func main() {
 			Aliases:     []string{"b"},
 			EnvVars:     envVars("backend"),
 			Value:       "docker",
-			Usage:       "backend type, 'docker' or 'kube' for now",
+			Usage:       "backend type, 'docker' or 'kube' or 'grpc'(remote)",
 			Destination: &conf.Backend.Type,
 		},
 		&cli.StringFlag{
@@ -71,32 +73,55 @@ func main() {
 			EnvVars: envVars("extra-args"),
 			Usage:   "pass extra args to the backend",
 		},
+		&cli.IntFlag{
+			Name:        "grpc-port",
+			EnvVars:     envVars("grpc-port"),
+			Usage:       "grpc server port, -1 for disable the grpc server",
+			Value:       -1,
+			Destination: &conf.Server.GrpcPort,
+		},
 		&cli.StringFlag{
-			Name:    "servers",
-			EnvVars: envVars("servers"),
-			Usage:   "upstream servers, for proxy mode",
+			Name:    "grpc-servers",
+			EnvVars: envVars("grpc-servers"),
+			Usage:   "upstream servers, for proxy mode(grpc address and port), use comma for split",
+		},
+		&cli.StringFlag{
+			Name:        "grpc-auth",
+			EnvVars:     envVars("grpc-auth"),
+			Usage:       "grpc auth token",
+			Value:       "password",
+			Destination: &conf.Backend.GRPC.Auth,
+		},
+		&cli.StringFlag{
+			Name:    "idle-time",
+			EnvVars: envVars("idle-time"),
+			Usage:   "time out of an idle connection",
 		},
 		&cli.BoolFlag{
 			Name:        "control-all",
-			Aliases:     []string{"ctl-all"},
+			Aliases:     []string{"ctl-a"},
+			EnvVars:     envVars("ctl-a"),
 			Usage:       "enable container control",
 			Destination: &conf.Control.All,
 		},
 		&cli.BoolFlag{
 			Name:        "control-start",
 			Aliases:     []string{"ctl-s"},
+			EnvVars:     envVars("ctl-s"),
 			Usage:       "enable container start  ",
 			Destination: &conf.Control.Start,
 		},
 		&cli.BoolFlag{
 			Name:        "control-stop",
 			Aliases:     []string{"ctl-t"},
+			EnvVars:     envVars("ctl-t"),
 			Usage:       "enable container stop   ",
 			Destination: &conf.Control.Stop,
 		},
 		&cli.BoolFlag{
 			Name:        "control-restart",
 			Aliases:     []string{"ctl-r"},
+			EnvVars:     envVars("ctl-r"),
 			Usage:       "enable container restart",
 			Destination: &conf.Control.Restart,
 		},
@@ -122,6 +147,14 @@ func main() {
 			if c.Bool("help") {
 				return cli.ShowAppHelp(c)
 			}
+			// parse idleTime
+			t := c.String("idle-time")
+			idleTime, err := time.ParseDuration(t)
+			if err != nil && t != "" {
+				logrus.Fatalf("parse idle-time error: %s", err)
+			} else {
+				conf.Server.IdleTime = idleTime
+			}
 
 			if eArgs := c.String("extra-args"); eArgs != "" {
 				conf.Backend.ExtraArgs = strings.Split(eArgs, " ")
@@ -139,7 +172,10 @@ func main() {
 				conf.Control.Enable = true
 			}
 
-			conf.Servers = strings.Split(c.String("servers"), " ")
+			servers := strings.Split(c.String("grpc-servers"), ",")
+			if servers[0] != "" {
+				conf.Backend.GRPC.Servers = servers
+			}
 			if conf.Debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			} else {
@@ -147,7 +183,7 @@ func main() {
 			}
 			logrus.Debugf("got config: %+v", conf)
 
-			run(c, conf)
+			run(c, *conf)
 			return nil
 		},
 	}

@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 var SHELL_LIST = []string{"/bin/bash", "/bin/ash", "/bin/sh"}
 
 type DockerConfig struct {
@@ -11,10 +13,16 @@ type KubeConfig struct {
 	ConfigPath string // normally is $HOME/.kube/config
 }
 
+type GRPCConfig struct {
+	Servers []string
+	Auth    string
+}
+
 type BackendConfig struct {
 	Type      string // docker or kubectl (for now)
 	Docker    DockerConfig
 	Kube      KubeConfig
+	GRPC      GRPCConfig
 	ExtraArgs []string // extra args pass to docker or kubectl
 }
 
@@ -26,10 +34,30 @@ type ControlConfig struct {
 	Restart bool
 }
 
+type ServerConfig struct {
+	Addr     string
+	Port     int
+	GrpcPort int
+	IdleTime time.Duration
+}
+
 type Config struct {
-	Port    int
 	Debug   bool
 	Control ControlConfig
 	Backend BackendConfig
-	Servers []string // for proxy mode
+	Server  ServerConfig
+}
+
+func New() *Config {
+	return &Config{
+		Backend: BackendConfig{
+			Docker: DockerConfig{},
+			Kube:   KubeConfig{},
+			GRPC: GRPCConfig{
+				Servers: []string{},
+			},
+		},
+		Server:  ServerConfig{},
+		Control: ControlConfig{},
+	}
 }

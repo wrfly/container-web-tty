@@ -1,49 +1,47 @@
 package util
 
 import (
-	"fmt"
 	"os"
-	"strings"
-	"time"
 
-	"github.com/gin-gonic/gin"
+	pb "github.com/wrfly/container-web-tty/proxy/grpc"
+	"github.com/wrfly/container-web-tty/types"
 )
 
-func GinLogger() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Start timer
-		start := time.Now()
-		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
+// ConvertTpContainer *pb.Container -> types.Container
+func ConvertPbContainer(c *pb.Container) types.Container {
+	return types.Container{
+		ID:            c.Id,
+		Name:          c.Name,
+		Image:         c.Image,
+		Command:       c.Command,
+		State:         c.State,
+		Status:        c.Status,
+		IPs:           c.Ips,
+		Shell:         c.Shell,
+		PodName:       c.PodName,
+		ContainerName: c.ContainerName,
+		Namespace:     c.Namespace,
+		RunningNode:   c.RunningNode,
+		LocServer:     c.LocServer,
+	}
+}
 
-		// Process request
-		c.Next()
-
-		if strings.HasPrefix(c.Request.URL.Path, "/exec") {
-			// Stop timer
-			end := time.Now()
-			latency := end.Sub(start)
-
-			clientIP := c.ClientIP()
-			method := c.Request.Method
-			statusCode := c.Writer.Status()
-
-			comment := c.Errors.ByType(gin.ErrorTypePrivate).String()
-
-			if raw != "" {
-				path = path + "?" + raw
-			}
-
-			fmt.Fprintf(os.Stdout, "%v | %3d | %13v | %15s | %-7s %s \n%s",
-				end.Format("2006/01/02 - 15:04:05"),
-				statusCode,
-				latency,
-				clientIP,
-				method,
-				path,
-				comment,
-			)
-		}
+// ConvertTpContainer types.Container -> *pb.Container
+func ConvertTpContainer(c types.Container) *pb.Container {
+	return &pb.Container{
+		Id:            c.ID,
+		Name:          c.Name,
+		Image:         c.Image,
+		Command:       c.Command,
+		State:         c.State,
+		Status:        c.Status,
+		Ips:           c.IPs,
+		Shell:         c.Shell,
+		PodName:       c.PodName,
+		ContainerName: c.ContainerName,
+		Namespace:     c.Namespace,
+		RunningNode:   c.RunningNode,
+		LocServer:     c.LocServer,
 	}
 }
 

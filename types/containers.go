@@ -23,7 +23,6 @@ func (cs *Containers) Len() int {
 func (cs *Containers) Set(containers []Container) {
 	cs.init()
 
-	cs.m.Lock()
 	tempContainers := make(map[string]Container, len(containers)*2)
 	for _, c := range containers {
 		tempContainers[c.ID] = c
@@ -31,6 +30,7 @@ func (cs *Containers) Set(containers []Container) {
 			tempContainers[c.ID[:12]] = c
 		}
 	}
+	cs.m.Lock()
 	cs.c = tempContainers
 	cs.m.Unlock()
 }

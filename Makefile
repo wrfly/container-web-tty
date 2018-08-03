@@ -1,5 +1,3 @@
-.PHONY: build test dev
-
 NAME = container-web-tty
 PKG = github.com/wrfly/$(NAME)
 BIN = bin
@@ -43,6 +41,8 @@ dev: asset build
 release:
 	GOOS=linux GOARCH=amd64 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME)_linux_amd64 .
 	GOOS=darwin GOARCH=amd64 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME)_darwin_amd64 .
+	tar -C $(BIN) -czf $(BIN)/$(NAME)_linux_amd64.tgz $(NAME)_linux_amd64
+	tar -C $(BIN) -czf $(BIN)/$(NAME)_darwin_amd64.tgz $(NAME)_darwin_amd64
 
 .PHONY: image
 image:
@@ -62,6 +62,15 @@ push-develop:
 push-tag:
 	docker tag $(IMAGE) $(IMAGE):$(VERSION)
 	docker push $(IMAGE):$(VERSION)
+
+.PHONY: api
+api:
+	protoc -I proxy/grpc proxy/grpc/api.proto --go_out=plugins=grpc:proxy/grpc/
+
+.PHONY: proto
+proto:
+	proteus proto -f /tmp -p github.com/wrfly/container-web-tty/types --verbose
+	cp /tmp/github.com/wrfly/container-web-tty/types/generated.proto proxy/grpc
 
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset

@@ -138,14 +138,19 @@ th, td {
     width: 12%;
 }
 
-/* Status */
+/* LocServer */
 .column6 {
+    width: 10%;
+}
+
+/* Status */
+.column7 {
     width: 10%;
     padding-right: 30px;
 }
 
 /* Buttons */
-.column7 {
+.column8 {
     width: 15%;
     padding-right: 20px;
 }

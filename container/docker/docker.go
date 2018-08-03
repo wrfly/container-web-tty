@@ -30,7 +30,7 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 		host = "tcp://" + host
 	}
 	version := "v1.24"
-	logrus.Infof("docker connecting to %s", host)
+	logrus.Infof("Docker connecting to %s", host)
 	UA := map[string]string{"User-Agent": "engine-api-cli-1.0"}
 	cli, err := client.NewClient(host, version, nil, UA)
 	if err != nil {
@@ -50,13 +50,13 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infof("new docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
+	logrus.Infof("New docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
 	dockerCli := &DockerCli{
 		cli:         cli,
 		containers:  &types.Containers{},
 		listOptions: listOptions,
 	}
-	logrus.Infof("warm up containers info...")
+	logrus.Infof("Warm up containers info...")
 	dockerCli.List(ctx)
 
 	return dockerCli, nil
@@ -104,8 +104,10 @@ func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container
 	if container := docker.containers.Find(cid); container.ID != "" {
 		if container.Shell == "" {
 			shell := docker.getShell(ctx, cid)
+			container.Shell = shell
 			docker.containers.SetShell(cid, shell)
 		}
+		logrus.Debugf("found valid container: %s (%s)", container.ID, container.Shell)
 		return container
 	}
 
@@ -282,16 +284,16 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 	}
 
 	resizeFunc := func(width int, height int) error {
-		err := docker.cli.ContainerExecResize(ctx, execID, apiTypes.ResizeOptions{
-			Width:  uint(width),
-			Height: uint(height),
-		})
-		if err != nil {
-			logrus.Errorf("resize exec %s (container %s) window size to %dx%d; err: %v",
-				container.ID, execID, width, height, err)
-		}
-		return err
+		return docker.cli.ContainerExecResize(ctx, execID,
+			apiTypes.ResizeOptions{
+				Width:  uint(width),
+				Height: uint(height),
+			})
 	}
 
 	return newExecInjector(resp, resizeFunc), nil
+}
+
+func (docker DockerCli) Close() error {
+	return docker.cli.Close()
 }
