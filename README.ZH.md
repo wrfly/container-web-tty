@@ -9,24 +9,23 @@
 [![GitHub release](https://img.shields.io/github/release/wrfly/container-web-tty.svg)](https://github.com/wrfly/container-web-tty/releases)
 [![Github All Releases](https://img.shields.io/github/downloads/wrfly/container-web-tty/total.svg)](https://github.com/wrfly/container-web-tty/releases)
 
-[中文](README.ZH.md)
+[English](README.md)
 
-Tired of typing `docker ps | grep xxx` && `docker exec -ti xxxx sh` ? Try me!
+当我们想进入某个容器内部的时候，通常会执行这个命令组合 `docker ps | grep xxx` && `docker exec -ti xxxx sh`，
+但老这样敲也是很烦，也许你可以试一下这个项目。
 
-Although I like terminal, I still want a better tool to get into the containers to do some debugging or checking.
-So I build this `container-web-tty`. It can help you get into the container and execute commands via a web-tty,
-based on [yudai/gotty](https://github.com/yudai/gotty) with some changes.
+虽然我很喜欢终端，但是我仍然希望有一个更好的工具来进入容器内部去做一些检查或者debug。所以我写了这个项目，它能够帮助你通过点击网页的方式
+进到容器里执行命令。初版的代码是基于[yudai/gotty](https://github.com/yudai/gotty)这个项目的，感谢yudai。
 
-Both `docker` and `kubectl` are supported.
+后端可以对接docker或者kubectl。
 
-## Usage
+## 使用
 
-Of cause you can run it by downloading the binary, but thare are some
-`Copy-and-Paste` ways.
+你可以从release页面下载二进制运行这个程序，但这里有一些“复制粘贴”的方法。
 
-### Using docker
+### 通过 docker
 
-You can start `container-web-tty` inside a container by mounting `docker.sock`:
+把`docker.sock`挂在到容器里就完事儿了
 
 ```bash
 docker run --rm -ti --name web-tty \
@@ -35,9 +34,9 @@ docker run --rm -ti --name web-tty \
     wrfly/container-web-tty
 ```
 
-### Using kubernetes
+### 通过 kubernetes
 
-Or you can mount the kubernetes config file:
+你需要把kubernetes的配置文件挂进去，默认是在 `$HOME/.kube/config`，然后指定一下backed的类型，也就是`kube`
 
 ```bash
 docker run --rm -ti --name web-tty \
@@ -48,17 +47,16 @@ docker run --rm -ti --name web-tty \
     wrfly/container-web-tty
 ```
 
-### Using local <-> remote (gRPC)
+### 通过 gRPC （代理模式）
 
-You can deploy `container-web-tty` in remote servers, and connect
-to it via a local `container-web-tty`. They use gRPC for communication.
+当我们有很多server需要接入的时候，就可以使用这种模式把远程的`container-web-tty`们
+**merge** 到一起，典型的CS模式，通过gRPC通信。
 
-This is useful when you cannot get the remote servers or there are more
-than one server that you need to connect to.
+在一个界面上查看多台机器上的容器。
 
-#### Remote
+#### 远程配置
 
-Host `192.168.66.1` and `192.168.66.2` both running:
+假如有两台机器 `192.168.66.1` 和 `192.168.66.2`，他们可以用如下的命令来启动`container-web-tty`
 
 ```bash
 docker run --rm -ti --name web-tty \
@@ -70,12 +68,12 @@ docker run --rm -ti --name web-tty \
     wrfly/container-web-tty
 ```
 
-Notes:
+注意:
 
-- You can disable the HTTP server by setting `WEB_TTY_PORT=-1`
-- The `WEB_TTY_GRPC_AUTH` must be the same between all hosts
+- 你可以通过设置 `WEB_TTY_PORT=-1` 的方式来关闭HTTPserver，拒绝一般接入
+- 这个 `WEB_TTY_GRPC_AUTH` key 在所有机器上必须要相同（目前）
 
-#### Local
+#### 本地配置
 
 ```bash
 docker run --rm -ti --name web-tty \
@@ -86,34 +84,36 @@ docker run --rm -ti --name web-tty \
     wrfly/container-web-tty
 ```
 
-Now you will see all the containers of all the servers via *<http://localhost:8080>*
+现在你就可以通过访问 *<http://localhost:8080>* 来获取两台机器上所有的容器
 
-## Keyboard Shortcuts (Linux)
+## 快捷键 (Linux)
 
 - Cut the word before the cursor `Ctrl+w` => **You cannot do it for now** (I'll working on it for `Ctrl+Backspace`, but I know little about js)
 - Copy:  `Ctrl+Shift+c` => `Ctrl+Insert`
 - Paste: `Ctrl+Shift+v` => `Shift+Insert`
 
-## Features
+## 特性
 
-- [x] it works
-- [x] docker backend
-- [x] kubectl backend
-- [x] beautiful index
+- [x] 能用了
+- [x] 对接 docker 后端
+- [x] 对接 kubectl 的后端
+- [x] 比较好看的前端界面
 - [x] start|stop|restart container(docker backend only)
-- [x] environment injection (extra params)
-- [x] proxy mode (client -> server's containers)
-- [x] auth(only in proxy mode)
-- [x] TTY timeout (idle timeout)
-- [ ] history audit
+- [x] 参数注入，比如环境变量
+- [x] 代理模式 (本地连接到远程机器上的容器)
+- [x] 认证（仅限代理模式）
+- [x] 超时自动断开
+- [ ] 历史记录审计
 
-## Show-off
+## 效果展示
 
-List the containers on your machine:
+列出所有容器:
 
 ![list](images/list.png)
 
-It will execute `/bin/sh` if there is no `/bin/bash` inside the container:
+在选择shell的时候，优选选择bash，如果没有，就依次选择ash，sh，再没有就退出了。
+
+`/bin/sh`:
 
 <img src="images/sh.png" width="400" height="150">
 
