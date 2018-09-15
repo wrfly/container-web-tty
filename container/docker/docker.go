@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -296,4 +297,13 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 
 func (docker DockerCli) Close() error {
 	return docker.cli.Close()
+}
+
+func (docker DockerCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
+	return docker.cli.ContainerLogs(ctx, opts.ID, apiTypes.ContainerLogsOptions{
+		ShowStderr: true,
+		ShowStdout: true,
+		Follow:     opts.Follow,
+		Tail:       opts.Tail,
+	})
 }

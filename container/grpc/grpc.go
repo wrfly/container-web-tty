@@ -3,6 +3,7 @@ package remote
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -247,4 +248,8 @@ func (gCli GrpcCli) Close() error {
 		}
 	}
 	return nil
+}
+
+func (gCli GrpcCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
+	return nil, nil
 }

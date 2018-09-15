@@ -37,11 +37,13 @@
           {{ range .containers }}
           <tr class="row100 body">
             <td class="cell100 column1">
-              <a href="/exec/{{ printf " %.12s " .ID }}" target="_blank" title="{{ .ID }}">{{ printf "%.12s" .ID }}</a>
+              <a href="/exec/{{ printf "%.12s" .ID }}" target="_blank" title="exec into container">{{ printf "%.12s" .ID }}</a>
             </td>
             <td class="cell100 column2" title="{{ .Image }}">{{ printf .Image }}</td>
             <td class="cell100 column3" title="{{ .Command }}">{{ printf .Command }}</td>
-            <td class="cell100 column4" title="{{ .Name }}">{{ printf .Name }}</td>
+            <td class="cell100 column4" title="{{ .Name }}">
+                <a href="/logs/{{ printf "%.12s" .ID }}?follow=1&tail=10" target="_blank" title="get logs">{{ printf .Name }}</a>
+            </td>
             <td class="cell100 column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
             {{- if $showLocation -}}
             <td class="cell100 column6" title="{{ .LocServer }}">{{ printf .LocServer }}</td>

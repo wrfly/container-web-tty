@@ -106,6 +106,7 @@ Now you will see all the containers of all the servers via *<http://localhost:80
 - [x] auth(only in proxy mode)
 - [x] TTY timeout (idle timeout)
 - [ ] history audit
+- [ ] container logs
 
 ## Show-off
 

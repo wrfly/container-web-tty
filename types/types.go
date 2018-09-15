@@ -39,3 +39,16 @@ type InitMessage struct {
 	Arguments string `json:"Arguments,omitempty"`
 	AuthToken string `json:"AuthToken,omitempty"`
 }
+
+type LogOptions struct {
+	ID     string
+	Follow bool
+	Tail   string
+}
+
+type ContainerAct int
+
+const (
+	EXEC ContainerAct = iota
+	LOGS
+)

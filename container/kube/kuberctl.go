@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -286,4 +287,8 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 func (kube KubeCli) Close() error {
 	// no need to close
 	return nil
+}
+
+func (kube KubeCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
+	return nil, nil
 }
