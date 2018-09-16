@@ -232,3 +232,42 @@ func (svc *containerService) Exec(stream pb.ContainerServer_ExecServer) error {
 	logrus.Debugf("grpc exec done")
 	return nil
 }
+
+func (svc *containerService) Logs(logOpts *pb.LogOpts, stream pb.ContainerServer_LogsServer) error {
+	cid := logOpts.C
+	if err := checkNil(cid); err != nil {
+		return err
+	}
+
+	if err := svc.checkAuth(cid.Auth); err != nil {
+		return err
+	}
+
+	logrus.Debugf("get container logs: %s", cid.Id)
+	rc, err := svc.cli.Logs(stream.Context(), types.LogOptions{
+		Follow: logOpts.Follow,
+		Tail:   logOpts.Tail,
+		ID:     cid.Id,
+	})
+	if err != nil {
+		return err
+	}
+
+	buff := make([]byte, 2048)
+	for {
+		n, err := rc.Read(buff)
+		if err != nil {
+			if err != context.Canceled {
+				logrus.Errorf("read logs error: %s", err)
+			}
+			break
+		}
+		if err := stream.Send(&pb.Io{
+			In: buff[:n],
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

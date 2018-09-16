@@ -9,6 +9,7 @@ service containerServer {
     rpc Restart (ContainerID) returns (err) {}
     rpc Exec(stream execOptions) returns (stream execOptions) {}
     rpc Ping(empty) returns (pong) {}
+    rpc Logs(logOpts) returns (stream io) {}
 }
 
 message empty{
@@ -26,6 +27,12 @@ message err{
 message ContainerID {
 	string id = 1;
 	string auth = 2;
+}
+
+message logOpts {
+	ContainerID c = 1;
+	bool follow = 2;
+	string tail = 3;
 }
 
 // Container instance
