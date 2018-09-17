@@ -45,6 +45,9 @@ func newSlave(rc io.ReadCloser) webtty.Slave {
 				return
 			}
 			pw.Write(bs[:n])
+			if bs[n-1] == 10 {
+				pw.Write([]byte{13})
+			}
 		}
 	}()
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -295,5 +296,43 @@ func (kube KubeCli) Close() error {
 }
 
 func (kube KubeCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
-	return nil, nil
+	c := kube.GetInfo(ctx, opts.ID)
+	logrus.Debugf("get pod logs: %v", c)
+	if c.PodName == "" || c.Namespace == "" {
+		return nil, fmt.Errorf("PodName or Namespace is empty")
+	}
+	pod, err := kube.cli.CoreV1().Pods(c.Namespace).
+		Get(c.PodName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if pod.Status.Phase == api.PodSucceeded || pod.Status.Phase == api.PodFailed {
+		return nil,
+			fmt.Errorf("cannot get container logs in a completed pod; current phase is %s",
+				pod.Status.Phase)
+	}
+
+	req := kube.cli.CoreV1().RESTClient().Get().
+		Namespace(c.Namespace).
+		Name(c.PodName).
+		Resource("pods").
+		SubResource("log").
+		Param("follow", strconv.FormatBool(opts.Follow)).
+		Param("container", c.ContainerName).
+		Param("tailLines", opts.Tail)
+
+	// Param("previous", strconv.FormatBool(logOptions.Previous)).
+	// Param("timestamps", strconv.FormatBool(logOptions.Timestamps))
+
+	// if logOptions.SinceSeconds != nil {
+	// 	req.Param("sinceSeconds", strconv.FormatInt(*logOptions.SinceSeconds, 10))
+	// }
+	// if logOptions.SinceTime != nil {
+	// 	req.Param("sinceTime", logOptions.SinceTime.Format(time.RFC3339))
+	// }
+	// if logOptions.LimitBytes != nil {
+	// 	req.Param("limitBytes", strconv.FormatInt(*logOptions.LimitBytes, 10))
+	// }
+
+	return req.Stream()
 }
