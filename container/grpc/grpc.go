@@ -3,6 +3,7 @@ package remote
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -209,7 +210,8 @@ func (gCli GrpcCli) Restart(ctx context.Context, containerID string) error {
 }
 
 func (gCli GrpcCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
-	logrus.Debugf("exec into container: %s (%s)", container.ID, container.Shell)
+	logrus.Debugf("exec into container: %s (%s) (%s)",
+		container.ID, container.Shell, container.ExecCMD)
 	if container.ID == "" {
 		return nil, fmt.Errorf("container not found")
 	}
@@ -247,4 +249,55 @@ func (gCli GrpcCli) Close() error {
 		}
 	}
 	return nil
+}
+
+func (gCli GrpcCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
+	logrus.Debugf("get container logs, id: %s", opts.ID)
+	info := gCli.containers.Find(opts.ID)
+	if info.ID == "" {
+		return nil, fmt.Errorf("container not found")
+	}
+
+	cli, exist := gCli.clients[info.LocServer]
+	if !exist {
+		return nil, fmt.Errorf("location server [%s] not found", info.LocServer)
+	}
+	if !cli.alive() {
+		logrus.Error("111")
+		return nil, fmt.Errorf("remote server %s is not ready: %s", info.LocServer, cli.state())
+	}
+
+	logsClient, err := cli.client.Logs(ctx, &pb.LogOpts{
+		Follow: opts.Follow,
+		Tail:   opts.Tail,
+		C: &pb.ContainerID{
+			Id:   info.ID,
+			Auth: gCli.auth,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	logrus.Debugf("start to pipe...")
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		defer pr.Close()
+		for {
+			in, err := logsClient.Recv()
+			if err != nil {
+				if grpc.ErrorDesc(err) != context.Canceled.Error() {
+					logrus.Errorf("logs recv error: %s", err)
+				}
+				break
+			}
+			if _, err = pw.Write(in.GetIn()); err != nil {
+				logrus.Errorf("logs write to remote error: %s", err)
+				break
+			}
+		}
+	}()
+
+	return pr, nil
 }

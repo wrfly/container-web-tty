@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -257,15 +258,19 @@ func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
 }
 
 func (docker DockerCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
+	cmd := []string{container.Shell}
+	if exec := container.ExecCMD; exec != "" {
+		cmd = strings.Split(exec, " ")
+	}
 	execConfig := apiTypes.ExecConfig{
-		// User:         "string",
 		Privileged:   false,
-		Tty:          true,
 		AttachStdin:  true,
 		AttachStderr: true,
 		AttachStdout: true,
-		// Env:          []string,
-		Cmd: []string{container.Shell},
+		// User: "string",
+		// Env: []string{},
+		Tty: true,
+		Cmd: cmd,
 	}
 
 	response, err := docker.cli.ContainerExecCreate(ctx, container.ID, execConfig)
@@ -296,4 +301,13 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 
 func (docker DockerCli) Close() error {
 	return docker.cli.Close()
+}
+
+func (docker DockerCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
+	return docker.cli.ContainerLogs(ctx, opts.ID, apiTypes.ContainerLogsOptions{
+		ShowStderr: true,
+		ShowStdout: true,
+		Follow:     opts.Follow,
+		Tail:       opts.Tail,
+	})
 }

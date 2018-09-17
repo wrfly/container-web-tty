@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +17,12 @@ import (
 
 	"github.com/wrfly/container-web-tty/types"
 )
+
+func (server *Server) handleExec(c *gin.Context, counter *counter) {
+	cInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
+	server.generateHandleWS(c.Request.Context(), counter, cInfo).
+		ServeHTTP(c.Writer, c.Request)
+}
 
 func (server *Server) generateHandleWS(ctx context.Context, counter *counter, container types.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -42,11 +50,6 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 
 		log.Infof("New client connected: %s, connections: %d", r.RemoteAddr, num)
 
-		if r.Method != "GET" {
-			http.Error(w, "Method not allowed", 405)
-			return
-		}
-
 		conn, err := server.upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			closeReason = err.Error()
@@ -57,7 +60,7 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		cctx, timeoutCancel := context.WithCancel(ctx)
 		defer timeoutCancel()
 
-		err = server.processWSConn(cctx, timeoutCancel, conn, container)
+		err = server.processTTY(cctx, timeoutCancel, conn, container)
 		switch err {
 		case ctx.Err():
 			closeReason = "cancelation"
@@ -73,25 +76,20 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 	}
 }
 
-func (server *Server) processWSConn(ctx context.Context, timeoutCancel context.CancelFunc,
+func (server *Server) processTTY(ctx context.Context, timeoutCancel context.CancelFunc,
 	conn *websocket.Conn, container types.Container) error {
-	typ, initLine, err := conn.ReadMessage()
+	arguments, err := server.readInitMessage(conn)
 	if err != nil {
-		return fmt.Errorf("failed to authenticate websocket connection")
+		return err
 	}
-	if typ != websocket.TextMessage {
-		return fmt.Errorf("failed to authenticate websocket connection: invalid message type")
+	log.Debugf("exec container: %s, params: %s", container.ID, arguments)
+
+	if q, err := parseQuery(strings.TrimSpace(arguments)); err != nil {
+		return err
+	} else {
+		container.ExecCMD = q.Get("cmd")
 	}
 
-	var init types.InitMessage
-	if json.Unmarshal(initLine, &init) != nil {
-		return fmt.Errorf("failed to authenticate websocket connection")
-	}
-	if server.options.Credential != "" && init.AuthToken != server.options.Credential {
-		return fmt.Errorf("failed to authenticate websocket connection")
-	}
-
-	log.Debugf("exec container: %s", container.ID)
 	containerTTY, err := server.containerCli.Exec(ctx, container)
 	if err != nil {
 		return fmt.Errorf("exec container error: %s", err)
@@ -119,30 +117,13 @@ func (server *Server) processWSConn(ctx context.Context, timeoutCancel context.C
 		}()
 	}
 
-	location := "127.0.0.1"
-	if container.LocServer != "" {
-		location = container.LocServer
-	}
-
-	titleVars := server.titleVariables(
-		[]string{"server"},
-		map[string]map[string]interface{}{
-			"server": map[string]interface{}{
-				"containerLoc":  location,
-				"containerName": container.Name,
-				"containerID":   container.ID,
-			},
-		},
-	)
-
-	titleBuf := new(bytes.Buffer)
-	err = titleTemplate.Execute(titleBuf, titleVars)
+	titleBuf, err := server.makeTitleBuff(container)
 	if err != nil {
 		return fmt.Errorf("failed to fill window title template: %s", err)
 	}
 
 	opts := []webtty.Option{
-		webtty.WithWindowTitle(titleBuf.Bytes()),
+		webtty.WithWindowTitle(titleBuf),
 		webtty.WithPermitWrite(),
 		// webtty.WithReconnect(10), // not work....
 	}
@@ -156,7 +137,8 @@ func (server *Server) processWSConn(ctx context.Context, timeoutCancel context.C
 	return tty.Run(ctx)
 }
 
-func (server *Server) handleExec(c *gin.Context, cInfo types.Container) {
+func (server *Server) handleWSIndex(c *gin.Context) {
+	cInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
 	titleVars := server.titleVariables(
 		[]string{"server"},
 		map[string]map[string]interface{}{
@@ -273,4 +255,132 @@ func (server *Server) handleStopContainer(c *gin.Context) {
 
 func (server *Server) handleRestartContainer(c *gin.Context) {
 	server.handleContainerActions(c, "restart")
+}
+
+func (server *Server) handleLogs(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	conn, err := server.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "server error: %s", err)
+		return
+	}
+	defer conn.Close()
+
+	initArg, err := server.readInitMessage(conn)
+	if err != nil {
+		c.String(http.StatusBadRequest, "read init message error: %s", err)
+		return
+	}
+
+	q, err := parseQuery(initArg)
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+	follow := true
+	if v := q.Get("follow"); v != "1" && v != "" {
+		follow = false
+	}
+	tail := "10"
+	if v := q.Get("tail"); v != "" {
+		tail = v
+	}
+	opts := types.LogOptions{
+		ID:     c.Param("id"),
+		Follow: follow,
+		Tail:   tail,
+	}
+
+	container := server.containerCli.GetInfo(ctx, opts.ID)
+
+	log.Debugf("get logs of container: %s", container.ID)
+	logsReadCloser, err := server.containerCli.Logs(ctx, opts)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "get logs error: %s", err)
+		return
+	}
+	defer logsReadCloser.Close()
+
+	titleBuf, err := server.makeTitleBuff(container)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "failed to fill window title template: %s", err)
+		return
+	}
+
+	tty, err := webtty.New(
+		&wsWrapper{conn},
+		newSlave(logsReadCloser),
+		[]webtty.Option{
+			webtty.WithWindowTitle(titleBuf),
+			webtty.WithPermitWrite(), // can type "enter"
+		}...,
+	)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "failed to create webtty: %s", err)
+		return
+	}
+
+	if err := tty.Run(ctx); err != nil {
+		if err != webtty.ErrMasterClosed {
+			log.Errorf("failed to run webtty: %s", err)
+		}
+		return
+	}
+}
+
+func (server *Server) makeTitleBuff(c types.Container) ([]byte, error) {
+	location := "127.0.0.1"
+	if c.LocServer != "" {
+		location = c.LocServer
+	}
+
+	titleVars := server.titleVariables(
+		[]string{"server"},
+		map[string]map[string]interface{}{
+			"server": map[string]interface{}{
+				"containerLoc":  location,
+				"containerName": c.Name,
+				"containerID":   c.ID,
+			},
+		},
+	)
+	titleBuf := new(bytes.Buffer)
+	if err := titleTemplate.Execute(titleBuf, titleVars); err != nil {
+		return nil, err
+	}
+
+	return titleBuf.Bytes(), nil
+}
+
+func (server *Server) readInitMessage(conn *websocket.Conn) (string, error) {
+	typ, initLine, err := conn.ReadMessage()
+	if err != nil {
+		return "", fmt.Errorf("failed to authenticate websocket connection")
+	}
+	if typ != websocket.TextMessage {
+		return "", fmt.Errorf("failed to authenticate websocket connection: invalid message type")
+	}
+
+	var init types.InitMessage
+	if json.Unmarshal(initLine, &init) != nil {
+		return "", fmt.Errorf("failed to authenticate websocket connection")
+	}
+	if server.options.Credential != "" && init.AuthToken != server.options.Credential {
+		return "", fmt.Errorf("failed to authenticate websocket connection")
+	}
+
+	return init.Arguments, nil
+}
+
+func parseQuery(arguments string) (url.Values, error) {
+	queryPath := "?"
+	if arguments != "" {
+		queryPath = arguments
+	}
+	refURL, err := url.Parse(queryPath)
+	if err != nil {
+		return nil, fmt.Errorf("bad arguments: %s", arguments)
+	}
+	return refURL.Query(), nil
 }

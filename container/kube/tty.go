@@ -78,9 +78,8 @@ func (enj *execInjector) WindowTitleVariables() map[string]interface{} {
 func (enj *execInjector) ResizeTerminal(width int, height int) (err error) {
 	logrus.Debugf("resize terminal to: %dx%d", width, height)
 	for i := 0; i < 3; i++ {
-		if err = enj.sq.resize(width, height); err == nil {
-			return
-		}
+		// there is a delay somehow, use this trick method to avoid it
+		enj.sq.resize(width, height)
 		time.Sleep(time.Millisecond * 50)
 	}
 	return

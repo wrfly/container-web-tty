@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container/docker"
@@ -24,6 +25,8 @@ type Cli interface {
 	Exec(ctx context.Context, container types.Container) (types.TTY, error)
 	// close the connections
 	Close() error
+	// read logs
+	Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error)
 }
 
 // NewCliBackend returns the client backend
