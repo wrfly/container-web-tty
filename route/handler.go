@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,12 @@ import (
 
 	"github.com/wrfly/container-web-tty/types"
 )
+
+func (server *Server) handleExec(c *gin.Context, counter *counter) {
+	cInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
+	server.generateHandleWS(c.Request.Context(), counter, cInfo).
+		ServeHTTP(c.Writer, c.Request)
+}
 
 func (server *Server) generateHandleWS(ctx context.Context, counter *counter, container types.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +60,7 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		cctx, timeoutCancel := context.WithCancel(ctx)
 		defer timeoutCancel()
 
-		err = server.processWSConn(cctx, timeoutCancel, conn, container)
+		err = server.processTTY(cctx, timeoutCancel, conn, container)
 		switch err {
 		case ctx.Err():
 			closeReason = "cancelation"
@@ -69,14 +76,20 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 	}
 }
 
-func (server *Server) processWSConn(ctx context.Context, timeoutCancel context.CancelFunc,
+func (server *Server) processTTY(ctx context.Context, timeoutCancel context.CancelFunc,
 	conn *websocket.Conn, container types.Container) error {
-	_, err := server.readInitMessage(conn)
+	arguments, err := server.readInitMessage(conn)
 	if err != nil {
 		return err
 	}
+	log.Debugf("exec container: %s, params: %s", container.ID, arguments)
 
-	log.Debugf("exec container: %s", container.ID)
+	if q, err := parseQuery(strings.TrimSpace(arguments)); err != nil {
+		return err
+	} else {
+		container.ExecCMD = q.Get("cmd")
+	}
+
 	containerTTY, err := server.containerCli.Exec(ctx, container)
 	if err != nil {
 		return fmt.Errorf("exec container error: %s", err)
@@ -254,22 +267,17 @@ func (server *Server) handleLogs(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	init, err := server.readInitMessage(conn)
+	initArg, err := server.readInitMessage(conn)
 	if err != nil {
 		c.String(http.StatusBadRequest, "read init message error: %s", err)
 		return
 	}
 
-	queryPath := "?"
-	if init.Arguments != "" {
-		queryPath = init.Arguments
-	}
-	refURL, err := url.Parse(queryPath)
+	q, err := parseQuery(initArg)
 	if err != nil {
-		c.String(http.StatusBadRequest, "bad arguments: %s", init.Arguments)
+		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
-	q := refURL.Query()
 	follow := true
 	if v := q.Get("follow"); v != "1" && v != "" {
 		follow = false
@@ -345,22 +353,34 @@ func (server *Server) makeTitleBuff(c types.Container) ([]byte, error) {
 	return titleBuf.Bytes(), nil
 }
 
-func (server *Server) readInitMessage(conn *websocket.Conn) (types.InitMessage, error) {
-	var init types.InitMessage
+func (server *Server) readInitMessage(conn *websocket.Conn) (string, error) {
 	typ, initLine, err := conn.ReadMessage()
 	if err != nil {
-		return init, fmt.Errorf("failed to authenticate websocket connection")
+		return "", fmt.Errorf("failed to authenticate websocket connection")
 	}
 	if typ != websocket.TextMessage {
-		return init, fmt.Errorf("failed to authenticate websocket connection: invalid message type")
+		return "", fmt.Errorf("failed to authenticate websocket connection: invalid message type")
 	}
 
+	var init types.InitMessage
 	if json.Unmarshal(initLine, &init) != nil {
-		return init, fmt.Errorf("failed to authenticate websocket connection")
+		return "", fmt.Errorf("failed to authenticate websocket connection")
 	}
 	if server.options.Credential != "" && init.AuthToken != server.options.Credential {
-		return init, fmt.Errorf("failed to authenticate websocket connection")
+		return "", fmt.Errorf("failed to authenticate websocket connection")
 	}
 
-	return init, nil
+	return init.Arguments, nil
+}
+
+func parseQuery(arguments string) (url.Values, error) {
+	queryPath := "?"
+	if arguments != "" {
+		queryPath = arguments
+	}
+	refURL, err := url.Parse(queryPath)
+	if err != nil {
+		return nil, fmt.Errorf("bad arguments: %s", arguments)
+	}
+	return refURL.Query(), nil
 }

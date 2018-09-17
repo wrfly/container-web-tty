@@ -104,8 +104,6 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		opt(opts)
 	}
 
-	counter := newCounter(server.options.Timeout)
-
 	router := gin.New()
 	router.Use(gin.Recovery())
 	if gin.Mode() == gin.DebugMode {
@@ -127,18 +125,13 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	}
 
 	// exec
+	counter := newCounter(server.options.Timeout)
 	router.GET("/exec/:id/", func(c *gin.Context) { server.handleWSIndex(c) })
-	router.GET("/exec/:id/"+"ws", func(c *gin.Context) {
-		containerInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
-		server.generateHandleWS(cctx, counter, containerInfo).ServeHTTP(c.Writer, c.Request)
-	})
+	router.GET("/exec/:id/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
+
 	// logs
-	router.GET("/logs/:id/", func(c *gin.Context) {
-		server.handleWSIndex(c)
-	})
-	router.GET("/logs/:id/"+"ws", func(c *gin.Context) {
-		server.handleLogs(c)
-	})
+	router.GET("/logs/:id/", func(c *gin.Context) { server.handleWSIndex(c) })
+	router.GET("/logs/:id/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
 
 	ctl := server.options.Control
 	if ctl.Enable {

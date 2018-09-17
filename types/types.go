@@ -11,13 +11,20 @@ type Container struct {
 	State, Status  string // "running"  "Up 13 minutes"
 	IPs            []string
 	Shell          string
+
 	// k8s
 	PodName, ContainerName string
 	Namespace, RunningNode string
+
 	// remote location server address
 	// use this to locate the container
 	// in the proxy mode
 	LocServer string
+
+	// exec commands in arguments
+	// permit user to execute any command
+	// in that container
+	ExecCMD string
 }
 
 // ContainerActionMessage tells the web browser the action's status
