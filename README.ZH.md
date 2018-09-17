@@ -129,4 +129,4 @@ docker run --rm -ti --name web-tty \
 
 查看容器日志:
 
-<img src="images/logs.png" width="400" height="150">
+![logs](images/logs.png)

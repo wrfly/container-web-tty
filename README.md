@@ -129,4 +129,4 @@ Run custom command:
 
 Get container logs:
 
-<img src="images/logs.png" width="400" height="150">
+![logs](images/logs.png)

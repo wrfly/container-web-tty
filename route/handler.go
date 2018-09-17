@@ -322,7 +322,7 @@ func (server *Server) handleLogs(c *gin.Context) {
 	}
 
 	if err := tty.Run(ctx); err != nil {
-		if err != webtty.ErrMasterClosed {
+		if err != webtty.ErrMasterClosed && err != webtty.ErrMasterClosed {
 			log.Errorf("failed to run webtty: %s", err)
 		}
 		return

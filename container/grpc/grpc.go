@@ -263,7 +263,6 @@ func (gCli GrpcCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadClo
 		return nil, fmt.Errorf("location server [%s] not found", info.LocServer)
 	}
 	if !cli.alive() {
-		logrus.Error("111")
 		return nil, fmt.Errorf("remote server %s is not ready: %s", info.LocServer, cli.state())
 	}
 
