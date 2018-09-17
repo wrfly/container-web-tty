@@ -106,7 +106,8 @@ Now you will see all the containers of all the servers via *<http://localhost:80
 - [x] auth(only in proxy mode)
 - [x] TTY timeout (idle timeout)
 - [ ] history audit
-- [ ] container logs
+- [x] container logs (just click the container name)
+- [x] exec arguments (append an extra "?cmd=xxx" argument to exec URL)
 
 ## Show-off
 
@@ -121,3 +122,11 @@ It will execute `/bin/sh` if there is no `/bin/bash` inside the container:
 `/bin/bash`:
 
 <img src="images/bash.png" width="400" height="150">
+
+Run custom command:
+
+<img src="images/cmd.png" width="400" height="150">
+
+Get container logs:
+
+<img src="images/logs.png" width="400" height="150">

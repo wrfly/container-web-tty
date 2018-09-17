@@ -104,7 +104,8 @@ docker run --rm -ti --name web-tty \
 - [x] 认证（仅限代理模式）
 - [x] 超时自动断开
 - [ ] 历史记录审计
-- [ ] 容器日志
+- [x] 容器日志
+- [x] 自定义执行命令
 
 ## 效果展示
 
@@ -121,3 +122,11 @@ docker run --rm -ti --name web-tty \
 `/bin/bash`:
 
 <img src="images/bash.png" width="400" height="150">
+
+运行指定命令:
+
+<img src="images/cmd.png" width="400" height="150">
+
+查看容器日志:
+
+<img src="images/logs.png" width="400" height="150">
