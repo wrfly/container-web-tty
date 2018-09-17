@@ -243,15 +243,20 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 			fmt.Errorf("cannot exec into a container in a completed pod; current phase is %s", pod.Status.Phase)
 	}
 
-	restClient := kube.cli.CoreV1().RESTClient()
+	cmd := c.Shell
+	if c.ExecCMD != "" {
+		cmd = c.ExecCMD
+		logrus.Debugf("exec with cmd: %s", cmd)
+	}
 
+	restClient := kube.cli.CoreV1().RESTClient()
 	req := restClient.Post().
 		Resource("pods").
 		Name(c.PodName).
 		Namespace(c.Namespace).
 		SubResource("exec").
 		Param("container", c.ContainerName).
-		Param("command", c.Shell).
+		Param("command", cmd).
 		Param("stdin", "true").
 		Param("stdout", "true").
 		Param("tty", "true")

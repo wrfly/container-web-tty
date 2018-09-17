@@ -210,7 +210,8 @@ func (gCli GrpcCli) Restart(ctx context.Context, containerID string) error {
 }
 
 func (gCli GrpcCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
-	logrus.Debugf("exec into container: %s (%s)", container.ID, container.Shell)
+	logrus.Debugf("exec into container: %s (%s) (%s)",
+		container.ID, container.Shell, container.ExecCMD)
 	if container.ID == "" {
 		return nil, fmt.Errorf("container not found")
 	}
