@@ -1,6 +1,7 @@
 package route
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/yudai/gotty/webtty"
@@ -44,9 +45,27 @@ func newSlave(rc io.ReadCloser) webtty.Slave {
 			if err != nil {
 				return
 			}
-			pw.Write(bs[:n])
-			if bs[n-1] == 10 {
-				pw.Write([]byte{13})
+			if len(bs) <= 1 {
+				continue
+			}
+
+			if bs[n-2] == 13 { // \r\n
+				pw.Write(bs[:n])
+				continue
+			}
+
+			// only \n or a long log string containes \n
+			s, e := 0, 0
+			for e < n {
+				x := bytes.IndexByte(bs[e:n], 10)
+				if x == -1 {
+					break
+				}
+				s = e
+				e += x
+				pw.Write(bs[s:e])
+				pw.Write([]byte{13, 10})
+				e++ // skip this \n
 			}
 		}
 	}()
