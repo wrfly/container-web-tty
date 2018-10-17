@@ -39,6 +39,7 @@ type ServerConfig struct {
 	Port     int
 	GrpcPort int
 	IdleTime time.Duration
+	Share    bool
 }
 
 type Config struct {

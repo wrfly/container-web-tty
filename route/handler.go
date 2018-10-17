@@ -129,7 +129,17 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 	}
 
 	wrapper := &wsWrapper{conn}
-	tty, err := webtty.New(wrapper, containerTTY, opts...)
+	shareableTTY := types.NewShareTTY(containerTTY)
+	server.mMux.Lock()
+	server.masters[container.ID] = shareableTTY
+	server.mMux.Unlock()
+	defer func() {
+		server.mMux.Lock()
+		delete(server.masters, container.ID)
+		server.mMux.Unlock()
+	}()
+
+	tty, err := webtty.New(wrapper, shareableTTY, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create webtty: %s", err)
 	}
@@ -208,6 +218,7 @@ func (server *Server) handleListContainers(c *gin.Context) {
 		"containers": server.containerCli.List(c.Request.Context()),
 		"control":    server.options.Control,
 		"loc":        server.options.ShowLocation,
+		"share":      server.options.EnableShare,
 	}
 
 	listBuf := new(bytes.Buffer)
@@ -310,7 +321,7 @@ func (server *Server) handleLogs(c *gin.Context) {
 
 	tty, err := webtty.New(
 		&wsWrapper{conn},
-		newSlave(logsReadCloser),
+		newSlave(logsReadCloser, false),
 		[]webtty.Option{
 			webtty.WithWindowTitle(titleBuf),
 			webtty.WithPermitWrite(), // can type "enter"
@@ -327,6 +338,63 @@ func (server *Server) handleLogs(c *gin.Context) {
 		}
 	}
 }
+
+func (server *Server) handleShare(c *gin.Context) {
+	ctx := c.Request.Context()
+	cid := c.Param("id")
+	cInfo := server.containerCli.GetInfo(ctx, cid)
+
+	conn, err := server.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Errorf("upgrade ws error: %s", err)
+		return
+	}
+	defer conn.Close()
+
+	// note: must read the init message
+	_, _ = server.readInitMessage(conn)
+
+	server.mMux.RLock()
+	shareableTTY, ok := server.masters[cInfo.ID]
+	server.mMux.RUnlock()
+	if !ok {
+		log.Error("share terminal error, master not found")
+		conn.WriteMessage(websocket.CloseMessage, []byte("not found"))
+		return
+	}
+
+	titleBuf, err := server.makeTitleBuff(cInfo)
+	if err != nil {
+		e := fmt.Sprintf("failed to fill window title template: %s", err)
+		conn.WriteMessage(websocket.CloseMessage, []byte(e))
+		log.Error(e)
+		return
+	}
+
+	fork := shareableTTY.Fork(c.ClientIP())
+	defer fork.Close()
+
+	tty, err := webtty.New(
+		&wsWrapper{conn},
+		newSlave(fork, true),
+		[]webtty.Option{
+			webtty.WithWindowTitle(titleBuf),
+			webtty.WithPermitWrite()}...,
+	)
+	if err != nil {
+		e := fmt.Sprintf("failed to create webtty: %s", err)
+		conn.WriteMessage(websocket.CloseMessage, []byte(e))
+		log.Error(e)
+		return
+	}
+
+	if err := tty.Run(ctx); err != nil && err != webtty.ErrMasterClosed {
+		e := fmt.Sprintf("failed to run webtty: %s", err)
+		log.Error(e)
+	}
+}
+
+func (server *Server) terminalPage(c *gin.Context) { server.handleWSIndex(c) }
 
 func (server *Server) makeTitleBuff(c types.Container) ([]byte, error) {
 	location := "127.0.0.1"

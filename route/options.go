@@ -18,6 +18,7 @@ type Options struct {
 	Timeout         time.Duration
 	Control         config.ControlConfig
 	ShowLocation    bool
+	EnableShare     bool
 
 	// EnableBasicAuth bool `default:"false"`
 	// Once            bool `default:"false"`

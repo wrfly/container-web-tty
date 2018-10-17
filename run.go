@@ -17,10 +17,11 @@ import (
 func run(c *cli.Context, conf config.Config) {
 
 	appOptions := &route.Options{
-		Control: conf.Control,
-		Port:    fmt.Sprintf("%d", conf.Server.Port),
-		Address: conf.Server.Addr,
-		Timeout: conf.Server.IdleTime,
+		Control:     conf.Control,
+		Port:        fmt.Sprintf("%d", conf.Server.Port),
+		Address:     conf.Server.Addr,
+		Timeout:     conf.Server.IdleTime,
+		EnableShare: conf.Server.Share,
 	}
 	if len(conf.Backend.GRPC.Servers) > 0 {
 		appOptions.ShowLocation = true

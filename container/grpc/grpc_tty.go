@@ -73,6 +73,7 @@ func (enj *execWrapper) ResizeTerminal(width int, height int) (err error) {
 	}
 	return
 }
+
 func (enj *execWrapper) resize(width int, height int) error {
 	return enj.exec.Send(&pb.ExecOptions{
 		Ws: &pb.WindowSize{

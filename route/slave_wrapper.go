@@ -32,7 +32,7 @@ func (sw *slaveWrapper) Read(p []byte) (n int, err error) {
 	return sw.pr.Read(p)
 }
 
-func newSlave(rc io.ReadCloser) webtty.Slave {
+func newSlave(rc io.ReadCloser, share bool) webtty.Slave {
 	pr, pw := io.Pipe()
 	go func() {
 		defer pr.Close()
@@ -45,11 +45,16 @@ func newSlave(rc io.ReadCloser) webtty.Slave {
 			if err != nil {
 				return
 			}
-			if len(bs) <= 1 {
+			if share {
+				pw.Write(bs[:n])
 				continue
 			}
 
-			if bs[n-2] == 13 { // \r\n
+			if n <= 1 {
+				continue
+			}
+
+			if n >= 2 && bs[n-2] == 13 { // \r\n
 				pw.Write(bs[:n])
 				continue
 			}

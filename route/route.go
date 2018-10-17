@@ -9,6 +9,7 @@ import (
 	pprof "net/http/pprof"
 	"os"
 	"regexp"
+	"sync"
 	noesctmpl "text/template"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/container"
+	"github.com/wrfly/container-web-tty/types"
 )
 
 // Server provides a webtty HTTP endpoint.
@@ -28,6 +30,9 @@ type Server struct {
 	upgrader     *websocket.Upgrader
 	srv          *http.Server
 	hostname     string
+
+	masters map[string]*types.ShareTTY
+	mMux    sync.RWMutex
 }
 
 var (
@@ -81,6 +86,7 @@ func New(containerCli container.Cli, options *Options) (*Server, error) {
 	return &Server{
 		options:      options,
 		containerCli: containerCli,
+		masters:      make(map[string]*types.ShareTTY, 50),
 		hostname:     h,
 
 		upgrader: &websocket.Upgrader{
@@ -126,11 +132,17 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 
 	// exec
 	counter := newCounter(server.options.Timeout)
-	router.GET("/exec/:id/", func(c *gin.Context) { server.handleWSIndex(c) })
+	router.GET("/exec/:id/", server.terminalPage)
 	router.GET("/exec/:id/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
 
+	if server.options.EnableShare {
+		// share screen
+		router.GET("/share/:id/", server.terminalPage)
+		router.GET("/share/:id/ws", func(c *gin.Context) { server.handleShare(c) })
+	}
+
 	// logs
-	router.GET("/logs/:id/", func(c *gin.Context) { server.handleWSIndex(c) })
+	router.GET("/logs/:id/", server.terminalPage)
 	router.GET("/logs/:id/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
 
 	ctl := server.options.Control
