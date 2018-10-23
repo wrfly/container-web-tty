@@ -35,11 +35,26 @@ type ControlConfig struct {
 }
 
 type ServerConfig struct {
-	Addr     string
+	Address  string
 	Port     int
 	GrpcPort int
 	IdleTime time.Duration
-	Share    bool
+
+	Credential      string
+	EnableReconnect bool
+	ReconnectTime   int
+	MaxConnection   int
+	WSOrigin        string
+	Term            string `default:"xterm"`
+	ShowLocation    bool
+	EnableShare     bool
+	EnableAudit     bool
+
+	Control ControlConfig
+
+	// EnableBasicAuth bool `default:"false"`
+	// Once            bool `default:"false"`
+	// TitleVariables map[string]interface{}
 }
 
 type Config struct {

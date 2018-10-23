@@ -97,7 +97,7 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 	defer containerTTY.Exit()
 
 	// handle timeout
-	tout := server.options.Timeout
+	tout := server.options.IdleTime
 	if tout.Seconds() != 0 {
 		go func() {
 			timer := time.NewTimer(tout)
@@ -352,7 +352,8 @@ func (server *Server) handleShare(c *gin.Context) {
 	defer conn.Close()
 
 	// note: must read the init message
-	_, _ = server.readInitMessage(conn)
+	// although it's useless in this situation
+	server.readInitMessage(conn)
 
 	server.mMux.RLock()
 	shareableTTY, ok := server.masters[cInfo.ID]

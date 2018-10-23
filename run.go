@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/utils"
@@ -15,18 +14,11 @@ import (
 )
 
 func run(c *cli.Context, conf config.Config) {
-
-	appOptions := &route.Options{
-		Control:     conf.Control,
-		Port:        fmt.Sprintf("%d", conf.Server.Port),
-		Address:     conf.Server.Addr,
-		Timeout:     conf.Server.IdleTime,
-		EnableShare: conf.Server.Share,
-	}
+	srvOptions := conf.Server
 	if len(conf.Backend.GRPC.Servers) > 0 {
-		appOptions.ShowLocation = true
+		srvOptions.ShowLocation = true
 	}
-	if err := utils.ApplyDefaultValues(appOptions); err != nil {
+	if err := utils.ApplyDefaultValues(srvOptions); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -36,7 +28,7 @@ func run(c *cli.Context, conf config.Config) {
 	}
 	defer containerCli.Close()
 
-	srv, err := route.New(containerCli, appOptions)
+	srv, err := route.New(containerCli, srvOptions)
 	if err != nil {
 		logrus.Fatalf("Create server error: %s", err)
 	}

@@ -19,13 +19,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/webtty"
 
+	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"
 	"github.com/wrfly/container-web-tty/types"
 )
 
 // Server provides a webtty HTTP endpoint.
 type Server struct {
-	options      *Options
+	options      config.ServerConfig
 	containerCli container.Cli
 	upgrader     *websocket.Upgrader
 	srv          *http.Server
@@ -69,7 +70,7 @@ func init() {
 
 // New creates a new instance of Server.
 // Server will use the New() of the factory provided to handle each request.
-func New(containerCli container.Cli, options *Options) (*Server, error) {
+func New(containerCli container.Cli, options config.ServerConfig) (*Server, error) {
 
 	var originChekcer func(r *http.Request) bool
 	if options.WSOrigin != "" {
@@ -131,7 +132,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	}
 
 	// exec
-	counter := newCounter(server.options.Timeout)
+	counter := newCounter(server.options.IdleTime)
 	router.GET("/exec/:id/", server.terminalPage)
 	router.GET("/exec/:id/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
 
@@ -171,7 +172,8 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	}
 	rootMux.Handle("/", router)
 
-	hostPort := net.JoinHostPort(server.options.Address, server.options.Port)
+	hostPort := net.JoinHostPort(server.options.Address,
+		fmt.Sprint(server.options.Port))
 	srv := &http.Server{
 		Addr:    hostPort,
 		Handler: rootMux,

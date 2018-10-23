@@ -22,7 +22,7 @@ func main() {
 			EnvVars:     envVars("address"),
 			Usage:       "server binding address",
 			Value:       "0.0.0.0",
-			Destination: &conf.Server.Addr,
+			Destination: &conf.Server.Address,
 		},
 		&cli.IntFlag{
 			Name:        "port",
@@ -130,7 +130,7 @@ func main() {
 			Aliases:     []string{"share"},
 			EnvVars:     envVars("share"),
 			Usage:       "enable share the container's terminal",
-			Destination: &conf.Server.Share,
+			Destination: &conf.Server.EnableShare,
 		},
 		&cli.BoolFlag{
 			Name:    "help",
