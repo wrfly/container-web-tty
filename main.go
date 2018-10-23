@@ -12,6 +12,7 @@ import (
 	"gopkg.in/urfave/cli.v2"
 
 	"github.com/wrfly/container-web-tty/config"
+	"github.com/wrfly/container-web-tty/util"
 )
 
 func main() {
@@ -19,7 +20,7 @@ func main() {
 	appFlags := []cli.Flag{
 		&cli.StringFlag{
 			Name:        "addr",
-			EnvVars:     envVars("address"),
+			EnvVars:     util.EnvVars("address"),
 			Usage:       "server binding address",
 			Value:       "0.0.0.0",
 			Destination: &conf.Server.Address,
@@ -27,7 +28,7 @@ func main() {
 		&cli.IntFlag{
 			Name:        "port",
 			Aliases:     []string{"p"},
-			EnvVars:     envVars("port"),
+			EnvVars:     util.EnvVars("port"),
 			Usage:       "HTTP server port, -1 for disable the HTTP server",
 			Value:       8080,
 			Destination: &conf.Server.Port,
@@ -36,99 +37,99 @@ func main() {
 			Name:        "debug",
 			Aliases:     []string{"d"},
 			Value:       false,
-			EnvVars:     envVars("debug"),
+			EnvVars:     util.EnvVars("debug"),
 			Usage:       "debug mode (log-level=debug enable pprof)",
 			Destination: &conf.Debug,
 		},
 		&cli.StringFlag{
 			Name:        "backend",
 			Aliases:     []string{"b"},
-			EnvVars:     envVars("backend"),
+			EnvVars:     util.EnvVars("backend"),
 			Value:       "docker",
 			Usage:       "backend type, 'docker' or 'kube' or 'grpc'(remote)",
 			Destination: &conf.Backend.Type,
 		},
 		&cli.StringFlag{
 			Name:        "docker-host",
-			EnvVars:     append(envVars("docker-host"), "DOCKER_HOST"),
+			EnvVars:     append(util.EnvVars("docker-host"), "DOCKER_HOST"),
 			Value:       "/var/run/docker.sock",
 			Usage:       "docker host path",
 			Destination: &conf.Backend.Docker.DockerHost,
 		},
 		&cli.StringFlag{
 			Name:        "docker-ps",
-			EnvVars:     envVars("docker-ps"),
+			EnvVars:     util.EnvVars("docker-ps"),
 			Usage:       "docker ps options",
 			Destination: &conf.Backend.Docker.PsOptions,
 		},
 		&cli.StringFlag{
 			Name:        "kube-config",
-			EnvVars:     envVars("kube-config"),
-			Value:       kubeConfigPath(),
+			EnvVars:     util.EnvVars("kube-config"),
+			Value:       util.KubeConfigPath(),
 			Usage:       "kube config path",
 			Destination: &conf.Backend.Kube.ConfigPath,
 		},
 		&cli.StringFlag{
 			Name:    "extra-args",
-			EnvVars: envVars("extra-args"),
+			EnvVars: util.EnvVars("extra-args"),
 			Usage:   "pass extra args to the backend",
 		},
 		&cli.IntFlag{
 			Name:        "grpc-port",
-			EnvVars:     envVars("grpc-port"),
+			EnvVars:     util.EnvVars("grpc-port"),
 			Usage:       "grpc server port, -1 for disable the grpc server",
 			Value:       -1,
 			Destination: &conf.Server.GrpcPort,
 		},
 		&cli.StringFlag{
 			Name:    "grpc-servers",
-			EnvVars: envVars("grpc-servers"),
+			EnvVars: util.EnvVars("grpc-servers"),
 			Usage:   "upstream servers, for proxy mode(grpc address and port), use comma for split",
 		},
 		&cli.StringFlag{
 			Name:        "grpc-auth",
-			EnvVars:     envVars("grpc-auth"),
+			EnvVars:     util.EnvVars("grpc-auth"),
 			Usage:       "grpc auth token",
 			Value:       "password",
 			Destination: &conf.Backend.GRPC.Auth,
 		},
 		&cli.StringFlag{
 			Name:    "idle-time",
-			EnvVars: envVars("idle-time"),
+			EnvVars: util.EnvVars("idle-time"),
 			Usage:   "time out of an idle connection",
 		},
 		&cli.BoolFlag{
 			Name:        "control-all",
 			Aliases:     []string{"ctl-a"},
-			EnvVars:     envVars("ctl-a"),
+			EnvVars:     util.EnvVars("ctl-a"),
 			Usage:       "enable container control",
 			Destination: &conf.Control.All,
 		},
 		&cli.BoolFlag{
 			Name:        "control-start",
 			Aliases:     []string{"ctl-s"},
-			EnvVars:     envVars("ctl-s"),
+			EnvVars:     util.EnvVars("ctl-s"),
 			Usage:       "enable container start  ",
 			Destination: &conf.Control.Start,
 		},
 		&cli.BoolFlag{
 			Name:        "control-stop",
 			Aliases:     []string{"ctl-t"},
-			EnvVars:     envVars("ctl-t"),
+			EnvVars:     util.EnvVars("ctl-t"),
 			Usage:       "enable container stop   ",
 			Destination: &conf.Control.Stop,
 		},
 		&cli.BoolFlag{
 			Name:        "control-restart",
 			Aliases:     []string{"ctl-r"},
-			EnvVars:     envVars("ctl-r"),
+			EnvVars:     util.EnvVars("ctl-r"),
 			Usage:       "enable container restart",
 			Destination: &conf.Control.Restart,
 		},
 		&cli.BoolFlag{
 			Name:        "enable-share",
 			Aliases:     []string{"share"},
-			EnvVars:     envVars("share"),
+			EnvVars:     util.EnvVars("share"),
 			Usage:       "enable share the container's terminal",
 			Destination: &conf.Server.EnableShare,
 		},

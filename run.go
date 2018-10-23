@@ -11,6 +11,7 @@ import (
 	"github.com/wrfly/container-web-tty/container"
 	"github.com/wrfly/container-web-tty/proxy"
 	"github.com/wrfly/container-web-tty/route"
+	"github.com/wrfly/container-web-tty/util"
 )
 
 func run(c *cli.Context, conf config.Config) {
@@ -50,7 +51,7 @@ func run(c *cli.Context, conf config.Config) {
 		}()
 	}
 
-	err = waitSignals(errs, cancel, gCancel)
+	err = util.WaitSignals(errs, cancel, gCancel)
 	if err != nil && err != context.Canceled {
 		logrus.Fatalf("Server exist with error: %s", err)
 	}
