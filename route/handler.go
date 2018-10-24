@@ -15,6 +15,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/webtty"
 
+	"github.com/wrfly/container-web-tty/audit"
 	"github.com/wrfly/container-web-tty/types"
 )
 
@@ -138,6 +139,16 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 		delete(server.masters, container.ID)
 		server.mMux.Unlock()
 	}()
+
+	if server.options.EnableAudit {
+		cIP := conn.RemoteAddr().String()
+		r := shareableTTY.Fork(cIP)
+		go audit.LogTo(ctx, r, audit.LogOpts{
+			Dir:         server.options.AuditLogDir,
+			ContainerID: container.ID,
+			ClientIP:    cIP,
+		})
+	}
 
 	tty, err := webtty.New(wrapper, shareableTTY, opts...)
 	if err != nil {

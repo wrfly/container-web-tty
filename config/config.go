@@ -48,7 +48,10 @@ type ServerConfig struct {
 	Term            string `default:"xterm"`
 	ShowLocation    bool
 	EnableShare     bool
-	EnableAudit     bool
+
+	// audit
+	EnableAudit bool
+	AuditLogDir string `default:"log"`
 
 	Control ControlConfig
 

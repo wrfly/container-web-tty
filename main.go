@@ -134,6 +134,20 @@ func main() {
 			Destination: &conf.Server.EnableShare,
 		},
 		&cli.BoolFlag{
+			Name:        "enable-audit",
+			Aliases:     []string{"audit"},
+			EnvVars:     util.EnvVars("audit"),
+			Usage:       "enable audit the container outputs",
+			Destination: &conf.Server.EnableAudit,
+		},
+		&cli.StringFlag{
+			Name:        "audit-dir",
+			EnvVars:     util.EnvVars("audit-dir"),
+			Value:       "log",
+			Usage:       "container audit log dir path",
+			Destination: &conf.Server.AuditLogDir,
+		},
+		&cli.BoolFlag{
 			Name:    "help",
 			Aliases: []string{"h"},
 			Usage:   "show help",

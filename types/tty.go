@@ -25,7 +25,9 @@ type ShareTTY struct {
 
 func (t *ShareTTY) Read(p []byte) (n int, err error) {
 	n, e := t.TTY.Read(p)
-	t.writeShares(p[:n])
+	bs := make([]byte, n)
+	copy(bs, p[:n])
+	go t.writeShares(bs)
 	return n, e
 }
 
