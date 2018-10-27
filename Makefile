@@ -74,7 +74,7 @@ proto:
 
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
-asset: clear static/js/gotty-bundle.js static/index.html static/favicon.png static/css/index.css static/css/xterm.css static/css/xterm_customize.css
+asset: clear static/js static/css static/html
 	go-bindata -nometadata -prefix static -pkg route -ignore=\\.gitkeep -o route/asset.go static/...
 	gofmt -w route/asset.go
 
@@ -84,38 +84,25 @@ clear:
 static:
 	mkdir -p static
 
-static/index.html: static resources/index.html resources/list.html
-	cp resources/index.html static/index.html
-	cp resources/list.html static/list.html
-
-static/favicon.png: static resources/favicon.png
+static/html: static
+	cp resources/*.html static/
 	cp resources/favicon.png static/favicon.png
 
-static/js: static
+static/js: static js/dist/gotty-bundle.js
 	mkdir -p static/js
-
-static/js/gotty-bundle.js: static/js js/dist/gotty-bundle.js
+	cp resources/*.js static/js/
 	cp js/dist/gotty-bundle.js static/js/gotty-bundle.js
-	cp resources/control.js static/js/control.js
 
-static/css: static
+static/css: static js/node_modules/xterm/dist/xterm.css
 	mkdir -p static/css
-
-static/css/index.css: static/css resources/index.css resources/list.css
-	cp resources/index.css static/css/index.css
-	cp resources/list.css static/css/list.css
-
-static/css/xterm_customize.css: static/css resources/xterm_customize.css
-	cp resources/xterm_customize.css static/css/xterm_customize.css
-
-static/css/xterm.css: static/css js/node_modules/xterm/dist/xterm.css
+	cp resources/*.css static/css
 	cp js/node_modules/xterm/dist/xterm.css static/css/xterm.css
 
 js/node_modules/xterm/dist/xterm.css:
 	cd js && \
 	npm install
 
-js/dist/gotty-bundle.js: js/src/* js/node_modules/webpack
+js/dist/gotty-bundle.js: js/node_modules/webpack
 	cd js && \
 	`npm bin`/webpack
 
