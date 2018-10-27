@@ -1,4 +1,4 @@
-{{- $ctl := .control -}} {{- $showLocation := .loc -}}
+{{- $ctl := .control -}} {{- $showLocation := .loc -}} {{- $share := .share -}}
 <!doctype html>
 <html>
 
@@ -6,6 +6,7 @@
   <title>{{ .title }}</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="stylesheet" href="/css/list.css" />
+  <script src="/js/clipboard.min.js"></script>
 </head>
 
 <body>
@@ -36,13 +37,21 @@
         <tbody>
           {{ range .containers }}
           <tr class="row100 body">
-            <td class="cell100 column1">
-              <a href="/exec/{{ printf "%.12s" .ID }}" target="_blank" title="exec into container">{{ printf "%.12s" .ID }}</a>
+            <td class="cell100 column1" title="exec into container">
+              <a href="/exec/{{ printf "%.12s" .ID }}" target="_blank">{{ printf "%.12s" .ID }}</a>
             </td>
-            <td class="cell100 column2" title="{{ .Image }}">{{ printf .Image }}</td>
+            {{- if $share -}}
+            <td class="cell100 column2" title="{{ .Image }} | share tty">
+              <a href="#" class="copy" data-clipboard-text="/share/{{ printf "%.12s" .ID }}">{{ printf .Image }}</a>
+            </td>
+            {{- else -}}
+            <td class="cell100 column2" title="{{ .Image }}">
+              {{ printf .Image }}
+            </td>
+            {{- end -}}
             <td class="cell100 column3" title="{{ .Command }}">{{ printf .Command }}</td>
             <td class="cell100 column4" title="{{ .Name }}">
-                <a href="/logs/{{ printf "%.12s" .ID }}?follow=1&tail=10" target="_blank" title="get logs">{{ printf .Name }}</a>
+              <a href="/logs/{{ printf "%.12s" .ID }}?follow=1&tail=10" target="_blank" title="get logs">{{ printf .Name }}</a>
             </td>
             <td class="cell100 column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
             {{- if $showLocation -}}
@@ -65,6 +74,21 @@
   </div>
 
   <script src="/js/control.js"></script>
+  <script>
+    var clipboard = new ClipboardJS('.copy', {
+      text: function (trigger) {
+        return trigger.baseURI.replace('/#','') + trigger.getAttribute('data-clipboard-text');
+      }
+    });
+    clipboard.on('success', function (e) {
+      console.info('Action:', e.action);
+      console.info('Text:', e.text);
+      console.info('Trigger:', e.trigger);
+
+      e.clearSelection();
+      alert("share link ("+e.text+") copied!");
+    });
+  </script>
 </body>
 
 </html>

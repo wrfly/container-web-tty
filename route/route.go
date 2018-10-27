@@ -9,6 +9,7 @@ import (
 	pprof "net/http/pprof"
 	"os"
 	"regexp"
+	"sync"
 	noesctmpl "text/template"
 	"time"
 
@@ -18,16 +19,21 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/webtty"
 
+	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"
+	"github.com/wrfly/container-web-tty/types"
 )
 
 // Server provides a webtty HTTP endpoint.
 type Server struct {
-	options      *Options
+	options      config.ServerConfig
 	containerCli container.Cli
 	upgrader     *websocket.Upgrader
 	srv          *http.Server
 	hostname     string
+
+	masters map[string]*types.ShareTTY
+	mMux    sync.RWMutex
 }
 
 var (
@@ -64,7 +70,7 @@ func init() {
 
 // New creates a new instance of Server.
 // Server will use the New() of the factory provided to handle each request.
-func New(containerCli container.Cli, options *Options) (*Server, error) {
+func New(containerCli container.Cli, options config.ServerConfig) (*Server, error) {
 
 	var originChekcer func(r *http.Request) bool
 	if options.WSOrigin != "" {
@@ -81,6 +87,7 @@ func New(containerCli container.Cli, options *Options) (*Server, error) {
 	return &Server{
 		options:      options,
 		containerCli: containerCli,
+		masters:      make(map[string]*types.ShareTTY, 50),
 		hostname:     h,
 
 		upgrader: &websocket.Upgrader{
@@ -125,12 +132,18 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	}
 
 	// exec
-	counter := newCounter(server.options.Timeout)
-	router.GET("/exec/:id/", func(c *gin.Context) { server.handleWSIndex(c) })
+	counter := newCounter(server.options.IdleTime)
+	router.GET("/exec/:id/", server.terminalPage)
 	router.GET("/exec/:id/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
 
+	if server.options.EnableShare {
+		// share screen
+		router.GET("/share/:id/", server.terminalPage)
+		router.GET("/share/:id/ws", func(c *gin.Context) { server.handleShare(c) })
+	}
+
 	// logs
-	router.GET("/logs/:id/", func(c *gin.Context) { server.handleWSIndex(c) })
+	router.GET("/logs/:id/", server.terminalPage)
 	router.GET("/logs/:id/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
 
 	ctl := server.options.Control
@@ -159,7 +172,8 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	}
 	rootMux.Handle("/", router)
 
-	hostPort := net.JoinHostPort(server.options.Address, server.options.Port)
+	hostPort := net.JoinHostPort(server.options.Address,
+		fmt.Sprint(server.options.Port))
 	srv := &http.Server{
 		Addr:    hostPort,
 		Handler: rootMux,

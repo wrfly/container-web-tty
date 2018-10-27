@@ -105,9 +105,37 @@ Now you will see all the containers of all the servers via *<http://localhost:80
 - [x] proxy mode (client -> server's containers)
 - [x] auth(only in proxy mode)
 - [x] TTY timeout (idle timeout)
-- [ ] history audit
+- [x] history audit (just `cat` the history logs after enable this feature)
+- [x] real time sharing (like screen sharing)
 - [x] container logs (just click the container name)
 - [x] exec arguments (append an extra "?cmd=xxx" argument to exec URL)
+
+### Audit exec history and container outputs
+
+```bash
+docker run --rm -ti --name web-tty \
+    -p 8080:8080 \
+    -e WEB_TTY_AUDIT=true \
+    -v `pwd`/container-logs:/log \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wrfly/container-web-tty
+```
+
+After you exec some commands, you will see the inputs and outputs under the
+`container-logs` directory, you can use `cat` or `tail -f` to see the changes.
+
+### Real-time sharing
+
+```bash
+docker run --rm -ti --name web-tty \
+    -p 8080:8080 \
+    -e WEB_TTY_SHARE=true \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wrfly/container-web-tty
+```
+
+By enabling this feature, you can share the container's inputs and outputs
+with others via the share link (click the container's image to get the link).
 
 ## Show-off
 

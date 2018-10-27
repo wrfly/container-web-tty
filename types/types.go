@@ -1,7 +1,5 @@
 package types
 
-import "github.com/yudai/gotty/webtty"
-
 // Container instance
 //proteus:generate
 type Container struct {
@@ -32,14 +30,6 @@ type ContainerActionMessage struct {
 	Error   string `json:"err"`
 	Code    int    `json:"code"`
 	Message string `json:"msg"`
-}
-
-// TTY is webtty.Slave with some additional methods.
-type TTY interface {
-	webtty.Slave
-	Exit() error
-	// ActiveChan is to notify that the connection is active
-	ActiveChan() <-chan struct{}
 }
 
 type InitMessage struct {

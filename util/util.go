@@ -1,7 +1,14 @@
 package util
 
 import (
+	"context"
+	"fmt"
 	"os"
+	"os/signal"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"syscall"
 
 	pb "github.com/wrfly/container-web-tty/proxy/grpc"
 	"github.com/wrfly/container-web-tty/types"
@@ -52,4 +59,55 @@ func HomeDIR() string {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
+}
+
+func DockerCliPath() string {
+	if runtime.GOOS == `darwin` {
+		return "/usr/local/bin/docker"
+	}
+	return "/usr/bin/docker"
+}
+
+func KubeConfigPath() string {
+	home := HomeDIR()
+	if home == "" {
+		return ""
+	}
+	return filepath.Join(home, ".kube", "config")
+}
+
+func EnvVars(e string) []string {
+	e = strings.ToUpper(e)
+	return []string{"WEB_TTY_" + strings.Replace(e, "-", "_", -1)}
+}
+
+func WaitSignals(errs chan error, cancel context.CancelFunc, gracefullCancel context.CancelFunc) error {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(
+		sigChan,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+
+	select {
+	case err := <-errs:
+		return err
+
+	case s := <-sigChan:
+		switch s {
+		case syscall.SIGINT:
+			gracefullCancel()
+			select {
+			case err := <-errs:
+				return err
+			case <-sigChan:
+				fmt.Println("Force closing...")
+				cancel()
+				return nil
+			}
+		default:
+			cancel()
+			return nil
+		}
+	}
 }

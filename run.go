@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yudai/gotty/utils"
@@ -12,20 +11,15 @@ import (
 	"github.com/wrfly/container-web-tty/container"
 	"github.com/wrfly/container-web-tty/proxy"
 	"github.com/wrfly/container-web-tty/route"
+	"github.com/wrfly/container-web-tty/util"
 )
 
 func run(c *cli.Context, conf config.Config) {
-
-	appOptions := &route.Options{
-		Control: conf.Control,
-		Port:    fmt.Sprintf("%d", conf.Server.Port),
-		Address: conf.Server.Addr,
-		Timeout: conf.Server.IdleTime,
-	}
+	srvOptions := conf.Server
 	if len(conf.Backend.GRPC.Servers) > 0 {
-		appOptions.ShowLocation = true
+		srvOptions.ShowLocation = true
 	}
-	if err := utils.ApplyDefaultValues(appOptions); err != nil {
+	if err := utils.ApplyDefaultValues(srvOptions); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -35,7 +29,7 @@ func run(c *cli.Context, conf config.Config) {
 	}
 	defer containerCli.Close()
 
-	srv, err := route.New(containerCli, appOptions)
+	srv, err := route.New(containerCli, srvOptions)
 	if err != nil {
 		logrus.Fatalf("Create server error: %s", err)
 	}
@@ -57,7 +51,7 @@ func run(c *cli.Context, conf config.Config) {
 		}()
 	}
 
-	err = waitSignals(errs, cancel, gCancel)
+	err = util.WaitSignals(errs, cancel, gCancel)
 	if err != nil && err != context.Canceled {
 		logrus.Fatalf("Server exist with error: %s", err)
 	}
