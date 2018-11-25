@@ -14,7 +14,7 @@ import (
 
 // GrpcServer is the grpc server
 type GrpcServer interface {
-	Run(ctx context.Context) error
+	Run(ctx context.Context, gCtx context.Context) error
 }
 
 type grpcServer struct {
@@ -34,7 +34,7 @@ func New(auth string, port int, cli container.Cli) GrpcServer {
 }
 
 // Run the server
-func (gsrv *grpcServer) Run(ctx context.Context) error {
+func (gsrv *grpcServer) Run(ctx context.Context, gCtx context.Context) error {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", gsrv.port))
 	if err != nil {
 		return err
@@ -55,7 +55,18 @@ func (gsrv *grpcServer) Run(ctx context.Context) error {
 	}()
 
 	// shutdown with cancel
-	<-ctx.Done()
-	srv.GracefulStop()
-	return listener.Close()
+	<-gCtx.Done()
+
+	gStopped := make(chan struct{})
+	go func() {
+		srv.GracefulStop()
+		close(gStopped)
+	}()
+
+	select {
+	case <-ctx.Done():
+		srv.Stop()
+	case <-gStopped:
+	}
+	return nil
 }

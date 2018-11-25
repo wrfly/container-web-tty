@@ -139,6 +139,8 @@ func (gCli GrpcCli) GetInfo(ctx context.Context, cid string) types.Container {
 
 func (gCli GrpcCli) List(ctx context.Context) []types.Container {
 	allContainers := make([]types.Container, 0)
+	containerIDMap := make(map[string]bool, 0)
+
 	for addr, cli := range gCli.clients {
 		if !cli.alive() {
 			logrus.Warnf("remote server %s is not ready: %s", addr, cli.state())
@@ -149,12 +151,14 @@ func (gCli GrpcCli) List(ctx context.Context) []types.Container {
 			logrus.Errorf("get container info error: %s", err)
 			continue
 		}
-		containers := make([]types.Container, len(cs.Cs))
-		for i, c := range cs.Cs {
+		for _, c := range cs.Cs {
 			c.LocServer = addr
-			containers[i] = util.ConvertPbContainer(c)
+			if !containerIDMap[c.Id] {
+				allContainers = append(allContainers,
+					util.ConvertPbContainer(c))
+				containerIDMap[c.Id] = true
+			}
 		}
-		allContainers = append(allContainers, containers...)
 	}
 
 	gCli.containers.Set(allContainers)
