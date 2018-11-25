@@ -35,7 +35,7 @@ func run(c *cli.Context, conf config.Config) {
 	defer containerCli.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	gCtx, gCancel := context.WithCancel(context.Background())
+	gCtx, gCancel := context.WithCancel(ctx)
 	errs := make(chan error, 2)
 
 	// run HTTP server if port > 0
@@ -54,12 +54,13 @@ func run(c *cli.Context, conf config.Config) {
 		go func() {
 			grpcServer := proxy.New(conf.Backend.GRPC.Auth,
 				srvOptions.GrpcPort, containerCli)
-			errs <- grpcServer.Run(ctx)
+			errs <- grpcServer.Run(ctx, gCtx)
 		}()
 	}
 
 	err = util.WaitSignals(errs, cancel, gCancel)
 	if err != nil && err != context.Canceled {
-		logrus.Fatalf("Server exit with error: %s", err)
+		logrus.Fatalf("Server closed with error: %s", err)
 	}
+	logrus.Info("Server closed")
 }
