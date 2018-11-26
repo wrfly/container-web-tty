@@ -150,7 +150,7 @@ func main() {
 		&cli.StringFlag{
 			Name:        "audit-dir",
 			EnvVars:     util.EnvVars("audit-dir"),
-			Value:       "log",
+			Value:       "audit",
 			Usage:       "container audit log dir path",
 			Destination: &conf.Server.AuditLogDir,
 		},
