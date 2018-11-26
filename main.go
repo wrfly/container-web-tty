@@ -94,6 +94,13 @@ func main() {
 			Destination: &conf.Backend.GRPC.Auth,
 		},
 		&cli.StringFlag{
+			Name:        "grpc-proxy",
+			EnvVars:     util.EnvVars("grpc-proxy"),
+			Usage:       "grpc proxy address, in the format of http://127.0.0.1:8080 or socks5://127.0.0.1:1080",
+			Value:       "",
+			Destination: &conf.Backend.GRPC.Proxy,
+		},
+		&cli.StringFlag{
 			Name:    "idle-time",
 			EnvVars: util.EnvVars("idle-time"),
 			Usage:   "time out of an idle connection",

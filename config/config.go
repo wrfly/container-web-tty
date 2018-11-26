@@ -16,6 +16,7 @@ type KubeConfig struct {
 type GRPCConfig struct {
 	Servers []string
 	Auth    string
+	Proxy   string // http or socks5
 }
 
 type BackendConfig struct {

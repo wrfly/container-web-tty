@@ -1,4 +1,4 @@
-package remote
+package grpc
 
 import (
 	"context"
@@ -64,16 +64,28 @@ func NewCli(conf config.GRPCConfig) (*GrpcCli, error) {
 	}
 
 	var opts []grpc.DialOption
-	// if *tls {
-	// 	if *caFile == "" {
-	// 		*caFile = testdata.Path("ca.pem")
-	// 	}
-	// 	creds, err := credentials.NewClientTLSFromFile(*caFile, *serverHostOverride)
-	// 	if err != nil {
-	// 		log.Fatalf("Failed to create TLS credentials %v", err)
-	// 	}
-	// 	opts = append(opts, grpc.WithTransportCredentials(creds))
-	// }
+
+	// add a proxy
+	if conf.Proxy != "" {
+		logrus.Infof("setting grpc proxy with %s", conf.Proxy)
+		dialerOption, err := newDialOption(conf.Proxy)
+		if err != nil {
+			return nil, fmt.Errorf("create proxy dialer error: %s", err)
+		}
+		opts = append(opts, dialerOption)
+	}
+	/*
+		if *tls {
+			if *caFile == "" {
+				*caFile = testdata.Path("ca.pem")
+			}
+			creds, err := credentials.NewClientTLSFromFile(*caFile, *serverHostOverride)
+			if err != nil {
+				log.Fatalf("Failed to create TLS credentials %v", err)
+			}
+			opts = append(opts, grpc.WithTransportCredentials(creds))
+		}
+	*/
 	opts = append(opts, grpc.WithInsecure())
 	for _, serverAddr := range conf.Servers {
 		conn, err := grpc.Dial(serverAddr, opts...)
