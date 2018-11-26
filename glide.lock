@@ -1,5 +1,5 @@
 hash: 353307f035cc5d613aa4c15a11e57ab76c688e08bf58867cb47af27f555259d4
-updated: 2018-08-02T18:46:32.078104664+08:00
+updated: 2018-11-27T01:49:04.517402058+08:00
 imports:
 - name: github.com/codegangsta/cli
   version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
@@ -47,6 +47,8 @@ imports:
   - spdy
 - name: github.com/elazarl/go-bindata-assetfs
   version: 30f82fa23fd844bd5bb1e5f216db87fd77b5eb43
+- name: github.com/elazarl/goproxy
+  version: 2ce16c963a8ac5bd6af851d4877e38701346983f
 - name: github.com/fatih/structs
   version: a9f7daa9c2729e97450c2da2feda19130a367d8f
 - name: github.com/ghodss/yaml
@@ -54,9 +56,10 @@ imports:
 - name: github.com/gin-contrib/sse
   version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
 - name: github.com/gin-gonic/gin
-  version: d459835d2b077e44f7c9b453505ee29881d5d12d
+  version: b869fe1415e4b9eb52f247441830d502aece2d4d
   subpackages:
   - binding
+  - json
   - render
 - name: github.com/gogo/protobuf
   version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
@@ -82,7 +85,7 @@ imports:
   - compiler
   - extensions
 - name: github.com/gorilla/websocket
-  version: ea4d1f681babbce9545c9c5f3d5194a789c89f5b
+  version: 66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d
 - name: github.com/hashicorp/go-multierror
   version: 56912fb08d85084aa318edcf2bba735b97cf35c5
 - name: github.com/howeyc/gopass
@@ -91,6 +94,8 @@ imports:
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/json-iterator/go
   version: 13f86432b882000a51c6e610c620974462691a97
+- name: github.com/konsorten/go-windows-terminal-sequences
+  version: 5c8c8bd35d3832f5d134ae1e1e375b69a4d25242
 - name: github.com/mattn/go-isatty
   version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
 - name: github.com/Microsoft/go-winio
@@ -100,7 +105,7 @@ imports:
 - name: github.com/pkg/errors
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/sirupsen/logrus
-  version: 3e01752db0189b9157070a0e1668a620f9a85da2
+  version: bcd833dfe83d3cebad139e4a29ed79cb2318bf95
   repo: https://github.com:/sirupsen/logrus.git
   vcs: git
 - name: github.com/Sirupsen/logrus
