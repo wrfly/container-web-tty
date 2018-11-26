@@ -112,3 +112,9 @@ js/node_modules/webpack:
 
 tools:
 	go get github.com/jteeuwen/go-bindata/...
+
+genOptions:
+	@$(BIN)/$(NAME) -h | \
+		grep -A 100 OPTION | \
+		sed "s/(default.*//" | \
+		sed "s/\\[.*//g"
