@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/wrfly/container-web-tty/container"
-	pbrpc "github.com/wrfly/container-web-tty/proxy/grpc"
+	pbrpc "github.com/wrfly/container-web-tty/proxy/pb"
 )
 
 // GrpcServer is the grpc server

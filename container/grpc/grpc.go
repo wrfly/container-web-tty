@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	"github.com/wrfly/container-web-tty/config"
-	pb "github.com/wrfly/container-web-tty/proxy/grpc"
+	pb "github.com/wrfly/container-web-tty/proxy/pb"
 	"github.com/wrfly/container-web-tty/types"
 	"github.com/wrfly/container-web-tty/util"
 )
