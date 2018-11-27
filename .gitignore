@@ -19,5 +19,5 @@ vendor/
 static
 js/node_modules/*
 
-# log file
-log/
+# audit file
+audit/

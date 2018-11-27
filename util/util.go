@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	pb "github.com/wrfly/container-web-tty/proxy/grpc"
+	pb "github.com/wrfly/container-web-tty/proxy/pb"
 	"github.com/wrfly/container-web-tty/types"
 )
 

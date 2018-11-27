@@ -65,12 +65,12 @@ push-tag:
 
 .PHONY: api
 api:
-	protoc -I proxy/grpc proxy/grpc/api.proto --go_out=plugins=grpc:proxy/grpc/
+	protoc -I proxy/pb proxy/pb/api.proto --go_out=plugins=grpc:proxy/pb/
 
 .PHONY: proto
 proto:
 	proteus proto -f /tmp -p github.com/wrfly/container-web-tty/types --verbose
-	cp /tmp/github.com/wrfly/container-web-tty/types/generated.proto proxy/grpc
+	cp /tmp/github.com/wrfly/container-web-tty/types/generated.proto proxy/pb
 
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
@@ -112,3 +112,9 @@ js/node_modules/webpack:
 
 tools:
 	go get github.com/jteeuwen/go-bindata/...
+
+genOptions:
+	@$(BIN)/$(NAME) -h | \
+		grep -A 100 OPTION | \
+		sed "s/(default.*//" | \
+		sed "s/\\[.*//g"

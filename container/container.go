@@ -7,7 +7,7 @@ import (
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container/docker"
-	grpc "github.com/wrfly/container-web-tty/container/grpc"
+	"github.com/wrfly/container-web-tty/container/grpc"
 	"github.com/wrfly/container-web-tty/container/kube"
 	"github.com/wrfly/container-web-tty/types"
 )

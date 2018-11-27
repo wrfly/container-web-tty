@@ -107,6 +107,7 @@ docker run --rm -ti --name web-tty \
 - [x] 实时共享输入输出
 - [x] 容器日志
 - [x] 自定义执行命令
+- [x] 通过代理连接gRPC服务器
 
 ## 效果展示
 

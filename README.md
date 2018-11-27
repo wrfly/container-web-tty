@@ -107,8 +107,9 @@ Now you will see all the containers of all the servers via *<http://localhost:80
 - [x] TTY timeout (idle timeout)
 - [x] history audit (just `cat` the history logs after enable this feature)
 - [x] real time sharing (like screen sharing)
-- [x] container logs (just click the container name)
-- [x] exec arguments (append an extra "?cmd=xxx" argument to exec URL)
+- [x] container logs (click the container name)
+- [x] exec arguments (append an extra "?cmd=xxx" argument in URL)
+- [x] connect to gRPC servers via HTTP/Socks5 proxy
 
 ### Audit exec history and container outputs
 
@@ -116,13 +117,13 @@ Now you will see all the containers of all the servers via *<http://localhost:80
 docker run --rm -ti --name web-tty \
     -p 8080:8080 \
     -e WEB_TTY_AUDIT=true \
-    -v `pwd`/container-logs:/log \
+    -v `pwd`/container-audit:/audit \
     -v /var/run/docker.sock:/var/run/docker.sock \
     wrfly/container-web-tty
 ```
 
 After you exec some commands, you will see the inputs and outputs under the
-`container-logs` directory, you can use `cat` or `tail -f` to see the changes.
+`container-audit` directory, you can use `cat` or `tail -f` to see the changes.
 
 ### Real-time sharing
 
@@ -136,6 +137,34 @@ docker run --rm -ti --name web-tty \
 
 By enabling this feature, you can share the container's inputs and outputs
 with others via the share link (click the container's image to get the link).
+
+## Options
+
+```txt
+GLOBAL OPTIONS:
+   --addr value                server binding address
+   --audit-dir value           container audit log dir path
+   --backend value, -b value   backend type, 'docker' or 'kube' or 'grpc'(remote)
+   --control-all, --ctl-a      enable container control
+   --control-restart, --ctl-r  enable container restart
+   --control-start, --ctl-s    enable container start
+   --control-stop, --ctl-t     enable container stop
+   --debug, -d                 debug mode (log-level=debug enable pprof)
+   --docker-host value         docker host path
+   --docker-ps value           docker ps options
+   --enable-audit, --audit     enable audit the container outputs
+   --enable-share, --share     enable share the container's terminal
+   --extra-args value          pass extra args to the backend
+   --grpc-auth value           grpc auth token
+   --grpc-port value           grpc server port, -1 for disable the grpc server
+   --grpc-proxy value          grpc proxy address, in the format of http://127.0.0.1:8080 or socks5://127.0.0.1:1080
+   --grpc-servers value        upstream servers, for proxy mode(grpc address and port), use comma for split
+   --help, -h                  show help
+   --idle-time value           time out of an idle connection
+   --kube-config value         kube config path
+   --port value, -p value      HTTP server port, -1 for disable the HTTP server
+   --version, -v               print the version
+```
 
 ## Show-off
 
