@@ -244,9 +244,9 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 			fmt.Errorf("cannot exec into a container in a completed pod; current phase is %s", pod.Status.Phase)
 	}
 
-	cmd := c.Shell
-	if c.ExecCMD != "" {
-		cmd = c.ExecCMD
+	cmd := fmt.Sprintf("%s -l", c.Shell)
+	if opts := c.Exec; opts.Cmd != "" {
+		cmd = fmt.Sprintf("%s -lc \"%s\"", c.Shell, opts.Cmd)
 		logrus.Debugf("exec with cmd: %s", cmd)
 	}
 
@@ -261,6 +261,7 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 		Param("stdin", "true").
 		Param("stdout", "true").
 		Param("tty", "true")
+		// TODO: k8s exec user & env
 
 	enj := newInjector(ctx)
 

@@ -37,9 +37,12 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 
 		defer func() {
 			num := counter.done()
+			if strings.Contains(closeReason, "error") {
+				log.Errorf("Connection closed by %s: %s, connections: %d",
+					closeReason, r.RemoteAddr, num)
+			}
 			log.Infof("Connection closed by %s: %s, connections: %d",
-				closeReason, r.RemoteAddr, num,
-			)
+				closeReason, r.RemoteAddr, num)
 		}()
 
 		if int64(server.options.MaxConnection) != 0 {
@@ -88,7 +91,12 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 	if q, err := parseQuery(strings.TrimSpace(arguments)); err != nil {
 		return err
 	} else {
-		container.ExecCMD = q.Get("cmd")
+		container.Exec = types.ExecOptions{
+			Cmd:        q.Get("cmd"),
+			Env:        q.Get("env"),
+			User:       q.Get("user"),
+			Privileged: q.Get("p") != "",
+		}
 	}
 
 	containerTTY, err := server.containerCli.Exec(ctx, container)

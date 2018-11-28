@@ -50,7 +50,9 @@ message Container {
 	string namespace = 11;
 	string running_node = 12;
 	string loc_server = 13;
-	string execCMD = 14;
+	string execCmd = 14;
+	string execUser = 15;
+	string execEnv = 16;
 }
 
 message Containers {
