@@ -1,7 +1,6 @@
 package types
 
 // Container instance
-//proteus:generate
 type Container struct {
 	// common
 	ID, Name       string
@@ -22,7 +21,7 @@ type Container struct {
 	// exec commands in arguments
 	// permit user to execute any command
 	// in that container
-	ExecCMD string
+	Exec ExecOptions
 }
 
 // ContainerActionMessage tells the web browser the action's status
@@ -49,3 +48,11 @@ const (
 	EXEC ContainerAct = iota
 	LOGS
 )
+
+type ExecOptions struct {
+	User string
+	Env  string
+	Cmd  string
+	// alias as `p`
+	Privileged bool
+}

@@ -30,7 +30,11 @@ func ConvertPbContainer(c *pb.Container) types.Container {
 		Namespace:     c.Namespace,
 		RunningNode:   c.RunningNode,
 		LocServer:     c.LocServer,
-		ExecCMD:       c.ExecCMD,
+		Exec: types.ExecOptions{
+			Cmd:  c.ExecCmd,
+			Env:  c.ExecEnv,
+			User: c.ExecUser,
+		},
 	}
 }
 
@@ -50,7 +54,9 @@ func ConvertTpContainer(c types.Container) *pb.Container {
 		Namespace:     c.Namespace,
 		RunningNode:   c.RunningNode,
 		LocServer:     c.LocServer,
-		ExecCMD:       c.ExecCMD,
+		ExecCmd:       c.Exec.Cmd,
+		ExecEnv:       c.Exec.Env,
+		ExecUser:      c.Exec.User,
 	}
 }
 

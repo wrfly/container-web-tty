@@ -2,7 +2,11 @@ package config
 
 import "time"
 
-var SHELL_LIST = []string{"/bin/bash", "/bin/ash", "/bin/sh"}
+var SHELL_LIST = [...]string{
+	"/bin/bash",
+	"/bin/ash",
+	"/bin/sh",
+}
 
 type DockerConfig struct {
 	DockerHost string // default is /var/run/docker.sock

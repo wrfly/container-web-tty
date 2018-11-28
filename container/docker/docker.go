@@ -39,14 +39,25 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 		return nil, err
 	}
 
+	// update docker version
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	v, err := cli.ServerVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cli, err = client.NewClient(host, v.APIVersion, nil, UA)
+	if err != nil {
+		logrus.Errorf("create new docker client error: %s", err)
+		return nil, err
+	}
+
 	listOptions, err := buildListOptions(conf.PsOptions)
 	if err != nil {
 		return nil, fmt.Errorf("build ps options error: %s", err)
 	}
-	logrus.Debugf("%+v", listOptions)
+	logrus.Debugf("list options: %+v", listOptions)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
 	ping, err := cli.Ping(ctx)
 	if err != nil {
 		return nil, err
@@ -258,19 +269,28 @@ func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
 }
 
 func (docker DockerCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
-	cmd := []string{container.Shell}
-	if exec := container.ExecCMD; exec != "" {
-		cmd = strings.Split(exec, " ")
+	// `-l` for a login shell
+	cmds := []string{container.Shell, "-l"}
+	opts := container.Exec
+	if cmd := opts.Cmd; cmd != "" {
+		cmds = append(cmds, "-c")
+		cmds = append(cmds, fmt.Sprintf("\"\"%s\"\"", cmd))
 	}
+	logrus.Debugf("exec cmd: %v", cmds)
+
 	execConfig := apiTypes.ExecConfig{
-		Privileged:   false,
 		AttachStdin:  true,
 		AttachStderr: true,
 		AttachStdout: true,
-		// User: "string",
-		// Env: []string{},
-		Tty: true,
-		Cmd: cmd,
+		Tty:          true,
+		Privileged:   opts.Privileged,
+		Cmd:          cmds,
+	}
+	if opts.User != "" {
+		execConfig.User = opts.User
+	}
+	if opts.Env != "" {
+		execConfig.Env = strings.Split(opts.Env, " ")
 	}
 
 	response, err := docker.cli.ContainerExecCreate(ctx, container.ID, execConfig)
