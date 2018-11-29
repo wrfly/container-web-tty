@@ -67,7 +67,6 @@ type ServerConfig struct {
 
 type Config struct {
 	Debug   bool
-	Control ControlConfig
 	Backend BackendConfig
 	Server  ServerConfig
 }
@@ -81,7 +80,8 @@ func New() *Config {
 				Servers: []string{},
 			},
 		},
-		Server:  ServerConfig{},
-		Control: ControlConfig{},
+		Server: ServerConfig{
+			Control: ControlConfig{},
+		},
 	}
 }
