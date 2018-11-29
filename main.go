@@ -69,11 +69,6 @@ func main() {
 			Usage:       "kube config path",
 			Destination: &conf.Backend.Kube.ConfigPath,
 		},
-		&cli.StringFlag{
-			Name:    "extra-args",
-			EnvVars: util.EnvVars("extra-args"),
-			Usage:   "pass extra args to the backend",
-		},
 		&cli.IntFlag{
 			Name:        "grpc-port",
 			EnvVars:     util.EnvVars("grpc-port"),
@@ -185,16 +180,7 @@ func main() {
 				conf.Server.IdleTime = idleTime
 			}
 
-			if eArgs := c.String("extra-args"); eArgs != "" {
-				conf.Backend.ExtraArgs = strings.Split(eArgs, " ")
-			} else {
-				switch conf.Backend.Type {
-				case "docker":
-					defaultArgs := "-e HISTCONTROL=ignoredups -e TERM=xterm"
-					conf.Backend.ExtraArgs = strings.Split(defaultArgs, " ")
-				case "kube":
-				}
-			}
+			// defaultArgs := "-e HISTCONTROL=ignoredups -e TERM=xterm"
 
 			ctl := conf.Server.Control
 			if ctl.Start || ctl.Stop || ctl.Restart || ctl.All {

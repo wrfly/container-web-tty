@@ -33,9 +33,9 @@ type Cli interface {
 func NewCliBackend(conf config.BackendConfig) (cli Cli, err error) {
 	switch conf.Type {
 	case "docker":
-		cli, err = docker.NewCli(conf.Docker, conf.ExtraArgs)
+		cli, err = docker.NewCli(conf.Docker)
 	case "kube":
-		cli, err = kube.NewCli(conf.Kube, conf.ExtraArgs)
+		cli, err = kube.NewCli(conf.Kube)
 	case "grpc":
 		cli, err = grpc.NewCli(conf.GRPC)
 	default:

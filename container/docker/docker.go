@@ -23,7 +23,7 @@ type DockerCli struct {
 	listOptions apiTypes.ContainerListOptions
 }
 
-func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
+func NewCli(conf config.DockerConfig) (*DockerCli, error) {
 	host := conf.DockerHost
 	if host[:1] == "/" {
 		host = "unix://" + host
@@ -285,12 +285,14 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 		Tty:          true,
 		Privileged:   opts.Privileged,
 		Cmd:          cmds,
+		Env:          []string{"HISTCONTROL=ignoredups", "TERM=xterm"},
 	}
 	if opts.User != "" {
 		execConfig.User = opts.User
 	}
 	if opts.Env != "" {
-		execConfig.Env = strings.Split(opts.Env, " ")
+		execConfig.Env = append(execConfig.Env,
+			strings.Split(opts.Env, " ")...)
 	}
 
 	response, err := docker.cli.ContainerExecCreate(ctx, container.ID, execConfig)

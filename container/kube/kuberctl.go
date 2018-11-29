@@ -28,7 +28,7 @@ type KubeCli struct {
 	containers *types.Containers
 }
 
-func NewCli(conf config.KubeConfig, args []string) (*KubeCli, error) {
+func NewCli(conf config.KubeConfig) (*KubeCli, error) {
 	// use the current context in kubeconfig
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", conf.ConfigPath)
 	if err != nil {

@@ -24,11 +24,10 @@ type GRPCConfig struct {
 }
 
 type BackendConfig struct {
-	Type      string // docker or kubectl (for now)
-	Docker    DockerConfig
-	Kube      KubeConfig
-	GRPC      GRPCConfig
-	ExtraArgs []string // extra args pass to docker or kubectl
+	Type   string // docker or kubectl (for now)
+	Docker DockerConfig
+	Kube   KubeConfig
+	GRPC   GRPCConfig
 }
 
 type ControlConfig struct {
