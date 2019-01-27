@@ -102,7 +102,6 @@ Now you will see all the containers of all the servers via *<http://localhost:80
 - [x] beautiful index
 - [x] support `docker ps` options
 - [x] start|stop|restart container(docker backend only)
-- [x] environment injection (extra params)
 - [x] proxy mode (client -> server's containers)
 - [x] auth(only in proxy mode)
 - [x] TTY timeout (idle timeout)

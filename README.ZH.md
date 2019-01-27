@@ -99,7 +99,6 @@ docker run --rm -ti --name web-tty \
 - [x] 对接 kubectl 的后端
 - [x] 比较好看的前端界面
 - [x] start|stop|restart container(docker backend only)
-- [x] 参数注入，比如环境变量
 - [x] 代理模式 (本地连接到远程机器上的容器)
 - [x] 认证（仅限代理模式）
 - [x] 超时自动断开

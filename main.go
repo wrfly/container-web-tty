@@ -69,11 +69,6 @@ func main() {
 			Usage:       "kube config path",
 			Destination: &conf.Backend.Kube.ConfigPath,
 		},
-		&cli.StringFlag{
-			Name:    "extra-args",
-			EnvVars: util.EnvVars("extra-args"),
-			Usage:   "pass extra args to the backend",
-		},
 		&cli.IntFlag{
 			Name:        "grpc-port",
 			EnvVars:     util.EnvVars("grpc-port"),
@@ -110,28 +105,28 @@ func main() {
 			Aliases:     []string{"ctl-a"},
 			EnvVars:     util.EnvVars("ctl-a"),
 			Usage:       "enable container control",
-			Destination: &conf.Control.All,
+			Destination: &conf.Server.Control.All,
 		},
 		&cli.BoolFlag{
 			Name:        "control-start",
 			Aliases:     []string{"ctl-s"},
 			EnvVars:     util.EnvVars("ctl-s"),
 			Usage:       "enable container start  ",
-			Destination: &conf.Control.Start,
+			Destination: &conf.Server.Control.Start,
 		},
 		&cli.BoolFlag{
 			Name:        "control-stop",
 			Aliases:     []string{"ctl-t"},
 			EnvVars:     util.EnvVars("ctl-t"),
 			Usage:       "enable container stop   ",
-			Destination: &conf.Control.Stop,
+			Destination: &conf.Server.Control.Stop,
 		},
 		&cli.BoolFlag{
 			Name:        "control-restart",
 			Aliases:     []string{"ctl-r"},
 			EnvVars:     util.EnvVars("ctl-r"),
 			Usage:       "enable container restart",
-			Destination: &conf.Control.Restart,
+			Destination: &conf.Server.Control.Restart,
 		},
 		&cli.BoolFlag{
 			Name:        "enable-share",
@@ -185,20 +180,11 @@ func main() {
 				conf.Server.IdleTime = idleTime
 			}
 
-			if eArgs := c.String("extra-args"); eArgs != "" {
-				conf.Backend.ExtraArgs = strings.Split(eArgs, " ")
-			} else {
-				switch conf.Backend.Type {
-				case "docker":
-					defaultArgs := "-e HISTCONTROL=ignoredups -e TERM=xterm"
-					conf.Backend.ExtraArgs = strings.Split(defaultArgs, " ")
-				case "kube":
-				}
-			}
+			// defaultArgs := "-e HISTCONTROL=ignoredups -e TERM=xterm"
 
-			ctl := conf.Control
+			ctl := conf.Server.Control
 			if ctl.Start || ctl.Stop || ctl.Restart || ctl.All {
-				conf.Control.Enable = true
+				conf.Server.Control.Enable = true
 			}
 
 			servers := strings.Split(c.String("grpc-servers"), ",")

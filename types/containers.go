@@ -7,31 +7,35 @@ import (
 
 type Containers struct {
 	c    map[string]Container
+	cs   []Container
 	m    sync.RWMutex
 	once sync.Once
+}
+
+func (cs *Containers) List() []Container {
+	cs.init()
+	return cs.cs
 }
 
 func (cs *Containers) Len() int {
 	cs.init()
 
-	cs.m.RLock()
-	l := len(cs.c)
-	cs.m.RUnlock()
-	return l
+	return len(cs.c)
 }
 
 func (cs *Containers) Set(containers []Container) {
 	cs.init()
 
-	tempContainers := make(map[string]Container, len(containers)*2)
+	mapContainers := make(map[string]Container, len(containers)*2)
 	for _, c := range containers {
-		tempContainers[c.ID] = c
+		mapContainers[c.ID] = c
 		if len(c.ID) >= 12 {
-			tempContainers[c.ID[:12]] = c
+			mapContainers[c.ID[:12]] = c
 		}
 	}
 	cs.m.Lock()
-	cs.c = tempContainers
+	cs.c = mapContainers
+	cs.cs = containers
 	cs.m.Unlock()
 }
 
@@ -46,6 +50,7 @@ func (cs *Containers) Append(c Container) {
 	if len(c.ID) >= 12 {
 		cs.c[c.ID[:12]] = c
 	}
+	cs.cs = append(cs.cs, c)
 	cs.m.Unlock()
 }
 

@@ -24,11 +24,10 @@ type GRPCConfig struct {
 }
 
 type BackendConfig struct {
-	Type      string // docker or kubectl (for now)
-	Docker    DockerConfig
-	Kube      KubeConfig
-	GRPC      GRPCConfig
-	ExtraArgs []string // extra args pass to docker or kubectl
+	Type   string // docker or kubectl (for now)
+	Docker DockerConfig
+	Kube   KubeConfig
+	GRPC   GRPCConfig
 }
 
 type ControlConfig struct {
@@ -67,7 +66,6 @@ type ServerConfig struct {
 
 type Config struct {
 	Debug   bool
-	Control ControlConfig
 	Backend BackendConfig
 	Server  ServerConfig
 }
@@ -81,7 +79,8 @@ func New() *Config {
 				Servers: []string{},
 			},
 		},
-		Server:  ServerConfig{},
-		Control: ControlConfig{},
+		Server: ServerConfig{
+			Control: ControlConfig{},
+		},
 	}
 }

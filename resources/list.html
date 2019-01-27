@@ -38,7 +38,7 @@
           {{ range .containers }}
           <tr class="row100 body">
             <td class="cell100 column1" title="exec into container">
-              <a href="/exec/{{ printf "%.12s" .ID }}" target="_blank">{{ printf "%.12s" .ID }}</a>
+              <a href="/exec/{{ printf "%.12s" .ID }}" value="{{ .ID }}" target="_blank">{{ printf "%.12s" .ID }}</a>
             </td>
             {{- if $share -}}
             <td class="cell100 column2" title="{{ .Image }} | share tty">

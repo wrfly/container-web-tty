@@ -21,9 +21,10 @@ type DockerCli struct {
 	cli         *client.Client
 	containers  *types.Containers
 	listOptions apiTypes.ContainerListOptions
+	lastList    time.Time
 }
 
-func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
+func NewCli(conf config.DockerConfig) (*DockerCli, error) {
 	host := conf.DockerHost
 	if host[:1] == "/" {
 		host = "unix://" + host
@@ -71,6 +72,8 @@ func NewCli(conf config.DockerConfig, args []string) (*DockerCli, error) {
 	logrus.Infof("Warm up containers info...")
 	dockerCli.List(ctx)
 
+	go dockerCli.watchEvents()
+
 	return dockerCli, nil
 }
 
@@ -106,7 +109,32 @@ func getContainerIP(networkSettings interface{}) (ips []string) {
 	return
 }
 
-func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
+func (docker *DockerCli) watchEvents() {
+	eventChan, errChan := docker.cli.Events(context.Background(), apiTypes.EventsOptions{})
+
+	go func() {
+		for err := range errChan {
+			logrus.Errorf("docker cli watch events error: %s", err)
+		}
+	}()
+
+	go func() {
+		for event := range eventChan {
+			if event.Type != "container" {
+				continue
+			}
+			logrus.Debugf("container event: %+v", event)
+			switch event.Action {
+			case "start", "destroy":
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+				docker.listContainers(ctx, true)
+				cancel()
+			}
+		}
+	}()
+}
+
+func (docker *DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
 	if docker.containers.Len() == 0 {
 		logrus.Debugf("zero containers, get cid %s", cid)
 		docker.List(ctx)
@@ -137,7 +165,7 @@ func (docker DockerCli) GetInfo(ctx context.Context, cid string) types.Container
 	return c
 }
 
-func (docker DockerCli) convertCjsonToContainre(cjson apiTypes.ContainerJSON) types.Container {
+func (docker *DockerCli) convertCjsonToContainre(cjson apiTypes.ContainerJSON) types.Container {
 	if cjson.Config == nil {
 		// WTF?
 		return types.Container{}
@@ -161,7 +189,11 @@ func (docker DockerCli) convertCjsonToContainre(cjson apiTypes.ContainerJSON) ty
 	return c
 }
 
-func (docker DockerCli) List(ctx context.Context) []types.Container {
+func (docker *DockerCli) listContainers(ctx context.Context, force bool) []types.Container {
+	if time.Now().Sub(docker.lastList) < time.Minute && !force {
+		return docker.containers.List()
+	}
+
 	start := time.Now()
 	logrus.Debug("list conatiners")
 	cs, err := docker.cli.ContainerList(ctx, docker.listOptions)
@@ -196,11 +228,16 @@ func (docker DockerCli) List(ctx context.Context) []types.Container {
 
 	docker.containers.Set(containers)
 
+	docker.lastList = time.Now()
 	logrus.Debugf("list %d containers, use %s", len(containers), time.Now().Sub(start))
 	return containers
 }
 
-func (docker DockerCli) exist(ctx context.Context, cid, path string) bool {
+func (docker *DockerCli) List(ctx context.Context) []types.Container {
+	return docker.listContainers(ctx, false)
+}
+
+func (docker *DockerCli) exist(ctx context.Context, cid, path string) bool {
 	_, err := docker.cli.ContainerStatPath(ctx, cid, path)
 	if err != nil {
 		return false
@@ -208,7 +245,7 @@ func (docker DockerCli) exist(ctx context.Context, cid, path string) bool {
 	return true
 }
 
-func (docker DockerCli) getShell(ctx context.Context, cid string) string {
+func (docker *DockerCli) getShell(ctx context.Context, cid string) string {
 	for _, sh := range config.SHELL_LIST {
 		if docker.exist(ctx, cid, sh) {
 			logrus.Debugf("container [%s] use [%s]", cid, sh)
@@ -219,17 +256,17 @@ func (docker DockerCli) getShell(ctx context.Context, cid string) string {
 	return ""
 }
 
-func (docker DockerCli) Start(ctx context.Context, cid string) error {
+func (docker *DockerCli) Start(ctx context.Context, cid string) error {
 	return docker.cli.ContainerStart(ctx, cid, apiTypes.ContainerStartOptions{})
 }
 
-func (docker DockerCli) Stop(ctx context.Context, cid string) error {
+func (docker *DockerCli) Stop(ctx context.Context, cid string) error {
 	// Notice: is there a need to config this stop duration?
 	duration := time.Second * 5
 	return docker.cli.ContainerStop(ctx, cid, &duration)
 }
 
-func (docker DockerCli) Restart(ctx context.Context, cid string) error {
+func (docker *DockerCli) Restart(ctx context.Context, cid string) error {
 	// restart immediately
 	return docker.cli.ContainerRestart(ctx, cid, nil)
 }
@@ -268,7 +305,7 @@ func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
 	return listOptions, nil
 }
 
-func (docker DockerCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
+func (docker *DockerCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
 	// `-l` for a login shell
 	cmds := []string{container.Shell, "-l"}
 	opts := container.Exec
@@ -285,12 +322,14 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 		Tty:          true,
 		Privileged:   opts.Privileged,
 		Cmd:          cmds,
+		Env:          []string{"HISTCONTROL=ignoredups", "TERM=xterm"},
 	}
 	if opts.User != "" {
 		execConfig.User = opts.User
 	}
 	if opts.Env != "" {
-		execConfig.Env = strings.Split(opts.Env, " ")
+		execConfig.Env = append(execConfig.Env,
+			strings.Split(opts.Env, " ")...)
 	}
 
 	response, err := docker.cli.ContainerExecCreate(ctx, container.ID, execConfig)
@@ -319,11 +358,11 @@ func (docker DockerCli) Exec(ctx context.Context, container types.Container) (ty
 	return newExecInjector(resp, resizeFunc), nil
 }
 
-func (docker DockerCli) Close() error {
+func (docker *DockerCli) Close() error {
 	return docker.cli.Close()
 }
 
-func (docker DockerCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
+func (docker *DockerCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
 	return docker.cli.ContainerLogs(ctx, opts.ID, apiTypes.ContainerLogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
