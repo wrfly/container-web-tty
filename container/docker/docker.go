@@ -63,7 +63,7 @@ func NewCli(conf config.DockerConfig) (*DockerCli, error) {
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infof("New docker client: OS [%s], API [%s]", ping.OSType, ping.APIVersion)
+	logrus.Infof("New docker client: API [%s]", ping.APIVersion)
 	dockerCli := &DockerCli{
 		cli:         cli,
 		containers:  &types.Containers{},
