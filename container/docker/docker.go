@@ -70,9 +70,18 @@ func NewCli(conf config.DockerConfig) (*DockerCli, error) {
 		listOptions: listOptions,
 	}
 	logrus.Infof("Warm up containers info...")
-	dockerCli.List(ctx)
 
-	go dockerCli.watchEvents()
+	// watch events forever, especially after the docker restarted
+	// fix #30
+	go func() {
+		for {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			dockerCli.listContainers(ctx, true)
+			dockerCli.watchEvents() // will block here
+			cancel()
+			time.Sleep(time.Second * 3)
+		}
+	}()
 
 	return dockerCli, nil
 }
@@ -113,12 +122,6 @@ func (docker *DockerCli) watchEvents() {
 	eventChan, errChan := docker.cli.Events(context.Background(), apiTypes.EventsOptions{})
 
 	go func() {
-		for err := range errChan {
-			logrus.Errorf("docker cli watch events error: %s", err)
-		}
-	}()
-
-	go func() {
 		for event := range eventChan {
 			if event.Type != "container" {
 				continue
@@ -132,6 +135,9 @@ func (docker *DockerCli) watchEvents() {
 			}
 		}
 	}()
+
+	logrus.Errorf("docker cli watch events error: %s", <-errChan)
+	return
 }
 
 func (docker *DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
