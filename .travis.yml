@@ -3,7 +3,13 @@ sudo: required
 services:
   - docker
 
+language: go
+
+go:
+ - "1.12"
+
 script:
+  - make build
   - make image
 
 after_success:

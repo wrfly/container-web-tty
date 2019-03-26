@@ -13,25 +13,16 @@ CTIMEVAR = -X main.CommitID=$(COMMITID) \
 GO_LDFLAGS = -ldflags "-s -w $(CTIMEVAR)"
 GO_LDFLAGS_STATIC = -ldflags "-w $(CTIMEVAR) -extldflags -static"
 
-.PHONY: prepare
-prepare:
-	glide i
-
-.PHONY: bin
-bin:
-	mkdir -p bin
-
-.PHONY: glide-up
-glide-up:
-	https_proxy=http://127.0.0.1:1081 glide up
+export GO111MODULE=on
 
 .PHONY: build
-build: bin
-	go build $(GO_LDFLAGS) -o $(BIN)/$(NAME) .
+build:
+	mkdir -p bin
+	CGO_ENABLED=0 go build $(GO_LDFLAGS) -o $(BIN)/$(NAME) .
 
 .PHONY: test
 test:
-	go test -cover -v `glide nv`
+	go test -cover -v ./...
 
 .PHONY: dev
 dev: asset build

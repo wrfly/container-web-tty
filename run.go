@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	"github.com/yudai/gotty/utils"
+	"github.com/wrfly/ecp"
 	"gopkg.in/urfave/cli.v2"
 
 	"github.com/wrfly/container-web-tty/config"
@@ -20,7 +20,7 @@ func run(c *cli.Context, conf config.Config) {
 	if len(conf.Backend.GRPC.Servers) > 0 {
 		srvOptions.ShowLocation = true
 	}
-	if err := utils.ApplyDefaultValues(srvOptions); err != nil {
+	if err := ecp.Default(&srvOptions); err != nil {
 		logrus.Fatal(err)
 	}
 
