@@ -13,7 +13,6 @@ import (
 	noesctmpl "text/template"
 	"time"
 
-	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"
+	"github.com/wrfly/container-web-tty/route/asset"
 	"github.com/wrfly/container-web-tty/types"
 )
 
@@ -43,23 +43,17 @@ var (
 )
 
 func init() {
-	indexData, err := Asset("index.html")
+	indexData, err := asset.Find("/index.html")
 	if err != nil {
 		log.Fatal(err)
 	}
-	indexTemplate, err = template.New("index").Parse(string(indexData))
-	if err != nil {
-		log.Fatal(err)
-	}
+	indexTemplate = indexData.Template()
 
-	listIndexData, err := Asset("list.html")
+	listIndexData, err := asset.Find("/list.html")
 	if err != nil {
 		log.Fatal(err)
 	}
-	listTemplate, err = template.New("list").Parse(string(listIndexData))
-	if err != nil {
-		log.Fatal(err)
-	}
+	listTemplate = listIndexData.Template()
 
 	titleFormat := "{{ .containerName }} - {{ printf \"%.8s\" .containerID }}@{{ .containerLoc }}"
 	titleTemplate, err = noesctmpl.New("title").Parse(titleFormat)
@@ -117,18 +111,16 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		router.Use(gin.Logger())
 	}
 
-	h := http.FileServer(
-		&assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, Prefix: "/"},
-	)
-	fh := gin.WrapH(http.StripPrefix("/", h))
-
 	// Routes
 	router.GET("/", server.handleListContainers)
 	router.GET("/auth_token.js", server.handleAuthToken)
 	router.GET("/config.js", server.handleConfig)
 
-	for _, fileName := range AssetNames() {
-		router.GET(fileName, fh)
+	h := gin.WrapF(asset.Handler)
+	for _, f := range asset.List() {
+		if f.Name() != "/" {
+			router.GET(f.Name(), h)
+		}
 	}
 
 	// exec
