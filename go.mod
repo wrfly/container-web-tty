@@ -31,6 +31,7 @@ require (
 	github.com/sirupsen/logrus v1.4.0
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780 // indirect
+	github.com/wrfly/bindata v0.0.0-20190329131907-372088142650 // indirect
 	github.com/wrfly/ecp v0.1.0
 	github.com/yudai/gotty v2.0.0-alpha.3+incompatible
 	golang.org/x/net v0.0.0-20190326090315-15845e8f865b

@@ -66,8 +66,9 @@ proto:
 ## --- these stages are copied from gotty for asset building --- ##
 .PHONY: asset
 asset: clear static/js static/css static/html
-	go-bindata -nometadata -prefix static -pkg route -ignore=\\.gitkeep -o route/asset.go static/...
-	gofmt -w route/asset.go
+	bindata \
+		-pkg $(PKG)/route/asset \
+		-resource static/
 
 clear:
 	rm -rf static

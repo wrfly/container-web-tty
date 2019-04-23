@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
 	api "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
@@ -244,11 +244,11 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 			fmt.Errorf("cannot exec into a container in a completed pod; current phase is %s", pod.Status.Phase)
 	}
 
-	cmd := fmt.Sprintf("%s -l", c.Shell)
+	cmds := []string{c.Shell, "-l"}
 	if opts := c.Exec; opts.Cmd != "" {
-		cmd = fmt.Sprintf("%s -lc \"%s\"", c.Shell, opts.Cmd)
-		logrus.Debugf("exec with cmd: %s", cmd)
+		cmds = []string{c.Shell, "-l",opts.Cmd}
 	}
+	logrus.Debugf("exec with cmd: %v", cmds)
 
 	restClient := kube.cli.CoreV1().RESTClient()
 	req := restClient.Post().
@@ -257,11 +257,15 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 		Namespace(c.Namespace).
 		SubResource("exec").
 		Param("container", c.ContainerName).
-		Param("command", cmd).
 		Param("stdin", "true").
 		Param("stdout", "true").
 		Param("tty", "true")
 		// TODO: k8s exec user & env
+	
+		// set commands
+		for _, cmd := range cmds{
+			req.Param("command", cmd)
+		}
 
 	enj := newInjector(ctx)
 
