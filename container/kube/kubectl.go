@@ -246,7 +246,7 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 
 	cmds := []string{c.Shell, "-l"}
 	if opts := c.Exec; opts.Cmd != "" {
-		cmds = []string{c.Shell, "-l",opts.Cmd}
+		cmds = []string{c.Shell, "-l", opts.Cmd}
 	}
 	logrus.Debugf("exec with cmd: %v", cmds)
 
@@ -260,12 +260,12 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 		Param("stdin", "true").
 		Param("stdout", "true").
 		Param("tty", "true")
-		// TODO: k8s exec user & env
-	
-		// set commands
-		for _, cmd := range cmds{
-			req.Param("command", cmd)
-		}
+	// TODO: k8s exec user & env
+
+	// set commands
+	for _, cmd := range cmds {
+		req.Param("command", cmd)
+	}
 
 	enj := newInjector(ctx)
 
