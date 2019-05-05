@@ -71,16 +71,16 @@ func NewCli(conf config.DockerConfig) (*DockerCli, error) {
 	}
 	logrus.Infof("Warm up containers info...")
 
-	// watch events forever, especially after the docker restarted
-	// fix #30
+	// when docker restarted, should restart the program as well
+	// since the socket file is gone (as the restart of docker daemon)
+	// see #30
 	go func() {
-		for {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			dockerCli.listContainers(ctx, true)
-			dockerCli.watchEvents() // will block here
-			cancel()
-			time.Sleep(time.Second * 3)
-		}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		dockerCli.listContainers(ctx, true)
+		cancel()
+
+		dockerCli.watchEvents() // will block here
+		logrus.Fatal("lost connection to docker daemon")
 	}()
 
 	return dockerCli, nil
@@ -137,7 +137,6 @@ func (docker *DockerCli) watchEvents() {
 	}()
 
 	logrus.Errorf("docker cli watch events error: %s", <-errChan)
-	return
 }
 
 func (docker *DockerCli) GetInfo(ctx context.Context, cid string) types.Container {

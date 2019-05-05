@@ -29,10 +29,13 @@ Of cause you can run it by downloading the binary, but thare are some
 You can start `container-web-tty` inside a container by mounting `docker.sock`:
 
 ```bash
-docker run --rm -ti --name web-tty \
+docker run -dti --restart always --name container-web-tty \
     -p 8080:8080 \
     -v /var/run/docker.sock:/var/run/docker.sock \
     wrfly/container-web-tty
+
+# tail logs
+docker logs -f container-web-tty
 ```
 
 ### Using kubernetes
@@ -40,7 +43,7 @@ docker run --rm -ti --name web-tty \
 Or you can mount the kubernetes config file:
 
 ```bash
-docker run --rm -ti --name web-tty \
+docker run -dti --restart always --name container-web-tty \
     -p 8080:8080 \
     -e WEB_TTY_BACKEND=kube \
     -e WEB_TTY_KUBE_CONFIG=/kube.config \
@@ -61,7 +64,7 @@ than one server that you need to connect to.
 Host `192.168.66.1` and `192.168.66.2` both running:
 
 ```bash
-docker run --rm -ti --name web-tty \
+docker run -dti --restart always --name container-web-tty \
     -p 8080:8080 \
     -p 8090:8090 \
     -e WEB_TTY_GRPC_PORT=8090 \
@@ -78,7 +81,7 @@ Notes:
 #### Local
 
 ```bash
-docker run --rm -ti --name web-tty \
+docker run -dti --restart always --name container-web-tty \
     -p 8080:8080 \
     -e WEB_TTY_BACKEND=grpc \
     -e WEB_TTY_GRPC_AUTH=96ssW0rd \
@@ -114,7 +117,7 @@ Now you will see all the containers of all the servers via *<http://localhost:80
 ### Audit exec history and container outputs
 
 ```bash
-docker run --rm -ti --name web-tty \
+docker run -dti --restart always --name container-web-tty \
     -p 8080:8080 \
     -e WEB_TTY_AUDIT=true \
     -v `pwd`/container-audit:/audit \
@@ -128,7 +131,7 @@ After you exec some commands, you will see the inputs and outputs under the
 ### Real-time sharing
 
 ```bash
-docker run --rm -ti --name web-tty \
+docker run -dti --restart always --name container-web-tty \
     -p 8080:8080 \
     -e WEB_TTY_SHARE=true \
     -v /var/run/docker.sock:/var/run/docker.sock \
