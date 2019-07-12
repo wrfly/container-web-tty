@@ -5,11 +5,11 @@
         "typescript": "^2.3.2",
         "uglifyjs-webpack-plugin": "^1.0.0-beta.2",
         "webpack": "^2.5.1",
-        "lodash": ">=4.17.5"
+        "lodash": ">=4.17.13"
     },
     "dependencies": {
         "libapps": "github:yudai/libapps#release-hterm-1.70",
         "xterm": "^2.7.0",
-        "lodash": ">=4.17.5"
+        "lodash": ">=4.17.13"
     }
 }
