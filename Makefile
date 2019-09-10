@@ -103,7 +103,7 @@ js/node_modules/webpack:
 	npm install
 
 tools:
-	go get github.com/jteeuwen/go-bindata/...
+	go get github.com/wrfly/bindata
 
 genOptions:
 	@$(BIN)/$(NAME) -h | \
