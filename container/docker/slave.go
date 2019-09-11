@@ -35,12 +35,13 @@ func (enj *execInjector) Read(p []byte) (n int, err error) {
 }
 
 func (enj *execInjector) Write(p []byte) (n int, err error) {
-	// logrus.Debugf("input: %s\n", p)
+	// logrus.Debugf("input: %v\n", p)
 	return enj.hResp.Conn.Write(p)
 }
 
 func (enj *execInjector) Exit() error {
-	enj.Write([]byte("exit\n"))
+	enj.Write([]byte{3}) // ^C
+	enj.Write([]byte{4}) // ^D
 	close(enj.activeChan)
 	return enj.hResp.Conn.Close()
 }
