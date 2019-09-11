@@ -94,6 +94,7 @@ js/node_modules/xterm/dist/xterm.css:
 	cd js && \
 	npm install
 
+# .PHONY: js/dist/gotty-bundle.js
 js/dist/gotty-bundle.js: js/node_modules/webpack
 	cd js && \
 	`npm bin`/webpack
@@ -103,7 +104,7 @@ js/node_modules/webpack:
 	npm install
 
 tools:
-	go get github.com/jteeuwen/go-bindata/...
+	go get github.com/wrfly/bindata
 
 genOptions:
 	@$(BIN)/$(NAME) -h | \

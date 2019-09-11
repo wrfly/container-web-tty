@@ -76,6 +76,8 @@ github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780 h1:vG/gY/PxA3v3l04
 github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780/go.mod h1:iT03XoTwV7xq/+UGwKO3UbC1nNNlopQiY61beSdrtOA=
 github.com/wrfly/bindata v0.0.0-20190329131907-372088142650 h1:RcrlTAimjpy8WqvYEJmRr3weVCzT8VkHXCqQQgQ8rdo=
 github.com/wrfly/bindata v0.0.0-20190329131907-372088142650/go.mod h1:PJWDAiT81Z8k5Wx4c1hl3aKFIxokgycbdNBlMtF/yaA=
+github.com/wrfly/bindata v0.0.0-20190403163452-84af32a30f60 h1:iEapbDpEpM74EUNs2VHchs0BmJwT0C+VRbvN+tz5nhQ=
+github.com/wrfly/bindata v0.0.0-20190403163452-84af32a30f60/go.mod h1:PJWDAiT81Z8k5Wx4c1hl3aKFIxokgycbdNBlMtF/yaA=
 github.com/wrfly/ecp v0.1.0 h1:btwZO5LGlM5SNykaUXGkJIjwckpjPU2MjFatehSCmY8=
 github.com/wrfly/ecp v0.1.0/go.mod h1:cmmFTD+MLlrDa3/EO3gjeKLKUhHiYP3cgaaJamIS1NU=
 github.com/yudai/gotty v2.0.0-alpha.3+incompatible h1:eUFSuV4B2g+Rj+PS3HxhvOGEu2klWRzsl/7z7T/NUJQ=

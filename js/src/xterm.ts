@@ -1,12 +1,12 @@
-import * as bare from "xterm";
 import { lib } from "libapps"
+import * as fit from 'xterm/lib/addons/fit/fit';
+import { Terminal } from 'xterm';
 
-
-bare.loadAddon("fit");
+Terminal.applyAddon(fit);
 
 export class Xterm {
     elem: HTMLElement;
-    term: bare;
+    term: Terminal;
     resizeListener: () => void;
     decoder: lib.UTF8Decoder;
 
@@ -17,24 +17,23 @@ export class Xterm {
 
     constructor(elem: HTMLElement) {
         this.elem = elem;
-        this.term = new bare();
-
-        this.message = elem.ownerDocument.createElement("div");
-        this.message.className = "xterm-overlay";
+        this.term = new Terminal();
         this.messageTimeout = 2000;
 
+        if (elem.ownerDocument != null){
+            this.message = elem.ownerDocument.createElement("div");
+            this.message.className = "xterm-overlay";
+        }
+
         this.resizeListener = () => {
-            this.term.fit();
+            fit.fit(this.term);
             this.term.scrollToBottom();
             this.showMessage(String(this.term.cols) + "x" + String(this.term.rows), this.messageTimeout);
         };
+        window.addEventListener("resize", this.resizeListener);
 
-        this.term.on("open", () => {
-            this.resizeListener();
-            window.addEventListener("resize", () => { this.resizeListener(); });
-        });
-
-        this.term.open(elem, true);
+        this.term.open(elem);
+        this.resizeListener(); // resize first
 
         this.decoder = new lib.UTF8Decoder()
     };
@@ -88,8 +87,8 @@ export class Xterm {
     };
 
     deactivate(): void {
-        this.term.off("data");
-        this.term.off("resize");
+        this.term.off("data", () => {});
+        this.term.off("resize", () => {});
         this.term.blur();
     }
 

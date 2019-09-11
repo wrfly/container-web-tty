@@ -55,7 +55,8 @@ func (enj *execInjector) Write(p []byte) (n int, err error) {
 }
 
 func (enj *execInjector) Exit() error {
-	enj.Write([]byte("exit\n"))
+	enj.Write([]byte{3}) // ^C
+	enj.Write([]byte{4}) // ^D
 
 	enj.r.Close()
 	enj.w.Close()

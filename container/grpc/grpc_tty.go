@@ -49,7 +49,8 @@ func (enj *execWrapper) Write(p []byte) (n int, err error) {
 }
 
 func (enj *execWrapper) Exit() error {
-	enj.Write([]byte("exit\n"))
+	enj.Write([]byte{3})
+	enj.Write([]byte{4})
 	close(enj.activeChan)
 	return enj.exec.CloseSend()
 }

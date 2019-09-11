@@ -311,8 +311,7 @@ func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
 }
 
 func (docker *DockerCli) Exec(ctx context.Context, container types.Container) (types.TTY, error) {
-	// `-l` for a login shell
-	cmds := []string{container.Shell, "-l"}
+	cmds := []string{container.Shell}
 	opts := container.Exec
 	if cmd := opts.Cmd; cmd != "" {
 		cmds = append(cmds, "-c")
