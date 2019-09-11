@@ -59,7 +59,7 @@ func newSlave(rc io.ReadCloser, share bool) webtty.Slave {
 				continue
 			}
 
-			// only \n or a long log string containes \n
+			// only \n or a long log string contains \n
 			s, e := 0, 0
 			for e < n {
 				x := bytes.IndexByte(bs[e:n], 10)

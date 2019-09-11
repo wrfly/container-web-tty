@@ -1,8 +1,8 @@
-import * as bare from "xterm";
 import { lib } from "libapps";
+import { Terminal } from 'xterm';
 export declare class Xterm {
     elem: HTMLElement;
-    term: bare;
+    term: Terminal;
     resizeListener: () => void;
     decoder: lib.UTF8Decoder;
     message: HTMLElement;

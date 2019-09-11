@@ -1,15 +1,21 @@
 {
     "devDependencies": {
-        "license-loader": "^0.5.0",
-        "ts-loader": "^2.0.3",
-        "typescript": "^2.3.2",
-        "uglifyjs-webpack-plugin": "^1.0.0-beta.2",
-        "webpack": "^2.5.1",
-        "lodash": ">=4.17.13"
+        "braces": ">=3.0.2",
+        "license-loader": "^0.7.0",
+        "lodash": ">=4.17.15",
+        "randomatic": ">=3.1.1",
+        "ts-loader": "^6.0.4",
+        "typescript": "^3.6.2",
+        "uglifyjs-webpack-plugin": "^1.0.0",
+        "webpack": "^4.39.3",
+        "webpack-cli": "^3.3.8",
+        "xterm": ">=3.14.5"
     },
     "dependencies": {
+        "braces": ">=3.0.2",
         "libapps": "github:yudai/libapps#release-hterm-1.70",
-        "xterm": "^2.7.0",
-        "lodash": ">=4.17.13"
+        "lodash": ">=4.17.15",
+        "randomatic": ">=3.1.1",
+        "xterm": ">=3.14.5"
     }
 }

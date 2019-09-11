@@ -94,6 +94,7 @@ js/node_modules/xterm/dist/xterm.css:
 	cd js && \
 	npm install
 
+# .PHONY: js/dist/gotty-bundle.js
 js/dist/gotty-bundle.js: js/node_modules/webpack
 	cd js && \
 	`npm bin`/webpack
