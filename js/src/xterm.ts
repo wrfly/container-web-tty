@@ -33,6 +33,7 @@ export class Xterm {
         window.addEventListener("resize", this.resizeListener);
 
         this.term.open(elem);
+        this.resizeListener(); // resize first
 
         this.decoder = new lib.UTF8Decoder()
     };
