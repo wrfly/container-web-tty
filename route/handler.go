@@ -88,15 +88,15 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 	}
 	log.Debugf("exec container: %s, params: %s", container.ID, arguments)
 
-	if q, err := parseQuery(strings.TrimSpace(arguments)); err != nil {
+	q, err := parseQuery(strings.TrimSpace(arguments))
+	if err != nil {
 		return err
-	} else {
-		container.Exec = types.ExecOptions{
-			Cmd:        q.Get("cmd"),
-			Env:        q.Get("env"),
-			User:       q.Get("user"),
-			Privileged: q.Get("p") != "",
-		}
+	}
+	container.Exec = types.ExecOptions{
+		Cmd:        q.Get("cmd"),
+		Env:        q.Get("env"),
+		User:       q.Get("user"),
+		Privileged: q.Get("p") != "",
 	}
 
 	containerTTY, err := server.containerCli.Exec(ctx, container)

@@ -14,18 +14,18 @@
     <div class="table-head">
       <table>
         <thead>
-          <tr class="row100 head">
-            <th class="cell100 column1">Container ID</th>
-            <th class="cell100 column2">Image</th>
-            <th class="cell100 column3">Command</th>
-            <th class="cell100 column4">Name</th>
-            <th class="cell100 column5">IP</th>
+          <tr>
+            <th class="column1">Container ID</th>
+            <th class="column2">Image</th>
+            <th class="column3">Command</th>
+            <th class="column4">Name</th>
+            <th class="column5">IP</th>
             {{- if $showLocation }}
-            <th class="cell100 column6">Location</th>
+            <th class="column6">Location</th>
             {{- end }}
-            <th class="cell100 column7">Status</th>
+            <th class="column7">Status</th>
             {{- if $ctl.Enable }}
-            <th class="cell100 column8">Actions</th>
+            <th class="column8">Actions</th>
             {{- end -}}
           </tr>
         </thead>
@@ -35,31 +35,31 @@
     <div class="table-body">
       <table>
         <tbody>
-          {{ range .containers }}
-          <tr class="row100 body">
-            <td class="cell100 column1" title="exec into container">
+          {{ range $i, $e := .containers }}
+          <tr {{ if (eq (mod $i 2) 1) -}}class="t c ver2"{{- end }}>
+            <td class="column1" title="exec into container">
               <a href="/exec/{{ printf "%.12s" .ID }}" value="{{ .ID }}" target="_blank">{{ printf "%.12s" .ID }}</a>
             </td>
             {{- if $share -}}
-            <td class="cell100 column2" title="{{ .Image }} | share tty">
+            <td class="column2" title="{{ .Image }} | share tty">
               <a href="#" class="copy" data-clipboard-text="/share/{{ printf "%.12s" .ID }}">{{ printf .Image }}</a>
             </td>
             {{- else -}}
-            <td class="cell100 column2" title="{{ .Image }}">
+            <td class="column2" title="{{ .Image }}">
               {{ printf .Image }}
             </td>
             {{- end -}}
-            <td class="cell100 column3" title="{{ .Command }}">{{ printf .Command }}</td>
-            <td class="cell100 column4" title="{{ .Name }}">
+            <td class="column3" title="{{ .Command }}">{{ printf .Command }}</td>
+            <td class="column4" title="{{ .Name }}">
               <a href="/logs/{{ printf "%.12s" .ID }}?follow=1&tail=10" target="_blank" title="get logs">{{ printf .Name }}</a>
             </td>
-            <td class="cell100 column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
+            <td class="column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
             {{- if $showLocation -}}
-            <td class="cell100 column6" title="{{ .LocServer }}">{{ printf .LocServer }}</td>
+            <td class="column6" title="{{ .LocServer }}">{{ printf .LocServer }}</td>
             {{- end -}}
-            <td class="cell100 column7" title="{{ .Status }}">{{ .State }}</td>
+            <td class="column7" title="{{ .Status }}">{{ .State }}</td>
             {{ if $ctl.Enable -}}
-            <td class="cell100 column8">
+            <td class="column8">
               {{ if or $ctl.Start $ctl.All }}
               <button title="start">Start</button>{{ end }} {{ if or $ctl.Stop $ctl.All }}
               <button title="stop">Stop</button>{{ end }} {{ if or $ctl.Restart $ctl.All}}
