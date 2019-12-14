@@ -1,8 +1,10 @@
 import { lib } from "libapps";
+import { FitAddon } from 'xterm-addon-fit';
 import { Terminal } from 'xterm';
 export declare class Xterm {
     elem: HTMLElement;
     term: Terminal;
+    fitAddon: FitAddon;
     resizeListener: () => void;
     decoder: lib.UTF8Decoder;
     message: HTMLElement;

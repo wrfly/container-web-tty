@@ -2,20 +2,18 @@
     "devDependencies": {
         "braces": ">=3.0.2",
         "license-loader": "^0.7.0",
-        "lodash": ">=4.17.15",
         "randomatic": ">=3.1.1",
-        "ts-loader": "^6.0.4",
-        "typescript": "^3.6.2",
-        "uglifyjs-webpack-plugin": "^1.0.0",
-        "webpack": "^4.39.3",
-        "webpack-cli": "^3.3.8",
-        "xterm": ">=3.14.5"
+        "ts-loader": "^6.2.1",
+        "typescript": "^3.7.3",
+        "uglifyjs-webpack-plugin": ">1.0.0",
+        "webpack": "^4.41.2",
+        "webpack-cli": "^3.3.10",
+        "xterm": "^4.3.0"
     },
     "dependencies": {
-        "braces": ">=3.0.2",
         "libapps": "github:yudai/libapps#release-hterm-1.70",
         "lodash": ">=4.17.15",
-        "randomatic": ">=3.1.1",
-        "xterm": ">=3.14.5"
+        "serialize-javascript": ">=2.1.1",
+        "xterm-addon-fit": "^0.3.0"
     }
 }
