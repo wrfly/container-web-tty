@@ -85,16 +85,16 @@ static/js: static js/dist/gotty-bundle.js
 	cp resources/*.js static/js/
 	cp js/dist/gotty-bundle.js static/js/gotty-bundle.js
 
-static/css: static js/node_modules/xterm/dist/xterm.css
+static/css: static js/node_modules/xterm/css/xterm.css
 	mkdir -p static/css
 	cp resources/*.css static/css
-	cp js/node_modules/xterm/dist/xterm.css static/css/xterm.css
+	cp js/node_modules/xterm/css/xterm.css static/css/xterm.css
 
 js/node_modules/xterm/dist/xterm.css:
 	cd js && \
 	npm install
 
-# .PHONY: js/dist/gotty-bundle.js
+.PHONY: js/dist/gotty-bundle.js
 js/dist/gotty-bundle.js: js/node_modules/webpack
 	cd js && \
 	`npm bin`/webpack
