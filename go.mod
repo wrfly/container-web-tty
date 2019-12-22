@@ -48,3 +48,15 @@ require (
 	k8s.io/klog v0.2.0 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
+
+replace (
+	golang.org/x/net => github.com/golang/net v0.0.0-20190326090315-15845e8f865b
+	golang.org/x/time => github.com/golang/time v0.0.0-20190308202827-9d24e82272b4
+	golang.org/x/tools => github.com/golang/tools v0.0.0-20180221164845-07fd8470d635
+	google.golang.org/grpc => github.com/grpc/grpc-go v1.19.1
+	k8s.io/api => github.com/kubernetes/api v0.0.0-20190222213804-5cb15d344471
+	k8s.io/apimachinery => github.com/kubernetes/apimachinery v0.0.0-20190221213512-86fb29eff628
+	k8s.io/client-go => github.com/kubernetes/client-go v10.0.0+incompatible
+	k8s.io/klog => github.com/kubernetes/klog v0.2.0
+	sigs.k8s.io/yaml => github.com/kubernetes-sigs/yaml v1.1.0
+)
