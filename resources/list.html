@@ -57,7 +57,7 @@
             {{- if $showLocation -}}
             <td class="column6" title="{{ .LocServer }}">{{ printf .LocServer }}</td>
             {{- end -}}
-            <td class="column7" title="{{ .Status }}">{{ .State }}</td>
+            <td class="column7" title="{{ .State }}">{{ .Status }}</td>
             {{ if $ctl.Enable -}}
             <td class="column8">
               {{ if or $ctl.Start $ctl.All }}
