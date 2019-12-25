@@ -104,7 +104,7 @@ func (r *fileReader) Seek(offset int64, whence int) (int64, error) {
 	return abs, nil
 }
 
-func (f *fileReader) Close() error {
+func (r *fileReader) Close() error {
 	return nil
 }
 
@@ -251,6 +251,7 @@ func unCompress(in []byte) []byte {
 }
 
 var (
+	// Root asset interface
 	Root Assets
 	fs   []*file
 	root = &data{}
