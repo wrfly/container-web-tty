@@ -9,7 +9,6 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.3.3 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
-	github.com/elazarl/go-bindata-assetfs v1.0.0
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a
 	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect
 	github.com/gin-gonic/gin v1.3.0
@@ -31,8 +30,7 @@ require (
 	github.com/sirupsen/logrus v1.4.0
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780 // indirect
-	github.com/wrfly/bindata v0.0.0-20190403163452-84af32a30f60 // indirect
-	github.com/wrfly/ecp v0.1.0
+	github.com/wrfly/ecp v0.1.1-0.20190725160759-97269b9e95f0
 	github.com/yudai/gotty v2.0.0-alpha.3+incompatible
 	golang.org/x/net v0.0.0-20190326090315-15845e8f865b
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect

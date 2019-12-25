@@ -42,6 +42,10 @@ var (
 	titleTemplate *noesctmpl.Template
 )
 
+func mod(i, j int) int {
+	return i % j
+}
+
 func init() {
 	indexData, err := asset.Find("/index.html")
 	if err != nil {
@@ -53,7 +57,14 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	listTemplate = listIndexData.Template()
+
+	listTemplate, err = template.New(listIndexData.Name()).
+		Funcs(template.FuncMap{
+			"mod": mod,
+		}).Parse(string(listIndexData.Bytes()))
+	if err != nil {
+		panic(err)
+	}
 
 	titleFormat := "{{ .containerName }} - {{ printf \"%.8s\" .containerID }}@{{ .containerLoc }}"
 	titleTemplate, err = noesctmpl.New("title").Parse(titleFormat)

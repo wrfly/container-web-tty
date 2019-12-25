@@ -189,10 +189,14 @@ th, td {
     background-color: #393939;
 }
 
+.t.c.ver2 td {
+    background-color: #171717;
+}
+
 .table.ver3 td {
     font-family: Lato-Regular;
     font-size: 15px;
-    color: #808080;
+    color: #717171;
     line-height: 1.4;
-    background-color: #222222;
+    background-color: #00000082;
 }
