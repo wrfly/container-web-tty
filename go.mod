@@ -31,6 +31,7 @@ require (
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780 // indirect
 	github.com/wrfly/ecp v0.1.1-0.20190725160759-97269b9e95f0
+	github.com/wrfly/pubsub v0.0.0-20200307185349-b35c047681a4
 	github.com/yudai/gotty v2.0.0-alpha.3+incompatible
 	golang.org/x/net v0.0.0-20190326090315-15845e8f865b
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
