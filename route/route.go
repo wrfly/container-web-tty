@@ -32,7 +32,7 @@ type Server struct {
 	srv          *http.Server
 	hostname     string
 
-	masters map[string]*types.ShareTTY
+	masters map[string]*types.MasterTTY
 	mMux    sync.RWMutex
 }
 
@@ -92,7 +92,7 @@ func New(containerCli container.Cli, options config.ServerConfig) (*Server, erro
 	return &Server{
 		options:      options,
 		containerCli: containerCli,
-		masters:      make(map[string]*types.ShareTTY, 50),
+		masters:      make(map[string]*types.MasterTTY, 50),
 		hostname:     h,
 
 		upgrader: &websocket.Upgrader{

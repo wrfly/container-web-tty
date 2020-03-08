@@ -52,6 +52,7 @@ type ServerConfig struct {
 	Term            string `default:"xterm"`
 	ShowLocation    bool
 	EnableShare     bool
+	Collaborate      bool
 
 	// audit
 	EnableAudit bool

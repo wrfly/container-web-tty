@@ -1,13 +1,14 @@
 package types
 
 import (
-	"fmt"
-	"io"
-	"sync"
-	"time"
+	"context"
 
+	"github.com/sirupsen/logrus"
+	"github.com/wrfly/pubsub"
 	"github.com/yudai/gotty/webtty"
 )
+
+var globalPubSuber = pubsub.NewMemPubSuber()
 
 // TTY is webtty.Slave with some additional methods.
 type TTY interface {
@@ -17,93 +18,83 @@ type TTY interface {
 	ActiveChan() <-chan struct{}
 }
 
-type ShareTTY struct {
-	TTY
-	shares map[string]shareTTY
-	m      sync.Mutex
+type SlaveTTY struct {
+	ps  pubsub.PubSubChan
+	tty TTY
+
+	readOnly bool
 }
 
-func (t *ShareTTY) Read(p []byte) (n int, err error) {
-	n, e := t.TTY.Read(p)
-	bs := make([]byte, n)
-	copy(bs, p[:n])
-	go t.writeShares(bs)
-	return n, e
+func (s *SlaveTTY) Read(p []byte) (int, error) {
+	bs := <-s.ps.Read()
+	// logrus.Debugf("slave tty read: %s", bs)
+	copy(p[:len(bs)], bs)
+	return len(bs), nil
 }
 
-func (t *ShareTTY) Write(p []byte) (n int, err error) {
-	return t.TTY.Write(p)
-}
-
-func (t *ShareTTY) Close() error {
-	t.m.Lock()
-	for _, s := range t.shares {
-		s.Close()
+func (s *SlaveTTY) Write(p []byte) (int, error) {
+	// logrus.Debugf("slave tty write: %s", p)
+	if !s.readOnly {
+		s.tty.Write(p)
 	}
-	t.m.Unlock()
+	return len(p), nil // write to parent as well
+}
 
+func (s *SlaveTTY) Close() error {
+	logrus.Debugf("close slave tty")
 	return nil
 }
 
-func (t *ShareTTY) Exit() error {
-	if err := t.Close(); err != nil {
-		return err
+type MasterTTY struct {
+	TTY
+	id   string
+	pubC pubsub.PubChan
+}
+
+func (m *MasterTTY) Read(p []byte) (n int, err error) {
+	n, err = m.TTY.Read(p) // read from tty
+	// logrus.Debugf("read from container: %s", p[:n])
+
+	// publish to all
+	if err := m.pubC.Write(p[:n]); err != nil {
+		panic(err)
 	}
-	return t.TTY.Exit()
+	return
 }
 
-func (t *ShareTTY) Fork(clientIP string) io.ReadCloser {
-	ID := fmt.Sprintf("%s-%d", clientIP, time.Now().UnixNano())
-	s := newShareTTY(t, ID)
-	t.m.Lock()
-	t.shares[ID] = s
-	t.m.Unlock()
-	return &s
+func (m *MasterTTY) Write(p []byte) (n int, err error) {
+	// logrus.Debugf("read from master: %x", p)
+	m.TTY.Write(p) // write to container
+	return len(p), nil
 }
 
-func (t *ShareTTY) writeShares(bs []byte) {
-	t.m.Lock()
-	for _, s := range t.shares {
-		s.pw.Write(bs)
+func (m *MasterTTY) Close() error {
+	logrus.Debugf("close master/fork-master tty: %s", m.id)
+	return nil
+}
+
+func (m *MasterTTY) Fork(ctx context.Context, collaborate bool) *SlaveTTY {
+	pubsub, err := globalPubSuber.PubSub(ctx, m.id)
+	if err != nil {
+		panic(err) // shouldn't happen
 	}
-	t.m.Unlock()
-}
-
-func NewShareTTY(t TTY) *ShareTTY {
-	return &ShareTTY{
-		TTY:    t,
-		shares: make(map[string]shareTTY, 50),
+	return &SlaveTTY{
+		tty: m.TTY,
+		ps:  pubsub,
+		// options
+		readOnly: !collaborate,
 	}
 }
 
-type shareTTY struct {
-	pt *ShareTTY
-	id string
-	pr *io.PipeReader
-	pw *io.PipeWriter
-}
-
-func (s *shareTTY) Close() error {
-	// delete itself
-	parent := s.pt
-	parent.m.Lock()
-	delete(parent.shares, s.id)
-	parent.m.Unlock()
-
-	// close pr & pw
-	s.pr.Close()
-	return s.pw.Close()
-}
-
-func (s *shareTTY) Read(p []byte) (int, error) {
-	return s.pr.Read(p)
-}
-
-func newShareTTY(parent *ShareTTY, id string) shareTTY {
-	s := shareTTY{
-		pt: parent,
-		id: id,
+func NewMasterTTY(ctx context.Context, t TTY, shareID string) (*MasterTTY, error) {
+	pubChan, err := globalPubSuber.Pub(ctx, shareID)
+	if err != nil {
+		return nil, err
 	}
-	s.pr, s.pw = io.Pipe()
-	return s
+
+	return &MasterTTY{
+		TTY:  t,
+		id:   shareID,
+		pubC: pubChan,
+	}, nil
 }

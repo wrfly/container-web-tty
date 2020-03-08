@@ -136,6 +136,13 @@ func main() {
 			Destination: &conf.Server.EnableShare,
 		},
 		&cli.BoolFlag{
+			Name:        "enable-collaborate",
+			Aliases:     []string{"collaborate"},
+			EnvVars:     util.EnvVars("collaborate"),
+			Usage:       "shared terminal can write to the same TTY",
+			Destination: &conf.Server.Collaborate,
+		},
+		&cli.BoolFlag{
 			Name:        "enable-audit",
 			Aliases:     []string{"audit"},
 			EnvVars:     util.EnvVars("audit"),
