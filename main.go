@@ -137,7 +137,7 @@ func main() {
 		},
 		&cli.BoolFlag{
 			Name:        "enable-collaborate",
-			Aliases:     []string{"collaborate"},
+			Aliases:     []string{"clb"},
 			EnvVars:     util.EnvVars("collaborate"),
 			Usage:       "shared terminal can write to the same TTY",
 			Destination: &conf.Server.Collaborate,

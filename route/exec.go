@@ -134,7 +134,8 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 	}
 
 	wrapper := &wsWrapper{conn}
-	masterTTY, err := types.NewMasterTTY(ctx, containerTTY, container.ID)
+	shareID := fmt.Sprintf("%s-%d", container.ID, time.Now().UnixNano())
+	masterTTY, err := types.NewMasterTTY(ctx, containerTTY, shareID)
 	if err != nil {
 		return err
 	}

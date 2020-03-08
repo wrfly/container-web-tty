@@ -141,32 +141,48 @@ docker run -dti --restart always --name container-web-tty \
 By enabling this feature, you can share the container's inputs and outputs
 with others via the share link (click the container's image to get the link).
 
+#### Collaborate
+
+```bash
+docker run -dti --restart always --name container-web-tty \
+    -p 8080:8080 \
+    -e WEB_TTY_SHARE=true \
+    -e WEB_TTY_COLLABORATE=true \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    wrfly/container-web-tty
+```
+
+By enabling this feature, once you exec into the container, you can share your
+process with others, that means anyone got the shareable link would type the command
+to the tty you are working on. You can edit the same file, type the same code, in the
+same TTY! (P.S. Only the first exec process would be shared to others)
+
 ## Options
 
 ```txt
 GLOBAL OPTIONS:
-   --addr value                server binding address
-   --audit-dir value           container audit log dir path
-   --backend value, -b value   backend type, 'docker' or 'kube' or 'grpc'(remote)
-   --control-all, --ctl-a      enable container control
-   --control-restart, --ctl-r  enable container restart
-   --control-start, --ctl-s    enable container start
-   --control-stop, --ctl-t     enable container stop
-   --debug, -d                 debug mode (log-level=debug enable pprof)
-   --docker-host value         docker host path
-   --docker-ps value           docker ps options
-   --enable-audit, --audit     enable audit the container outputs
-   --enable-share, --share     enable share the container's terminal
-   --extra-args value          pass extra args to the backend
-   --grpc-auth value           grpc auth token
-   --grpc-port value           grpc server port, -1 for disable the grpc server
-   --grpc-proxy value          grpc proxy address, in the format of http://127.0.0.1:8080 or socks5://127.0.0.1:1080
-   --grpc-servers value        upstream servers, for proxy mode(grpc address and port), use comma for split
-   --help, -h                  show help
-   --idle-time value           time out of an idle connection
-   --kube-config value         kube config path
-   --port value, -p value      HTTP server port, -1 for disable the HTTP server
-   --version, -v               print the version
+   --addr value                 server binding address (default: "0.0.0.0")
+   --audit-dir value            container audit log dir path (default: "audit")
+   --backend value, -b value    backend type, 'docker' or 'kube' or 'grpc'(remote) (default: "docker")
+   --control-all, --ctl-a       enable container control (default: false)
+   --control-restart, --ctl-r   enable container restart (default: false)
+   --control-start, --ctl-s     enable container start   (default: false)
+   --control-stop, --ctl-t      enable container stop    (default: false)
+   --debug, -d                  debug mode (log-level=debug enable pprof) (default: false)
+   --docker-host value          docker host path (default: "/var/run/docker.sock")
+   --docker-ps value            docker ps options
+   --enable-audit, --audit      enable audit the container outputs (default: false)
+   --enable-collaborate, --clb  shared terminal can write to the same TTY (default: false)
+   --enable-share, --share      enable share the container's terminal (default: false)
+   --grpc-auth value            grpc auth token (default: "password")
+   --grpc-port value            grpc server port, -1 for disable the grpc server (default: -1)
+   --grpc-proxy value           grpc proxy address, in the format of http://127.0.0.1:8080 or socks5://127.0.0.1:1080
+   --grpc-servers value         upstream servers, for proxy mode(grpc address and port), use comma for split
+   --help, -h                   show help (default: false)
+   --idle-time value            time out of an idle connection
+   --kube-config value          kube config path (default: "/home/mr/.kube/config")
+   --port value, -p value       HTTP server port, -1 for disable the HTTP server (default: 8080)
+   --version, -v                print the version (default: false)
 ```
 
 ## Show-off
