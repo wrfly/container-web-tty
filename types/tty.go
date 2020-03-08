@@ -21,6 +21,8 @@ type TTY interface {
 type SlaveTTY struct {
 	ps  pubsub.PubSubChan
 	tty TTY
+
+	readOnly bool
 }
 
 func (s *SlaveTTY) Read(p []byte) (int, error) {
@@ -32,10 +34,9 @@ func (s *SlaveTTY) Read(p []byte) (int, error) {
 
 func (s *SlaveTTY) Write(p []byte) (int, error) {
 	// logrus.Debugf("slave tty write: %s", p)
-	// if err := s.ps.Write(p); err != nil {
-	// 	return 0, err
-	// }
-	s.tty.Write(p)
+	if !s.readOnly {
+		s.tty.Write(p)
+	}
 	return len(p), nil // write to parent as well
 }
 
@@ -72,7 +73,7 @@ func (m *MasterTTY) Close() error {
 	return nil
 }
 
-func (m *MasterTTY) Fork(ctx context.Context) *SlaveTTY {
+func (m *MasterTTY) Fork(ctx context.Context, collaborate bool) *SlaveTTY {
 	pubsub, err := globalPubSuber.PubSub(ctx, m.id)
 	if err != nil {
 		panic(err) // shouldn't happen
@@ -80,6 +81,8 @@ func (m *MasterTTY) Fork(ctx context.Context) *SlaveTTY {
 	return &SlaveTTY{
 		tty: m.TTY,
 		ps:  pubsub,
+		// options
+		readOnly: !collaborate,
 	}
 }
 

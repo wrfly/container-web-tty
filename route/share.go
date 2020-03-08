@@ -42,7 +42,7 @@ func (server *Server) handleShare(c *gin.Context) {
 		return
 	}
 
-	fork := masterTTY.Fork(ctx)
+	fork := masterTTY.Fork(ctx, server.options.Collaborate)
 	defer fork.Close()
 
 	tty, err := webtty.New(

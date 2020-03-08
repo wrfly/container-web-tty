@@ -150,7 +150,7 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 	}()
 
 	if server.options.EnableAudit {
-		go audit.LogTo(ctx, masterTTY.Fork(ctx), audit.LogOpts{
+		go audit.LogTo(ctx, masterTTY.Fork(ctx, false), audit.LogOpts{
 			Dir:         server.options.AuditLogDir,
 			ContainerID: container.ID,
 			ClientIP:    conn.RemoteAddr().String(),
