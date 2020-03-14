@@ -16,14 +16,25 @@ import (
 	"github.com/wrfly/container-web-tty/util"
 )
 
+func (server *Server) handleExecRedirect(c *gin.Context) {
+	containerID := c.Param("id")
+	execID := server.setContainerID(containerID)
+	c.Redirect(302, "/exec/"+execID)
+}
+
 func (server *Server) handleWSIndex(c *gin.Context) {
-	cInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
+	execID := c.Param("id")
+	containerID, ok := server.getContainerID(execID)
+	if !ok {
+		log.Errorf("exec id %s not found", execID)
+		return
+	}
+	cInfo := server.containerCli.GetInfo(c.Request.Context(), containerID)
 	titleVars := server.titleVariables(
 		[]string{"server"},
 		map[string]map[string]interface{}{
 			"server": map[string]interface{}{
 				"containerName": cInfo.Name,
-				"containerID":   cInfo.ID,
 			},
 		},
 	)

@@ -23,9 +23,17 @@ type SlaveTTY struct {
 	tty TTY
 
 	readOnly bool
+
+	masterOutputs []byte
 }
 
 func (s *SlaveTTY) Read(p []byte) (int, error) {
+	if len(s.masterOutputs) != 0 {
+		copy(p[:len(s.masterOutputs)], s.masterOutputs)
+		s.masterOutputs = nil
+		return len(p), nil
+	}
+
 	bs := <-s.ps.Read()
 	// logrus.Debugf("slave tty read: %s", bs)
 	copy(p[:len(bs)], bs)
@@ -47,8 +55,9 @@ func (s *SlaveTTY) Close() error {
 
 type MasterTTY struct {
 	TTY
-	id   string
-	pubC pubsub.PubChan
+	id      string
+	pubC    pubsub.PubChan
+	outputs []byte // previous outputs
 }
 
 func (m *MasterTTY) Read(p []byte) (n int, err error) {
@@ -57,7 +66,7 @@ func (m *MasterTTY) Read(p []byte) (n int, err error) {
 
 	// publish to all
 	if err := m.pubC.Write(p[:n]); err != nil {
-		panic(err)
+		logrus.Errorf("pub err: %s", err)
 	}
 	return
 }
@@ -78,23 +87,40 @@ func (m *MasterTTY) Fork(ctx context.Context, collaborate bool) *SlaveTTY {
 	if err != nil {
 		panic(err) // shouldn't happen
 	}
+	outputs := make([]byte, len(m.outputs))
+	copy(outputs, m.outputs)
 	return &SlaveTTY{
 		tty: m.TTY,
 		ps:  pubsub,
 		// options
 		readOnly: !collaborate,
+		// previous outputs from master
+		masterOutputs: outputs,
 	}
 }
 
-func NewMasterTTY(ctx context.Context, t TTY, shareID string) (*MasterTTY, error) {
-	pubChan, err := globalPubSuber.Pub(ctx, shareID)
+func NewMasterTTY(ctx context.Context, t TTY, execID string) (*MasterTTY, error) {
+	pubsub, err := globalPubSuber.PubSub(ctx, execID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &MasterTTY{
-		TTY:  t,
-		id:   shareID,
-		pubC: pubChan,
-	}, nil
+	master := &MasterTTY{
+		TTY:     t,
+		id:      execID,
+		pubC:    pubsub,
+		outputs: make([]byte, 1e3),
+	}
+
+	go func() {
+		for output := range pubsub.Read() {
+			master.outputs = append(master.outputs, output...)
+			// master.outputs = append(master.outputs, '\n')
+			if len(master.outputs) > 1e3 {
+				master.outputs = master.outputs[len(master.outputs)-1e3:]
+			}
+		}
+	}()
+
+	return master, nil
 }

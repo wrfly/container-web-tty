@@ -38,7 +38,7 @@
           {{ range $i, $e := .containers }}
           <tr {{ if (eq (mod $i 2) 1) -}}class="t c ver2"{{- end }}>
             <td class="column1" title="exec into container">
-              <a href="/exec/{{ printf "%.12s" .ID }}" value="{{ .ID }}" target="_blank">{{ printf "%.12s" .ID }}</a>
+              <a href="/e/{{ printf "%.12s" .ID }}" value="{{ .ID }}" target="_blank">{{ printf "%.12s" .ID }}</a>
             </td>
             {{- if $share -}}
             <td class="column2" title="{{ .Image }} | share tty">
