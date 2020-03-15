@@ -15,11 +15,17 @@ import (
 	"github.com/yudai/gotty/webtty"
 )
 
+func (server *Server) handleExecRedirect(c *gin.Context) {
+	containerID := c.Param("cid")
+	execID := server.setContainerID(containerID)
+	c.Redirect(302, "/exec/"+execID)
+}
+
 func (server *Server) handleExec(c *gin.Context, counter *counter) {
-	execID := c.Param("id")
+	execID := c.Param("eid")
 	containerID, ok := server.getContainerID(execID)
 	if !ok {
-		log.Errorf("exec id %s not found", execID)
+		c.String(http.StatusBadRequest, fmt.Sprintf("exec id %s not found", execID))
 		return
 	}
 
@@ -98,7 +104,7 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 	if err != nil {
 		return err
 	}
-	log.Debugf("exec container: %s, params: %s", container.ID, arguments)
+	log.Debugf("exec container: %s, params: %s", container.ID[:7], arguments)
 
 	q, err := parseQuery(strings.TrimSpace(arguments))
 	if err != nil {
@@ -115,7 +121,12 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 	if err != nil {
 		return fmt.Errorf("exec container error: %s", err)
 	}
-	defer containerTTY.Exit()
+	defer func() {
+		log.Infof("container %s exit", container.ID[:7])
+		if err := containerTTY.Exit(); err != nil {
+			log.Warnf("exit container err: %s", err)
+		}
+	}()
 
 	// handle timeout
 	tout := server.options.IdleTime
@@ -162,7 +173,9 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 	defer func() {
 		// if master dead, all slaves dead
 		server.m.Lock()
+		masterTTY.Close()
 		delete(server.masters, execID)
+		delete(server.execs, execID)
 		server.m.Unlock()
 	}()
 
@@ -174,7 +187,7 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 		})
 	}
 
-	log.Infof("new web tty for container: %s", container.ID)
+	log.Infof("new web tty for container: %s", container.ID[:7])
 	wrapper := &wsWrapper{conn}
 	tty, err := webtty.New(wrapper, masterTTY, opts...)
 	if err != nil {

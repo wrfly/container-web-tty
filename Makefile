@@ -43,7 +43,6 @@ image:
 push-image:
 	docker push $(IMAGE)
 
-
 .PHONY: push-develop
 push-develop:
 	docker tag $(IMAGE) $(IMAGE):develop

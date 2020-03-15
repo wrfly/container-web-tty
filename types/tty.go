@@ -64,10 +64,9 @@ func (m *MasterTTY) Read(p []byte) (n int, err error) {
 	n, err = m.TTY.Read(p) // read from tty
 	// logrus.Debugf("read from container: %s", p[:n])
 
-	// publish to all
-	if err := m.pubC.Write(p[:n]); err != nil {
-		logrus.Errorf("pub err: %s", err)
-	}
+	// publish to all, ignore the error
+	m.pubC.Write(p[:n])
+
 	return
 }
 

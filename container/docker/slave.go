@@ -4,6 +4,7 @@ import (
 	"time"
 
 	apiTypes "github.com/docker/docker/api/types"
+	"github.com/sirupsen/logrus"
 )
 
 // execInjector implement webtty.Slave
@@ -35,13 +36,12 @@ func (enj *execInjector) Read(p []byte) (n int, err error) {
 }
 
 func (enj *execInjector) Write(p []byte) (n int, err error) {
-	// logrus.Debugf("input: %v\n", p)
+	logrus.Debugf("input: %v\n", p)
 	return enj.hResp.Conn.Write(p)
 }
 
 func (enj *execInjector) Exit() error {
-	enj.Write([]byte{3}) // ^C
-	enj.Write([]byte{4}) // ^D
+	enj.Write([]byte{3, 13, 4, 13}) // ^C, ^D, enter
 	close(enj.activeChan)
 	return enj.hResp.Conn.Close()
 }

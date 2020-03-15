@@ -140,19 +140,19 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 
 	// exec
 	counter := newCounter(server.options.IdleTime)
-	router.GET("/e/:id/", server.handleExecRedirect) // containerID
-	router.GET("/exec/:id/", server.terminalPage)    // execID
-	router.GET("/exec/:id/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
+	router.GET("/e/:cid/", server.handleExecRedirect) // containerID
+	router.GET("/exec/:eid/", server.handleWSIndex)   // execID
+	router.GET("/exec/:eid/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
 
 	if server.options.EnableShare {
 		// share screen
-		router.GET("/share/:id/", server.terminalPage)
-		router.GET("/share/:id/ws", func(c *gin.Context) { server.handleShare(c) })
+		router.GET("/share/:eid/", server.handleWSIndex)
+		router.GET("/share/:eid/ws", func(c *gin.Context) { server.handleShare(c) })
 	}
 
 	// logs
-	router.GET("/logs/:id/", server.terminalPage)
-	router.GET("/logs/:id/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
+	router.GET("/logs/:cid/", server.handleWSIndex)
+	router.GET("/logs/:cid/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
 
 	ctl := server.options.Control
 	if ctl.Enable {

@@ -2,6 +2,7 @@ package route
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -16,7 +17,7 @@ func (server *Server) handleShare(c *gin.Context) {
 	masterTTY, ok := server.masters[execID]
 	server.m.RUnlock()
 	if !ok || masterTTY == nil {
-		log.Error("share terminal error, master not found")
+		c.String(http.StatusBadRequest, "share terminal error, master not found")
 		return
 	}
 
@@ -70,7 +71,8 @@ func (server *Server) processShare(c *gin.Context, execID string, masterTTY *typ
 		return
 	}
 
-	if err := tty.Run(ctx); err != nil && err != webtty.ErrMasterClosed {
+	err = tty.Run(ctx)
+	if err != nil && err != webtty.ErrMasterClosed {
 		e := fmt.Sprintf("failed to run webtty: %s", err)
 		log.Error(e)
 	}
