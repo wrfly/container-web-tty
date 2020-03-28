@@ -74,8 +74,8 @@ github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780 h1:vG/gY/PxA3v3l04
 github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780/go.mod h1:iT03XoTwV7xq/+UGwKO3UbC1nNNlopQiY61beSdrtOA=
 github.com/wrfly/ecp v0.1.1-0.20190725160759-97269b9e95f0 h1:Zy3Chk4CvwAqJ6YgQym6hJQEk4JE7iPbHRfxkru6Zn0=
 github.com/wrfly/ecp v0.1.1-0.20190725160759-97269b9e95f0/go.mod h1:cmmFTD+MLlrDa3/EO3gjeKLKUhHiYP3cgaaJamIS1NU=
-github.com/wrfly/pubsub v0.0.0-20200307185349-b35c047681a4 h1:G8zs08Ln8gek2TpeM1dgYFlUepEK6JNCM966Sf1kT+8=
-github.com/wrfly/pubsub v0.0.0-20200307185349-b35c047681a4/go.mod h1:WFtPVb6GumrLEVcAHZPSbjZmvWgenDSi4ceFW7k1r30=
+github.com/wrfly/pubsub v0.0.0-20200314104228-47828c5578b6 h1:iuI+7TJcnnKB3WH08PmK5Y4c66Tf2XNXmnvLpIFFP30=
+github.com/wrfly/pubsub v0.0.0-20200314104228-47828c5578b6/go.mod h1:WFtPVb6GumrLEVcAHZPSbjZmvWgenDSi4ceFW7k1r30=
 github.com/yudai/gotty v2.0.0-alpha.3+incompatible h1:eUFSuV4B2g+Rj+PS3HxhvOGEu2klWRzsl/7z7T/NUJQ=
 github.com/yudai/gotty v2.0.0-alpha.3+incompatible/go.mod h1:QBg0hL6VTVdqQk0qoBYk631EHLRH+XtR4wtbVi64UJ4=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793 h1:u+LnwYTOOW7Ukr/fppxEb1Nwz0AtPflrblfvUudpo+I=

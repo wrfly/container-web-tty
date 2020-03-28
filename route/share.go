@@ -6,35 +6,36 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"github.com/wrfly/container-web-tty/types"
 	"github.com/yudai/gotty/webtty"
 )
 
-func (server *Server) handleShare(c *gin.Context) {
-	ctx := c.Request.Context()
-	cid := c.Param("id")
-	cInfo := server.containerCli.GetInfo(ctx, cid)
-
+func (server *Server) processShare(c *gin.Context, execID string, masterTTY *types.MasterTTY) {
 	conn, err := server.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Errorf("upgrade ws error: %s", err)
 		return
 	}
 	defer conn.Close()
-
 	// note: must read the init message
 	// although it's useless in this situation
 	server.readInitMessage(conn)
 
-	server.mMux.RLock()
-	masterTTY, ok := server.masters[cInfo.ID]
-	server.mMux.RUnlock()
+	ctx := c.Request.Context()
+	containerID, ok := server.getContainerID(execID)
 	if !ok {
-		log.Error("share terminal error, master not found")
-		conn.WriteMessage(websocket.CloseMessage, []byte("master container not found, exit"))
+		log.Error("share terminal error, exec not found")
+		conn.WriteMessage(websocket.CloseMessage,
+			[]byte("exec container not found, exit"))
 		return
 	}
 
-	titleBuf, err := server.makeTitleBuff(cInfo)
+	cInfo := server.containerCli.GetInfo(ctx, containerID)
+	var titleExtra = "[READONLY]"
+	if server.options.Collaborate {
+		titleExtra = "[SLAVE]"
+	}
+	titleBuf, err := server.makeTitleBuff(cInfo, titleExtra)
 	if err != nil {
 		e := fmt.Sprintf("failed to fill window title template: %s", err)
 		conn.WriteMessage(websocket.CloseMessage, []byte(e))
@@ -42,15 +43,18 @@ func (server *Server) handleShare(c *gin.Context) {
 		return
 	}
 
-	fork := masterTTY.Fork(ctx, server.options.Collaborate)
-	defer fork.Close()
+	master := masterTTY.Fork(ctx, true)
+	defer master.Close()
+
+	ttyOptions := []webtty.Option{webtty.WithWindowTitle(titleBuf)}
+	if server.options.Collaborate {
+		ttyOptions = append(ttyOptions, webtty.WithPermitWrite())
+	}
 
 	tty, err := webtty.New(
 		&wsWrapper{conn},
-		newSlave(fork, true),
-		[]webtty.Option{
-			webtty.WithWindowTitle(titleBuf),
-			webtty.WithPermitWrite()}...,
+		newSlave(master),
+		ttyOptions...,
 	)
 	if err != nil {
 		e := fmt.Sprintf("failed to create webtty: %s", err)
@@ -59,7 +63,8 @@ func (server *Server) handleShare(c *gin.Context) {
 		return
 	}
 
-	if err := tty.Run(ctx); err != nil && err != webtty.ErrMasterClosed {
+	err = tty.Run(ctx)
+	if err != nil && err != webtty.ErrMasterClosed {
 		e := fmt.Sprintf("failed to run webtty: %s", err)
 		log.Error(e)
 	}

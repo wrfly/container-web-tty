@@ -51,8 +51,7 @@ type ServerConfig struct {
 	WSOrigin        string
 	Term            string `default:"xterm"`
 	ShowLocation    bool
-	EnableShare     bool
-	Collaborate      bool
+	Collaborate     bool
 
 	// audit
 	EnableAudit bool

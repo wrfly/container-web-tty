@@ -32,8 +32,11 @@ type Server struct {
 	srv          *http.Server
 	hostname     string
 
+	// execID -> containerID
+	execs map[string]string
+	// execID -> process
 	masters map[string]*types.MasterTTY
-	mMux    sync.RWMutex
+	m       sync.RWMutex
 }
 
 var (
@@ -66,7 +69,7 @@ func init() {
 		panic(err)
 	}
 
-	titleFormat := "{{ .containerName }} - {{ printf \"%.8s\" .containerID }}@{{ .containerLoc }}"
+	titleFormat := "{{ .containerName }}@{{ .containerLoc }}"
 	titleTemplate, err = noesctmpl.New("title").Parse(titleFormat)
 	if err != nil {
 		log.Fatal(err)
@@ -92,6 +95,7 @@ func New(containerCli container.Cli, options config.ServerConfig) (*Server, erro
 	return &Server{
 		options:      options,
 		containerCli: containerCli,
+		execs:        make(map[string]string, 500),
 		masters:      make(map[string]*types.MasterTTY, 50),
 		hostname:     h,
 
@@ -136,18 +140,13 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 
 	// exec
 	counter := newCounter(server.options.IdleTime)
-	router.GET("/exec/:id/", server.terminalPage)
-	router.GET("/exec/:id/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
-
-	if server.options.EnableShare {
-		// share screen
-		router.GET("/share/:id/", server.terminalPage)
-		router.GET("/share/:id/ws", func(c *gin.Context) { server.handleShare(c) })
-	}
+	router.GET("/e/:cid/", server.handleExecRedirect) // containerID
+	router.GET("/exec/:eid/", server.handleWSIndex)   // execID
+	router.GET("/exec/:eid/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
 
 	// logs
-	router.GET("/logs/:id/", server.terminalPage)
-	router.GET("/logs/:id/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
+	router.GET("/logs/:cid/", server.handleWSIndex)
+	router.GET("/logs/:cid/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
 
 	ctl := server.options.Control
 	if ctl.Enable {

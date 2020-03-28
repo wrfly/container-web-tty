@@ -15,13 +15,39 @@ import (
 	"github.com/yudai/gotty/webtty"
 )
 
+func (server *Server) handleExecRedirect(c *gin.Context) {
+	containerID := c.Param("cid")
+	execID := server.setContainerID(containerID)
+	if query := c.Request.URL.RawQuery; query != "" {
+		c.Redirect(302, "/exec/"+execID+"?"+c.Request.URL.RawQuery)
+	} else {
+		c.Redirect(302, "/exec/"+execID)
+	}
+}
+
 func (server *Server) handleExec(c *gin.Context, counter *counter) {
-	cInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
-	server.generateHandleWS(c.Request.Context(), counter, cInfo).
+	execID := c.Param("eid")
+	containerID, ok := server.getContainerID(execID)
+	if !ok {
+		c.String(http.StatusBadRequest, fmt.Sprintf("exec id %s not found", execID))
+		return
+	}
+
+	server.m.RLock()
+	masterTTY, ok := server.masters[execID]
+	server.m.RUnlock()
+	if ok { // exec ID exist, use the same master
+		log.Infof("using exist master for exec %s", execID)
+		server.processShare(c, execID, masterTTY)
+		return
+	}
+
+	cInfo := server.containerCli.GetInfo(c.Request.Context(), containerID)
+	server.generateHandleWS(c.Request.Context(), execID, counter, cInfo).
 		ServeHTTP(c.Writer, c.Request)
 }
 
-func (server *Server) generateHandleWS(ctx context.Context, counter *counter, container types.Container) http.HandlerFunc {
+func (server *Server) generateHandleWS(ctx context.Context, execID string, counter *counter, container types.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if container.Shell == "" {
 			log.Errorf("cannot find a valid shell in container [%s]", container.ID)
@@ -60,7 +86,7 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 		cctx, timeoutCancel := context.WithCancel(ctx)
 		defer timeoutCancel()
 
-		err = server.processTTY(cctx, timeoutCancel, conn, container)
+		err = server.processTTY(cctx, execID, timeoutCancel, conn, container)
 		switch err {
 		case ctx.Err():
 			closeReason = "cancelation"
@@ -76,13 +102,13 @@ func (server *Server) generateHandleWS(ctx context.Context, counter *counter, co
 	}
 }
 
-func (server *Server) processTTY(ctx context.Context, timeoutCancel context.CancelFunc,
+func (server *Server) processTTY(ctx context.Context, execID string, timeoutCancel context.CancelFunc,
 	conn *websocket.Conn, container types.Container) error {
 	arguments, err := server.readInitMessage(conn)
 	if err != nil {
 		return err
 	}
-	log.Debugf("exec container: %s, params: %s", container.ID, arguments)
+	log.Debugf("exec container: %s, params: [%s]", container.ID[:7], arguments)
 
 	q, err := parseQuery(strings.TrimSpace(arguments))
 	if err != nil {
@@ -99,7 +125,12 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 	if err != nil {
 		return fmt.Errorf("exec container error: %s", err)
 	}
-	defer containerTTY.Exit()
+	defer func() {
+		log.Infof("container %s exit", container.ID[:7])
+		if err := containerTTY.Exit(); err != nil {
+			log.Warnf("exit container err: %s", err)
+		}
+	}()
 
 	// handle timeout
 	tout := server.options.IdleTime
@@ -130,24 +161,25 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 	opts := []webtty.Option{
 		webtty.WithWindowTitle(titleBuf),
 		webtty.WithPermitWrite(),
-		// webtty.WithReconnect(10), // not work....
 	}
 
-	wrapper := &wsWrapper{conn}
 	shareID := fmt.Sprintf("%s-%d", container.ID, time.Now().UnixNano())
 	masterTTY, err := types.NewMasterTTY(ctx, containerTTY, shareID)
 	if err != nil {
 		return err
 	}
-	server.mMux.Lock()
-	if _, ok := server.masters[container.ID]; !ok {
-		server.masters[container.ID] = masterTTY
-	}
-	server.mMux.Unlock()
+
+	server.m.Lock()
+	server.masters[execID] = masterTTY
+	server.m.Unlock()
+
 	defer func() {
-		server.mMux.Lock()
-		delete(server.masters, container.ID)
-		server.mMux.Unlock()
+		// if master dead, all slaves dead
+		server.m.Lock()
+		masterTTY.Close()
+		delete(server.masters, execID)
+		delete(server.execs, execID)
+		server.m.Unlock()
 	}()
 
 	if server.options.EnableAudit {
@@ -158,7 +190,8 @@ func (server *Server) processTTY(ctx context.Context, timeoutCancel context.Canc
 		})
 	}
 
-	log.Infof("new web tty for container: %s", container.ID)
+	log.Infof("new web tty for container: %s", container.ID[:7])
+	wrapper := &wsWrapper{conn}
 	tty, err := webtty.New(wrapper, masterTTY, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create webtty: %s", err)

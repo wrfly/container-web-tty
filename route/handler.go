@@ -4,48 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/types"
-	"github.com/wrfly/container-web-tty/util"
 )
-
-func (server *Server) handleWSIndex(c *gin.Context) {
-	cInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
-	titleVars := server.titleVariables(
-		[]string{"server"},
-		map[string]map[string]interface{}{
-			"server": map[string]interface{}{
-				"containerName": cInfo.Name,
-				"containerID":   cInfo.ID,
-			},
-		},
-	)
-
-	titleBuf := new(bytes.Buffer)
-	err := titleTemplate.Execute(titleBuf, titleVars)
-	if err != nil {
-		c.Error(err)
-	}
-
-	indexVars := map[string]interface{}{
-		"title": titleBuf.String(),
-	}
-
-	indexBuf := new(bytes.Buffer)
-	err = indexTemplate.Execute(indexBuf, indexVars)
-	if err != nil {
-		c.Error(err)
-	}
-
-	c.Writer.Write(indexBuf.Bytes())
-}
 
 func (server *Server) handleAuthToken(c *gin.Context) {
 	c.Header("Content-Type", "application/javascript")
@@ -87,7 +53,6 @@ func (server *Server) handleListContainers(c *gin.Context) {
 		"containers": server.containerCli.List(c.Request.Context()),
 		"control":    server.options.Control,
 		"loc":        server.options.ShowLocation,
-		"share":      server.options.EnableShare,
 	}
 
 	listBuf := new(bytes.Buffer)
@@ -137,83 +102,15 @@ func (server *Server) handleRestartContainer(c *gin.Context) {
 	server.handleContainerActions(c, "restart")
 }
 
-func (server *Server) handleLogs(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	conn, err := server.upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "server error: %s", err)
-		return
-	}
-	defer conn.Close()
-
-	initArg, err := server.readInitMessage(conn)
-	if err != nil {
-		c.String(http.StatusBadRequest, "read init message error: %s", err)
-		return
-	}
-
-	q, err := parseQuery(initArg)
-	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-	follow := true
-	if v := q.Get("follow"); v != "1" && v != "" {
-		follow = false
-	}
-	tail := "10"
-	if v := q.Get("tail"); v != "" {
-		tail = v
-	}
-	opts := types.LogOptions{
-		ID:     c.Param("id"),
-		Follow: follow,
-		Tail:   tail,
-	}
-
-	container := server.containerCli.GetInfo(ctx, opts.ID)
-
-	log.Debugf("get logs of container: %s", container.ID)
-	logsReadCloser, err := server.containerCli.Logs(ctx, opts)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "get logs error: %s", err)
-		return
-	}
-	defer logsReadCloser.Close()
-
-	titleBuf, err := server.makeTitleBuff(container)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "failed to fill window title template: %s", err)
-		return
-	}
-
-	tty, err := webtty.New(
-		&wsWrapper{conn},
-		newSlave(util.NopRWCloser(logsReadCloser), false),
-		[]webtty.Option{
-			webtty.WithWindowTitle(titleBuf),
-			webtty.WithPermitWrite(), // can type "enter"
-		}...,
-	)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "failed to create webtty: %s", err)
-		return
-	}
-
-	if err := tty.Run(ctx); err != nil {
-		if err != webtty.ErrMasterClosed && err != webtty.ErrSlaveClosed {
-			log.Errorf("failed to run webtty: %s", err)
-		}
-	}
-}
-
-func (server *Server) terminalPage(c *gin.Context) { server.handleWSIndex(c) }
-
-func (server *Server) makeTitleBuff(c types.Container) ([]byte, error) {
-	location := "127.0.0.1"
+func (server *Server) makeTitleBuff(c types.Container, extra ...string) ([]byte, error) {
+	location := "localhost"
 	if c.LocServer != "" {
 		location = c.LocServer
+	}
+
+	cName := c.Name
+	if len(extra) != 0 {
+		cName = extra[0] + " " + c.Name
 	}
 
 	titleVars := server.titleVariables(
@@ -221,7 +118,7 @@ func (server *Server) makeTitleBuff(c types.Container) ([]byte, error) {
 		map[string]map[string]interface{}{
 			"server": map[string]interface{}{
 				"containerLoc":  location,
-				"containerName": c.Name,
+				"containerName": cName,
 				"containerID":   c.ID,
 			},
 		},
