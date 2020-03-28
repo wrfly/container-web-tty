@@ -2,7 +2,6 @@ package route
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -11,21 +10,7 @@ import (
 	"github.com/yudai/gotty/webtty"
 )
 
-func (server *Server) handleShare(c *gin.Context) {
-	execID := c.Param("id")
-	server.m.RLock()
-	masterTTY, ok := server.masters[execID]
-	server.m.RUnlock()
-	if !ok || masterTTY == nil {
-		c.String(http.StatusBadRequest, "share terminal error, master not found")
-		return
-	}
-
-	server.processShare(c, execID, masterTTY, server.options.Collaborate)
-}
-
-func (server *Server) processShare(c *gin.Context, execID string, masterTTY *types.MasterTTY,
-	collaborate bool) {
+func (server *Server) processShare(c *gin.Context, execID string, masterTTY *types.MasterTTY) {
 	conn, err := server.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Errorf("upgrade ws error: %s", err)
@@ -46,7 +31,7 @@ func (server *Server) processShare(c *gin.Context, execID string, masterTTY *typ
 	}
 
 	cInfo := server.containerCli.GetInfo(ctx, containerID)
-	titleBuf, err := server.makeTitleBuff(cInfo)
+	titleBuf, err := server.makeTitleBuff(cInfo, !server.options.Collaborate)
 	if err != nil {
 		e := fmt.Sprintf("failed to fill window title template: %s", err)
 		conn.WriteMessage(websocket.CloseMessage, []byte(e))
@@ -54,15 +39,18 @@ func (server *Server) processShare(c *gin.Context, execID string, masterTTY *typ
 		return
 	}
 
-	fork := masterTTY.Fork(ctx, collaborate)
-	defer fork.Close()
+	master := masterTTY.Fork(ctx, true)
+	defer master.Close()
+
+	ttyOptions := []webtty.Option{webtty.WithWindowTitle(titleBuf)}
+	if server.options.Collaborate {
+		ttyOptions = append(ttyOptions, webtty.WithPermitWrite())
+	}
 
 	tty, err := webtty.New(
 		&wsWrapper{conn},
-		newSlave(fork, true),
-		[]webtty.Option{
-			webtty.WithWindowTitle(titleBuf),
-			webtty.WithPermitWrite()}...,
+		newSlave(master),
+		ttyOptions...,
 	)
 	if err != nil {
 		e := fmt.Sprintf("failed to create webtty: %s", err)

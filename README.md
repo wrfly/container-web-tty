@@ -130,23 +130,14 @@ After you exec some commands, you will see the inputs and outputs under the
 
 ### Real-time sharing
 
-```bash
-docker run -dti --restart always --name container-web-tty \
-    -p 8080:8080 \
-    -e WEB_TTY_SHARE=true \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    wrfly/container-web-tty
-```
+You can always share the container's inputs and outputs with others via the exec
+link, just share the `/exec/<exec-ID>` to them!
 
-By enabling this feature, you can share the container's inputs and outputs
-with others via the share link (click the container's image to get the link).
-
-#### Collaborate
+### Collaborate
 
 ```bash
 docker run -dti --restart always --name container-web-tty \
     -p 8080:8080 \
-    -e WEB_TTY_SHARE=true \
     -e WEB_TTY_COLLABORATE=true \
     -v /var/run/docker.sock:/var/run/docker.sock \
     wrfly/container-web-tty
@@ -155,7 +146,7 @@ docker run -dti --restart always --name container-web-tty \
 By enabling this feature, once you exec into the container, you can share your
 process with others, that means anyone got the shareable link would type the command
 to the tty you are working on. You can edit the same file, type the same code, in the
-same TTY! (P.S. Only the first exec process would be shared to others)
+same TTY! Just share the exec link to your friend!
 
 ## Options
 
@@ -172,8 +163,7 @@ GLOBAL OPTIONS:
    --docker-host value          docker host path (default: "/var/run/docker.sock")
    --docker-ps value            docker ps options
    --enable-audit, --audit      enable audit the container outputs (default: false)
-   --enable-collaborate, --clb  shared terminal can write to the same TTY (default: false)
-   --enable-share, --share      enable share the container's terminal (default: false)
+   --enable-collaborate, --clb  collaborate on the same TTY process (default: false)
    --grpc-auth value            grpc auth token (default: "password")
    --grpc-port value            grpc server port, -1 for disable the grpc server (default: -1)
    --grpc-proxy value           grpc proxy address, in the format of http://127.0.0.1:8080 or socks5://127.0.0.1:1080

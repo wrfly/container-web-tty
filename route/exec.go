@@ -34,7 +34,7 @@ func (server *Server) handleExec(c *gin.Context, counter *counter) {
 	server.m.RUnlock()
 	if ok { // exec ID exist, use the same master
 		log.Infof("using exist master for exec %s", execID)
-		server.processShare(c, execID, masterTTY, true)
+		server.processShare(c, execID, masterTTY)
 		return
 	}
 
@@ -157,7 +157,6 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 	opts := []webtty.Option{
 		webtty.WithWindowTitle(titleBuf),
 		webtty.WithPermitWrite(),
-		// webtty.WithReconnect(10), // not work....
 	}
 
 	shareID := fmt.Sprintf("%s-%d", container.ID, time.Now().UnixNano())

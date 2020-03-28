@@ -129,13 +129,6 @@ func main() {
 			Destination: &conf.Server.Control.Restart,
 		},
 		&cli.BoolFlag{
-			Name:        "enable-share",
-			Aliases:     []string{"share"},
-			EnvVars:     util.EnvVars("share"),
-			Usage:       "enable share the container's terminal",
-			Destination: &conf.Server.EnableShare,
-		},
-		&cli.BoolFlag{
 			Name:        "enable-collaborate",
 			Aliases:     []string{"clb"},
 			EnvVars:     util.EnvVars("collaborate"),

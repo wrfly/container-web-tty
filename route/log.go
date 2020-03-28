@@ -64,7 +64,7 @@ func (server *Server) handleLogs(c *gin.Context) {
 
 	tty, err := webtty.New(
 		&wsWrapper{conn},
-		newSlave(util.NopRWCloser(logsReadCloser), false),
+		newSlave(util.NopRWCloser(logsReadCloser)),
 		[]webtty.Option{
 			webtty.WithWindowTitle(titleBuf),
 			webtty.WithPermitWrite(), // can type "enter"

@@ -144,12 +144,6 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	router.GET("/exec/:eid/", server.handleWSIndex)   // execID
 	router.GET("/exec/:eid/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
 
-	if server.options.EnableShare {
-		// share screen
-		router.GET("/share/:eid/", server.handleWSIndex)
-		router.GET("/share/:eid/ws", func(c *gin.Context) { server.handleShare(c) })
-	}
-
 	// logs
 	router.GET("/logs/:cid/", server.handleWSIndex)
 	router.GET("/logs/:cid/"+"ws", func(c *gin.Context) { server.handleLogs(c) })

@@ -53,7 +53,6 @@ func (server *Server) handleListContainers(c *gin.Context) {
 		"containers": server.containerCli.List(c.Request.Context()),
 		"control":    server.options.Control,
 		"loc":        server.options.ShowLocation,
-		"share":      server.options.EnableShare,
 	}
 
 	listBuf := new(bytes.Buffer)
@@ -103,10 +102,15 @@ func (server *Server) handleRestartContainer(c *gin.Context) {
 	server.handleContainerActions(c, "restart")
 }
 
-func (server *Server) makeTitleBuff(c types.Container) ([]byte, error) {
+func (server *Server) makeTitleBuff(c types.Container, readonly ...bool) ([]byte, error) {
 	location := "127.0.0.1"
 	if c.LocServer != "" {
 		location = c.LocServer
+	}
+
+	cName := c.Name
+	if len(readonly) == 1 && readonly[0] {
+		cName = "[READONLY] " + c.Name
 	}
 
 	titleVars := server.titleVariables(
@@ -114,7 +118,7 @@ func (server *Server) makeTitleBuff(c types.Container) ([]byte, error) {
 		map[string]map[string]interface{}{
 			"server": map[string]interface{}{
 				"containerLoc":  location,
-				"containerName": c.Name,
+				"containerName": cName,
 				"containerID":   c.ID,
 			},
 		},
