@@ -31,7 +31,11 @@ func (server *Server) processShare(c *gin.Context, execID string, masterTTY *typ
 	}
 
 	cInfo := server.containerCli.GetInfo(ctx, containerID)
-	titleBuf, err := server.makeTitleBuff(cInfo, !server.options.Collaborate)
+	var titleExtra = "[READONLY]"
+	if server.options.Collaborate {
+		titleExtra = "[SLAVE]"
+	}
+	titleBuf, err := server.makeTitleBuff(cInfo, titleExtra)
 	if err != nil {
 		e := fmt.Sprintf("failed to fill window title template: %s", err)
 		conn.WriteMessage(websocket.CloseMessage, []byte(e))

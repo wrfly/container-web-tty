@@ -18,7 +18,11 @@ import (
 func (server *Server) handleExecRedirect(c *gin.Context) {
 	containerID := c.Param("cid")
 	execID := server.setContainerID(containerID)
-	c.Redirect(302, "/exec/"+execID)
+	if query := c.Request.URL.RawQuery; query != "" {
+		c.Redirect(302, "/exec/"+execID+"?"+c.Request.URL.RawQuery)
+	} else {
+		c.Redirect(302, "/exec/"+execID)
+	}
 }
 
 func (server *Server) handleExec(c *gin.Context, counter *counter) {
@@ -104,7 +108,7 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 	if err != nil {
 		return err
 	}
-	log.Debugf("exec container: %s, params: %s", container.ID[:7], arguments)
+	log.Debugf("exec container: %s, params: [%s]", container.ID[:7], arguments)
 
 	q, err := parseQuery(strings.TrimSpace(arguments))
 	if err != nil {

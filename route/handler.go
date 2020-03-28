@@ -102,15 +102,15 @@ func (server *Server) handleRestartContainer(c *gin.Context) {
 	server.handleContainerActions(c, "restart")
 }
 
-func (server *Server) makeTitleBuff(c types.Container, readonly ...bool) ([]byte, error) {
-	location := "127.0.0.1"
+func (server *Server) makeTitleBuff(c types.Container, extra ...string) ([]byte, error) {
+	location := "localhost"
 	if c.LocServer != "" {
 		location = c.LocServer
 	}
 
 	cName := c.Name
-	if len(readonly) == 1 && readonly[0] {
-		cName = "[READONLY] " + c.Name
+	if len(extra) != 0 {
+		cName = extra[0] + " " + c.Name
 	}
 
 	titleVars := server.titleVariables(
