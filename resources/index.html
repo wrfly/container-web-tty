@@ -13,4 +13,11 @@
     <script src="/config.js"></script>
     <script src="/js/gotty-bundle.js"></script>
   </body>
+  <script>
+    window.onbeforeunload = function (e) {
+        e = e || window.event;
+        if (e) {e.returnValue = '?';}
+        return '?';
+    };
+  </script>
 </html>
