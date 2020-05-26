@@ -6,7 +6,6 @@ module.exports = {
     output: {
         filename: "gotty-bundle.js"
     },
-    mode: "production",
     devtool: "source-map",
     resolve: {
         extensions: [".ts", ".tsx", ".js"],
@@ -21,6 +20,16 @@ module.exports = {
                 test: /\.js$/,
                 include: /node_modules/,
                 loader: 'license-loader'
+            },
+            {
+                test: /\.js$/,
+                include: /src/,
+                use: {
+                    loader: 'babel-loader',
+                    query: {
+                        presets: ["es2015"]
+                    }
+                }
             }
         ]
     },
