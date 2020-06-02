@@ -85,7 +85,7 @@ func (kube KubeCli) GetInfo(ctx context.Context, cid string) types.Container {
 }
 
 func trimContainerIDPrefix(id string) string {
-	return strings.TrimLeft(id, "docker://")
+	return strings.TrimPrefix(id, "docker://")
 }
 
 func containerReady(ready bool) string {
