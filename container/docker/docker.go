@@ -367,10 +367,11 @@ func (docker *DockerCli) Close() error {
 }
 
 func (docker *DockerCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
-	return docker.cli.ContainerLogs(ctx, opts.ID, apiTypes.ContainerLogsOptions{
+	rc, err := docker.cli.ContainerLogs(ctx, opts.ID, apiTypes.ContainerLogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
 		Follow:     opts.Follow,
 		Tail:       opts.Tail,
 	})
+	return parseContainerLog(rc), err
 }
