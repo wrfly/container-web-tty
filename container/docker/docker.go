@@ -279,7 +279,7 @@ func (docker *DockerCli) Restart(ctx context.Context, cid string) error {
 func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
 	// ["-a", "-f", "key=val"]
 	// https://docs.docker.com/engine/reference/commandline/ps/#filtering
-	listOptions := apiTypes.ContainerListOptions{Filters: filters.NewArgs()}
+	listOptions := apiTypes.ContainerListOptions{}
 	args := strings.Split(options, " ")
 	for i, arg := range args {
 		switch arg {
@@ -288,11 +288,11 @@ func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
 		case "-f", "--filter":
 			if i+1 < len(arg) {
 				f := args[i+1]
-				kv := strings.Split(f, "=")
-				if len(kv) != 2 {
-					return listOptions, fmt.Errorf("bad filter %s", f)
+				filterArgs, err := filters.ParseFlag(f, filters.NewArgs())
+				if err != nil {
+					return listOptions, err
 				}
-				listOptions.Filters.Add(kv[0], kv[1])
+				listOptions.Filters = filterArgs
 			}
 		case "-n", "--last":
 			if i+1 < len(arg) {
