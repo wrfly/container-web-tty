@@ -10,33 +10,32 @@ type logReadCloser struct {
 	io.Closer
 
 	docker io.ReadCloser
+
+	bsLeft int64
+
+	prevHeader []byte
 }
 
+func _makeLine(bs []byte) []byte {
+	if len(bs) == 0 {
+		return nil
+	}
+
+	line := make([]byte, len(bs), len(bs)+1)
+	copy(line, bs)
+
+	if line[len(line)-1] == '\n' {
+		line = append(line, '\r')
+	}
+	return line
+}
+
+// Read docker stream logs
 // https://ahmet.im/blog/docker-logs-api-binary-format-explained/
-func _dockerStreamFormat(p []byte) bool {
-	if len(p) < 8 {
-		return false
-	}
-	if p[0] != 1 && p[0] != 2 {
-		return false
-	}
-
-	for _, x := range p[1:4] {
-		if x != 0 {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (rc logReadCloser) Read(p []byte) (int, error) {
+func (rc *logReadCloser) Read(targetBytes []byte) (int, error) {
+	p := make([]byte, len(targetBytes))
 	n, err := rc.docker.Read(p)
 	if err != nil {
-		return n, err
-	}
-
-	if !_dockerStreamFormat(p) {
 		return n, err
 	}
 
@@ -45,29 +44,52 @@ func (rc logReadCloser) Read(p []byte) (int, error) {
 		msgLen int64
 		start  int64
 	)
-	bs := make([]byte, 0, len(p))
-	for start+msgLen < int64(len(p)) {
-		lenHex := fmt.Sprintf("%x", p[start+4:start+8])
+	bs := make([]byte, 0, n)
+
+	if len(rc.prevHeader) != 0 {
+		p = append(rc.prevHeader, p...) // append previous header
+		n = len(p)
+		rc.prevHeader = nil
+	} else if rc.bsLeft > 0 {
+		line := _makeLine(p[:rc.bsLeft])
+		bs = append(bs, line...)
+		start = rc.bsLeft // reset line start index
+		rc.bsLeft = 0     // reset left
+	}
+
+	for {
+		if start+8 > int64(n) {
+			rc.prevHeader = make([]byte, len(p[start:int64(n)]))
+			copy(rc.prevHeader, p[start:int64(n)])
+			break
+		}
+
+		header := p[start : start+8]
+		if p[start] != 1 && p[start] != 2 {
+			break
+		}
+
+		lenHex := fmt.Sprintf("%x", header[4:])
 		msgLen, err = strconv.ParseInt(lenHex, 16, 64)
 		if err != nil {
 			return 0, err
 		}
-		if msgLen == 0 {
+
+		start += 8 // move to msg beginning
+
+		if start+msgLen > int64(n) {
+			line := _makeLine(p[start:]) // append left bytes
+			bs = append(bs, line...)
+			rc.bsLeft = msgLen - (int64(n) - start)
 			break
 		}
 
-		start += 8
-		line := p[start : start+msgLen]
-		if line[len(line)-1] == '\n' {
-			line[len(line)-1] = '\r'
-			line = append(line, '\n') // must be \r\n
-		}
+		line := _makeLine(p[start : start+msgLen])
 		bs = append(bs, line...)
-		start += msgLen
+		start += msgLen // move start position to next
 	}
 
-	copy(p, bs)
-	return len(bs), nil
+	return copy(targetBytes, bs), nil
 }
 
 func parseContainerLog(rc io.ReadCloser) io.ReadCloser {
