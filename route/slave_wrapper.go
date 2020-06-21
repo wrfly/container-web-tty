@@ -19,10 +19,6 @@ func (sw *slaveWrapper) ResizeTerminal(columns int, rows int) error {
 }
 
 func (sw *slaveWrapper) Write(p []byte) (n int, err error) {
-	// logrus.Debugf("slaveWrapper write-> %s", p)
-	// if p[0] == 13 {
-	// 	p = append(p, 10) // append a new line
-	// }
 	return sw.master.Write(p)
 }
 

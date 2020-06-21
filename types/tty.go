@@ -2,6 +2,8 @@ package types
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/wrfly/pubsub"
@@ -22,9 +24,9 @@ type SlaveTTY struct {
 	ps  pubsub.PubSubChan
 	tty TTY
 
-	readOnly bool
-
+	readOnly      bool
 	masterOutputs []byte
+	mWriter       *mutexWriter
 }
 
 func (s *SlaveTTY) Read(p []byte) (int, error) {
@@ -41,11 +43,20 @@ func (s *SlaveTTY) Read(p []byte) (int, error) {
 }
 
 func (s *SlaveTTY) Write(p []byte) (int, error) {
-	// logrus.Debugf("slave tty write: %s", p)
-	if !s.readOnly {
-		s.tty.Write(p)
+	logrus.Debugf("browser write[slave]: %s", p)
+	if s.readOnly {
+		return len(p), nil
 	}
-	return len(p), nil // write to parent as well
+
+	s.mWriter.mutex.Lock()
+	defer s.mWriter.mutex.Unlock()
+	if !s.mWriter.SlaveCanWrite(s) {
+		return 0, nil // slave is writing, Slave cannot write
+	}
+	s.mWriter.lastSlaveWriteTime = time.Now()
+	s.mWriter.lastWroteSlave = s
+
+	return s.tty.Write(p)
 }
 
 func (s *SlaveTTY) Close() error {
@@ -58,6 +69,8 @@ type MasterTTY struct {
 	id      string
 	pubC    pubsub.PubChan
 	outputs []byte // previous outputs
+
+	mWriter *mutexWriter
 }
 
 func (m *MasterTTY) Read(p []byte) (n int, err error) {
@@ -65,15 +78,22 @@ func (m *MasterTTY) Read(p []byte) (n int, err error) {
 	// logrus.Debugf("read from container: %s", p[:n])
 
 	// publish to all, ignore the error
-	m.pubC.Write(p[:n])
+	_ = m.pubC.Write(p[:n])
 
 	return
 }
 
 func (m *MasterTTY) Write(p []byte) (n int, err error) {
-	// logrus.Debugf("read from master: %x", p)
-	m.TTY.Write(p) // write to container
-	return len(p), nil
+	logrus.Debugf("browser write[master]: %s", p)
+
+	m.mWriter.mutex.Lock()
+	defer m.mWriter.mutex.Unlock()
+	if !m.mWriter.MasterCanWrite() {
+		return 0, nil // slave is writing, master cannot write
+	}
+	m.mWriter.lastMasterWriteTime = time.Now()
+
+	return m.TTY.Write(p) // write to container
 }
 
 func (m *MasterTTY) Close() error {
@@ -95,6 +115,8 @@ func (m *MasterTTY) Fork(ctx context.Context, collaborate bool) *SlaveTTY {
 		readOnly: !collaborate,
 		// previous outputs from master
 		masterOutputs: outputs,
+		// mutex writer
+		mWriter: m.mWriter,
 	}
 }
 
@@ -109,6 +131,8 @@ func NewMasterTTY(ctx context.Context, t TTY, execID string) (*MasterTTY, error)
 		id:      execID,
 		pubC:    pubsub,
 		outputs: make([]byte, 1e3),
+
+		mWriter: &mutexWriter{},
 	}
 
 	go func() {
@@ -122,4 +146,34 @@ func NewMasterTTY(ctx context.Context, t TTY, execID string) (*MasterTTY, error)
 	}()
 
 	return master, nil
+}
+
+const _waiteWaitDuration = time.Second
+
+type mutexWriter struct {
+	lastMasterWriteTime time.Time
+	lastSlaveWriteTime  time.Time
+	lastWroteSlave      *SlaveTTY
+
+	mutex sync.Mutex
+}
+
+func (w *mutexWriter) MasterCanWrite() bool {
+	return time.Since(w.lastSlaveWriteTime) > _waiteWaitDuration
+}
+
+func (w *mutexWriter) SlaveCanWrite(tty *SlaveTTY) bool {
+	if time.Since(w.lastMasterWriteTime) < _waiteWaitDuration {
+		return false
+	}
+
+	if w.lastWroteSlave == nil {
+		return true
+	}
+
+	if w.lastWroteSlave == tty {
+		return true
+	}
+
+	return time.Since(w.lastSlaveWriteTime) > _waiteWaitDuration
 }

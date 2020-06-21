@@ -36,7 +36,7 @@ func (enj *execInjector) Read(p []byte) (n int, err error) {
 }
 
 func (enj *execInjector) Write(p []byte) (n int, err error) {
-	logrus.Debugf("input: %v\n", p)
+	logrus.Debugf("docker input: %v\n", p)
 	return enj.hResp.Conn.Write(p)
 }
 
