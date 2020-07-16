@@ -18,7 +18,7 @@
     },
     "dependencies": {
         "libapps": "github:yudai/libapps#release-hterm-1.70",
-        "lodash": ">=4.17.15",
+        "lodash": ">=4.17.19",
         "serialize-javascript": ">=2.1.1",
         "xterm-addon-fit": "^0.3.0"
     }
