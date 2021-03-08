@@ -33,11 +33,21 @@ func _makeLine(bs []byte) []byte {
 // Read docker stream logs
 // https://ahmet.im/blog/docker-logs-api-binary-format-explained/
 func (rc *logReadCloser) Read(targetBytes []byte) (int, error) {
-	p := make([]byte, len(targetBytes))
-	n, err := rc.docker.Read(p)
+	n, err := rc.docker.Read(targetBytes)
 	if err != nil {
 		return n, err
 	}
+
+	// FIXME: quick and dirty solution
+	// need to check the API version
+	if n >= 4 {
+		if targetBytes[1] != 0 || targetBytes[2] != 0 || targetBytes[3] != 0 {
+			return n, nil
+		}
+	}
+
+	p := make([]byte, len(targetBytes))
+	copy(p, targetBytes)
 
 	// docker log format
 	var (
