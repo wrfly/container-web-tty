@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { lib } from "libapps";
 import { FitAddon } from 'xterm-addon-fit';
 import { Terminal } from 'xterm';
@@ -9,7 +10,7 @@ export declare class Xterm {
     decoder: lib.UTF8Decoder;
     message: HTMLElement;
     messageTimeout: number;
-    messageTimer: number;
+    messageTimer: NodeJS.Timeout;
     constructor(elem: HTMLElement);
     info(): {
         columns: number;
