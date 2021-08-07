@@ -42,7 +42,10 @@ func NewCli(conf config.KubeConfig) (*KubeCli, error) {
 	}
 
 	// get namespaces
-	namespaceList, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	namespaceList, err := clientset.CoreV1().Namespaces().List(ctx,
+		metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +106,9 @@ func containerStartTime(state v1.ContainerState) time.Duration {
 }
 
 func (kube KubeCli) List(ctx context.Context) []types.Container {
-	pods, err := kube.cli.CoreV1().Pods("").List(metav1.ListOptions{})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	pods, err := kube.cli.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		logrus.Errorf("kubectl list pods error: %s", err)
 		return nil
@@ -234,14 +239,17 @@ func (kube KubeCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 	if c.PodName == "" || c.Namespace == "" {
 		return nil, fmt.Errorf("PodName or Namespace is empty")
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
 	pod, err := kube.cli.CoreV1().Pods(c.Namespace).
-		Get(c.PodName, metav1.GetOptions{})
+		Get(ctx, c.PodName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	if pod.Status.Phase == api.PodSucceeded || pod.Status.Phase == api.PodFailed {
 		return nil,
-			fmt.Errorf("cannot exec into a container in a completed pod; current phase is %s", pod.Status.Phase)
+			fmt.Errorf("cannot exec into a container in a completed pod; current phase is %s",
+				pod.Status.Phase)
 	}
 
 	cmds := []string{c.Shell, "-l"}
@@ -300,14 +308,17 @@ func (kube KubeCli) Close() error {
 	return nil
 }
 
-func (kube KubeCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
+func (kube KubeCli) Logs(ctx context.Context,
+	opts types.LogOptions) (io.ReadCloser, error) {
 	c := kube.GetInfo(ctx, opts.ID)
 	logrus.Debugf("get pod logs: %v", c)
 	if c.PodName == "" || c.Namespace == "" {
 		return nil, fmt.Errorf("PodName or Namespace is empty")
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
 	pod, err := kube.cli.CoreV1().Pods(c.Namespace).
-		Get(c.PodName, metav1.GetOptions{})
+		Get(ctx, c.PodName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -339,5 +350,5 @@ func (kube KubeCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadClo
 	// 	req.Param("limitBytes", strconv.FormatInt(*logOptions.LimitBytes, 10))
 	// }
 
-	return req.Stream()
+	return req.Stream(ctx)
 }

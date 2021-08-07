@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
 	"github.com/wrfly/ecp"
-	"gopkg.in/urfave/cli.v2"
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"
