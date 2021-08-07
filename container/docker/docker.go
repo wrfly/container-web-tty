@@ -288,11 +288,14 @@ func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {
 		case "-f", "--filter":
 			if i+1 < len(arg) {
 				f := args[i+1]
-				filterArgs, err := filters.ParseFlag(f, filters.NewArgs())
-				if err != nil {
-					return listOptions, err
+				kv := strings.Split(f, "=")
+				if len(kv) != 2 {
+					return listOptions, fmt.Errorf("bad filter '%s'", f)
 				}
-				listOptions.Filters = filterArgs
+				if listOptions.Filters.Len() == 0 {
+					listOptions.Filters = filters.NewArgs()
+				}
+				listOptions.Filters.Add(kv[0], kv[1])
 			}
 		case "-n", "--last":
 			if i+1 < len(arg) {
@@ -346,7 +349,10 @@ func (docker *DockerCli) Exec(ctx context.Context, container types.Container) (t
 		return nil, fmt.Errorf("exec ID empty")
 	}
 
-	resp, err := docker.cli.ContainerExecAttach(ctx, execID, execConfig)
+	execCheck := apiTypes.ExecStartCheck{
+		Tty: true,
+	}
+	resp, err := docker.cli.ContainerExecAttach(ctx, execID, execCheck)
 	if err != nil {
 		return nil, err
 	}
