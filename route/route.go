@@ -8,7 +8,9 @@ import (
 	"net/http"
 	pprof "net/http/pprof"
 	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	noesctmpl "text/template"
 	"time"
@@ -126,32 +128,42 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		router.Use(gin.Logger())
 	}
 
-	// Routes
-	router.GET("/", server.handleListContainers)
-	router.GET("/auth_token.js", server.handleAuthToken)
-	router.GET("/config.js", server.handleConfig)
+	base := server.options.Base
+	api := router.Group(base)
 
-	h := gin.WrapF(asset.Handler)
+	// Routes
+	api.GET("/", server.handleListContainers)
+	api.GET("/auth_token.js", server.handleAuthToken)
+	api.GET("/config.js", server.handleConfig)
+
+	rewriteH := func(c *gin.Context) {
+		if base != "/" {
+			c.Request.RequestURI = strings.TrimPrefix(
+				c.Request.RequestURI, base,
+			)
+		}
+		asset.Handler(c.Writer, c.Request)
+	}
 	for _, f := range asset.List() {
 		if f.Name() != "/" {
-			router.GET(f.Name(), h)
+			api.GET(f.Name(), rewriteH)
 		}
 	}
 
 	// exec
 	counter := newCounter(server.options.IdleTime)
-	router.GET("/e/:cid/", server.handleExecRedirect) // containerID
-	router.GET("/exec/:eid/", server.handleWSIndex)   // execID
-	router.GET("/exec/:eid/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
+	api.GET("/e/:cid/", server.handleExecRedirect) // containerID
+	api.GET("/exec/:eid/", server.handleWSIndex)   // execID
+	api.GET("/exec/:eid/"+"ws", func(c *gin.Context) { server.handleExec(c, counter) })
 
 	// logs
-	router.GET("/logs/:cid/", server.handleWSIndex)
-	router.GET("/logs/:cid/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
+	api.GET("/logs/:cid/", server.handleWSIndex)
+	api.GET("/logs/:cid/"+"ws", func(c *gin.Context) { server.handleLogs(c) })
 
 	ctl := server.options.Control
 	if ctl.Enable {
 		// container actions: start|stop|restart
-		containerG := router.Group("/container")
+		containerG := api.Group("/container")
 		if ctl.Start || ctl.All {
 			containerG.POST("/start/:id", server.handleStartContainer)
 		}
@@ -166,11 +178,11 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 	// pprof
 	rootMux := http.NewServeMux()
 	if log.GetLevel() == log.DebugLevel {
-		rootMux.HandleFunc("/debug/pprof/", pprof.Index)
-		rootMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-		rootMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-		rootMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-		rootMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		rootMux.HandleFunc(filepath.Join(base, "/debug/pprof/"), pprof.Index)
+		rootMux.HandleFunc(filepath.Join(base, "/debug/pprof/cmdline"), pprof.Cmdline)
+		rootMux.HandleFunc(filepath.Join(base, "/debug/pprof/profile"), pprof.Profile)
+		rootMux.HandleFunc(filepath.Join(base, "/debug/pprof/symbol"), pprof.Symbol)
+		rootMux.HandleFunc(filepath.Join(base, "/debug/pprof/trace"), pprof.Trace)
 	}
 	rootMux.Handle("/", router)
 
@@ -198,7 +210,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		}
 	}()
 
-	log.Infof("Server running at http://%s", hostPort)
+	log.Infof("Server running at http://%s%s", hostPort, base)
 
 	var err error
 	select {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +26,7 @@ func (server *Server) handleWSIndex(c *gin.Context) {
 	titleVars := server.titleVariables(
 		[]string{"server"},
 		map[string]map[string]interface{}{
-			"server": map[string]interface{}{
+			"server": {
 				"containerName": cInfo.Name,
 			},
 		},
@@ -39,6 +40,7 @@ func (server *Server) handleWSIndex(c *gin.Context) {
 
 	indexVars := map[string]interface{}{
 		"title": titleBuf.String(),
+		"base":  strings.TrimSuffix(server.options.Base, "/"),
 	}
 
 	indexBuf := new(bytes.Buffer)

@@ -41,6 +41,7 @@ type ControlConfig struct {
 type ServerConfig struct {
 	Address  string
 	Port     int
+	Base     string
 	GrpcPort int
 	IdleTime time.Duration
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -53,6 +54,7 @@ func (server *Server) handleListContainers(c *gin.Context) {
 		"containers": server.containerCli.List(c.Request.Context()),
 		"control":    server.options.Control,
 		"loc":        server.options.ShowLocation,
+		"base":       strings.TrimSuffix(server.options.Base, "/"),
 	}
 
 	listBuf := new(bytes.Buffer)
@@ -116,7 +118,7 @@ func (server *Server) makeTitleBuff(c types.Container, extra ...string) ([]byte,
 	titleVars := server.titleVariables(
 		[]string{"server"},
 		map[string]map[string]interface{}{
-			"server": map[string]interface{}{
+			"server": {
 				"containerLoc":  location,
 				"containerName": cName,
 				"containerID":   c.ID,

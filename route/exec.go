@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -18,10 +19,11 @@ import (
 func (server *Server) handleExecRedirect(c *gin.Context) {
 	containerID := c.Param("cid")
 	execID := server.setContainerID(containerID)
+	base := filepath.Join(server.options.Base, "/exec/") + "/"
 	if query := c.Request.URL.RawQuery; query != "" {
-		c.Redirect(302, "/exec/"+execID+"?"+c.Request.URL.RawQuery)
+		c.Redirect(302, base+execID+"?"+c.Request.URL.RawQuery)
 	} else {
-		c.Redirect(302, "/exec/"+execID)
+		c.Redirect(302, base+execID)
 	}
 }
 

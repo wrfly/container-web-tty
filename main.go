@@ -33,6 +33,13 @@ func main() {
 			Value:       8080,
 			Destination: &conf.Server.Port,
 		},
+		&cli.StringFlag{
+			Name:        "base",
+			EnvVars:     util.EnvVars("base"),
+			Usage:       "server base path, default is /",
+			Value:       "/",
+			Destination: &conf.Server.Base,
+		},
 		&cli.BoolFlag{
 			Name:        "debug",
 			Aliases:     []string{"d"},

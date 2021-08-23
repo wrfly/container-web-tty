@@ -1,11 +1,11 @@
-{{- $ctl := .control -}} {{- $showLocation := .loc -}} {{- $share := .share -}}
+{{- $ctl := .control -}} {{- $showLocation := .loc -}} {{- $share := .share -}} {{- $base := .base -}}
 <!doctype html>
 <html>
 
 <head>
   <title>{{ .title }}</title>
-  <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="stylesheet" href="/css/list.css" />
+  <link rel="icon" type="image/png" href="{{.base}}/favicon.png">
+  <link rel="stylesheet" href="{{$base}}/css/list.css" />
 </head>
 
 <body>
@@ -37,12 +37,12 @@
           {{ range $i, $e := .containers }}
           <tr {{ if (eq (mod $i 2) 1) -}}class="t c ver2"{{- end }}>
             <td class="column1" title="exec into container">
-              <a href="/e/{{ printf "%.12s" .ID }}" value="{{ .ID }}" target="_blank">{{ printf "%.12s" .ID }}</a>
+              <a href="{{$base}}/e/{{ printf "%.12s" .ID }}" value="{{ .ID }}" target="_blank">{{ printf "%.12s" .ID }}</a>
             </td>
             <td class="column2" title="{{ .Image }}">{{ printf .Image }}</td>
             <td class="column3" title="{{ .Command }}">{{ printf .Command }}</td>
             <td class="column4" title="{{ .Name }}">
-              <a href="/logs/{{ printf "%.12s" .ID }}?follow=1&tail=10" target="_blank" title="get logs">{{ printf .Name }}</a>
+              <a href="{{$base}}/logs/{{ printf "%.12s" .ID }}?follow=1&tail=10" target="_blank" title="get logs">{{ printf .Name }}</a>
             </td>
             <td class="column5" title="{{ .IPs }}">{{ index .IPs 0 }}</td>
             {{- if $showLocation -}}
@@ -64,7 +64,7 @@
     </div>
   </div>
 
-  <script src="/js/control.js"></script>
+  <script src="{{$base}}/js/control.js"></script>
 </body>
 
 </html>
