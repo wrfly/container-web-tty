@@ -128,7 +128,7 @@ func (server *Server) Run(ctx context.Context, options ...RunOption) error {
 		router.Use(gin.Logger())
 	}
 
-	base := server.options.Base
+	base := filepath.Join(server.options.Base)
 	api := router.Group(base)
 
 	// Routes
