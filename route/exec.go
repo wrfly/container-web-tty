@@ -146,7 +146,10 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 					timer.Stop()
 					timeoutCancel()
 					return
-				case <-activeChan:
+				case _, ok := <-activeChan:
+					if !ok {
+						return
+					}
 					// the connection is active, reset the timer
 					timer.Reset(tout)
 				}
