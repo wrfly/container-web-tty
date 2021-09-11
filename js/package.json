@@ -20,6 +20,7 @@
         "libapps": "github:yudai/libapps#release-hterm-1.70",
         "lodash": ">=4.17.19",
         "serialize-javascript": ">=3.1.0",
+        "ssri": ">=6.0.2",
         "xterm-addon-fit": "^0.3.0"
     }
 }
