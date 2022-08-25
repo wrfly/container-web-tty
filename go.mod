@@ -3,7 +3,7 @@ module github.com/wrfly/container-web-tty
 go 1.16
 
 require (
-	github.com/containerd/containerd v1.6.3 // indirect
+	github.com/containerd/containerd v1.6.8 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.8+incompatible
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a
