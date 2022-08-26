@@ -28,30 +28,20 @@ func NewCli(conf config.DockerConfig) (*DockerCli, error) {
 	host := conf.DockerHost
 	if host[:1] == "/" {
 		host = "unix://" + host
-	} else {
+	} else if !strings.HasPrefix(host, "tcp://") {
 		host = "tcp://" + host
 	}
-	version := "v1.24"
+
 	logrus.Infof("Docker connecting to %s", host)
-	UA := map[string]string{"User-Agent": "engine-api-cli-1.0"}
-	cli, err := client.NewClient(host, version, nil, UA)
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		logrus.Errorf("create new docker client error: %s", err)
 		return nil, err
 	}
 
-	// update docker version
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	v, err := cli.ServerVersion(ctx)
-	if err != nil {
-		return nil, err
-	}
-	cli, err = client.NewClient(host, v.APIVersion, nil, UA)
-	if err != nil {
-		logrus.Errorf("create new docker client error: %s", err)
-		return nil, err
-	}
 
 	listOptions, err := buildListOptions(conf.PsOptions)
 	if err != nil {
