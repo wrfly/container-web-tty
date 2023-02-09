@@ -7,7 +7,7 @@ require (
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.8+incompatible
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a
-	github.com/gin-gonic/gin v1.7.3
+	github.com/gin-gonic/gin v1.7.7
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/sirupsen/logrus v1.8.1
