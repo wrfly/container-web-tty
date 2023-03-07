@@ -15,7 +15,7 @@ require (
 	github.com/wrfly/ecp v0.1.1-0.20190725160759-97269b9e95f0
 	github.com/wrfly/pubsub v0.0.0-20200314104228-47828c5578b6
 	github.com/yudai/gotty v2.0.0-alpha.3+incompatible
-	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f
+	golang.org/x/net v0.7.0
 	google.golang.org/grpc v1.43.0
 	k8s.io/api v0.23.6
 	k8s.io/apimachinery v0.23.6
