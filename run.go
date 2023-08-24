@@ -20,7 +20,7 @@ func run(c *cli.Context, conf config.Config) {
 	if len(conf.Backend.GRPC.Servers) > 0 {
 		srvOptions.ShowLocation = true
 	}
-	if err := ecp.Default(&srvOptions); err != nil {
+	if err := ecp.Parse(&srvOptions); err != nil {
 		logrus.Fatal(err)
 	}
 

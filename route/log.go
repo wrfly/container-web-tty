@@ -3,9 +3,10 @@ package route
 import (
 	"net/http"
 
+	"github.com/wrfly/container-web-tty/third-part/gotty/webtty"
+
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/types"
 	"github.com/wrfly/container-web-tty/util"

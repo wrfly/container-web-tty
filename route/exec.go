@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wrfly/container-web-tty/third-part/gotty/webtty"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/wrfly/container-web-tty/audit"
 	"github.com/wrfly/container-web-tty/types"
-	"github.com/yudai/gotty/webtty"
 )
 
 func (server *Server) handleExecRedirect(c *gin.Context) {
