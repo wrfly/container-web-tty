@@ -9,6 +9,7 @@ import (
 	"time"
 
 	apiTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
@@ -256,14 +257,12 @@ func (docker *DockerCli) Start(ctx context.Context, cid string) error {
 }
 
 func (docker *DockerCli) Stop(ctx context.Context, cid string) error {
-	// Notice: is there a need to config this stop duration?
-	duration := time.Second * 5
-	return docker.cli.ContainerStop(ctx, cid, &duration)
+	return docker.cli.ContainerStop(ctx, cid, container.StopOptions{})
 }
 
 func (docker *DockerCli) Restart(ctx context.Context, cid string) error {
 	// restart immediately
-	return docker.cli.ContainerRestart(ctx, cid, nil)
+	return docker.cli.ContainerRestart(ctx, cid, container.StopOptions{})
 }
 
 func buildListOptions(options string) (apiTypes.ContainerListOptions, error) {

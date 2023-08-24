@@ -7,7 +7,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/wrfly/pubsub"
-	"github.com/yudai/gotty/webtty"
+
+	"github.com/wrfly/container-web-tty/third-part/gotty/webtty"
 )
 
 var globalPubSuber = pubsub.NewMemPubSuber()

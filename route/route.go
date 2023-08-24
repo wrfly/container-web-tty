@@ -15,10 +15,11 @@ import (
 	noesctmpl "text/template"
 	"time"
 
+	"github.com/wrfly/container-web-tty/third-part/gotty/webtty"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"github.com/yudai/gotty/webtty"
 
 	"github.com/wrfly/container-web-tty/config"
 	"github.com/wrfly/container-web-tty/container"

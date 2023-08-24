@@ -3,7 +3,7 @@ package route
 import (
 	"io"
 
-	"github.com/yudai/gotty/webtty"
+	"github.com/wrfly/container-web-tty/third-part/gotty/webtty"
 )
 
 type slaveWrapper struct {

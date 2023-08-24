@@ -5,16 +5,14 @@
       "noImplicitThis": true,
       "alwaysStrict": true,
       "outDir": "./dist/",
-      "declaration": true,
-      "sourceMap": true,
-      "target": "es5",
-      "module": "commonJS",
-      "baseUrl": ".",
+      "declaration": false,
+      "sourceMap": false,
+      "target": "es6",
+      "module": "commonjs",
+      "baseUrl": "./",
       "paths": {
           "*": ["./typings/*"]
       }
   },
-    "exclude": [
-      "node_modules"
-    ]
+    "exclude": ["node_modules/*"]
 }

@@ -3,11 +3,12 @@ package route
 import (
 	"fmt"
 
+	"github.com/wrfly/container-web-tty/third-part/gotty/webtty"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/wrfly/container-web-tty/types"
-	"github.com/yudai/gotty/webtty"
 )
 
 func (server *Server) processShare(c *gin.Context, execID string, masterTTY *types.MasterTTY) {

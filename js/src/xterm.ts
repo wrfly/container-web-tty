@@ -11,7 +11,7 @@ export class Xterm {
 
     message: HTMLElement;
     messageTimeout: number;
-    messageTimer: NodeJS.Timeout;
+    messageTimer: number;
 
 
     constructor(elem: HTMLElement) {

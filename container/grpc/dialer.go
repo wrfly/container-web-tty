@@ -61,7 +61,7 @@ func newDialOption(proxyStr string) (grpc.DialOption, error) {
 		}
 	case "http", "https":
 		p := goproxy.NewProxyHttpServer()
-		p.Logger.SetOutput(logrus.StandardLogger().Out)
+		p.Logger = logrus.StandardLogger()
 		httpDialer := p.NewConnectDialToProxy(proxyStr)
 
 		if _, err := dialWithTimeout(&dialer{proxyD: httpDialer},
