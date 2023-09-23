@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -138,6 +139,7 @@ func (wt *WebTTY) sendInitializeMessage() error {
 }
 
 func (wt *WebTTY) handleSlaveReadEvent(data []byte) error {
+	fmt.Printf("write to master ==> %s\n", data)
 	safeMessage := base64.StdEncoding.EncodeToString(data)
 	err := wt.masterWrite(append([]byte{Output}, []byte(safeMessage)...))
 	if err != nil {

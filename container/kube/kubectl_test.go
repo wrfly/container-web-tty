@@ -2,6 +2,7 @@ package kube
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 )
 
 func TestKubeCli(t *testing.T) {
+	_, err := os.Stat("/home/mr/.kube/config")
+	if err != nil {
+		return
+	}
+
 	logrus.SetLevel(logrus.DebugLevel)
 
 	k, err := NewCli(config.KubeConfig{ConfigPath: "/home/mr/.kube/config"})
