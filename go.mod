@@ -3,7 +3,7 @@ module github.com/wrfly/container-web-tty
 go 1.20
 
 require (
-	github.com/docker/docker v24.0.5+incompatible
+	github.com/docker/docker v24.0.9+incompatible
 	github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang/protobuf v1.5.3
