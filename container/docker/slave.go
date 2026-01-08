@@ -3,20 +3,20 @@ package docker
 import (
 	"time"
 
-	apiTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types"
 	"github.com/sirupsen/logrus"
 )
 
 // execInjector implement webtty.Slave
 type execInjector struct {
-	hResp      apiTypes.HijackedResponse
+	hResp      types.HijackedResponse
 	resize     resizeFunction
 	activeChan chan struct{}
 }
 
 type resizeFunction func(width int, height int) error
 
-func newExecInjector(resp apiTypes.HijackedResponse, resize resizeFunction) *execInjector {
+func newExecInjector(resp types.HijackedResponse, resize resizeFunction) *execInjector {
 	return &execInjector{
 		hResp:      resp,
 		resize:     resize,
