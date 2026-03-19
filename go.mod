@@ -16,7 +16,7 @@ require (
 	github.com/wrfly/ecp v0.2.4
 	github.com/wrfly/pubsub v0.0.0-20200314104228-47828c5578b6
 	golang.org/x/net v0.48.0
-	google.golang.org/grpc v1.78.0
+	google.golang.org/grpc v1.79.3
 	k8s.io/api v0.35.0
 	k8s.io/apimachinery v0.35.0
 	k8s.io/client-go v0.35.0
