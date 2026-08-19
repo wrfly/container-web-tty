@@ -13,7 +13,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
-	github.com/wrfly/ecp v0.2.4
+	github.com/wrfly/ecp v0.3.1
 	github.com/wrfly/pubsub v0.0.0-20200314104228-47828c5578b6
 	golang.org/x/net v0.48.0
 	google.golang.org/grpc v1.78.0

@@ -202,8 +202,8 @@ github.com/ugorji/go/codec v1.3.1 h1:waO7eEiFDwidsBN6agj1vJQ4AG7lh2yqXyOXqhgQuyY
 github.com/ugorji/go/codec v1.3.1/go.mod h1:pRBVtBSKl77K30Bv8R2P+cLSGaTtex6fsA2Wjqmfxj4=
 github.com/urfave/cli/v2 v2.27.7 h1:bH59vdhbjLv3LAvIu6gd0usJHgoTTPhCFib8qqOwXYU=
 github.com/urfave/cli/v2 v2.27.7/go.mod h1:CyNAG/xg+iAOg0N4MPGZqVmv2rCoP267496AOXUZjA4=
-github.com/wrfly/ecp v0.2.4 h1:vp/5kS0PPS+Pom9Z3w+V94klqY3Kin/OacExL5ioN/8=
-github.com/wrfly/ecp v0.2.4/go.mod h1:8rt/LxDJNLd6AxL56hbbbNWZfJLK4x8+UU4Fyey0m+8=
+github.com/wrfly/ecp v0.3.1 h1:NIEqJ6jxPwVriOpvr7bTIFPUje2M2UxCkr2XzSJOi68=
+github.com/wrfly/ecp v0.3.1/go.mod h1:8rt/LxDJNLd6AxL56hbbbNWZfJLK4x8+UU4Fyey0m+8=
 github.com/wrfly/pubsub v0.0.0-20200314104228-47828c5578b6 h1:iuI+7TJcnnKB3WH08PmK5Y4c66Tf2XNXmnvLpIFFP30=
 github.com/wrfly/pubsub v0.0.0-20200314104228-47828c5578b6/go.mod h1:WFtPVb6GumrLEVcAHZPSbjZmvWgenDSi4ceFW7k1r30=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
