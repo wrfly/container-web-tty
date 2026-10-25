@@ -6,6 +6,7 @@ import (
 	"github.com/wrfly/container-web-tty/third-part/gotty/webtty"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/wrfly/container-web-tty/types"
@@ -41,13 +42,17 @@ func (server *Server) handleLogs(c *gin.Context) {
 	if v := q.Get("tail"); v != "" {
 		tail = v
 	}
+	container := server.containerCli.GetInfo(ctx, c.Param("cid"))
+	if container.ID == "" {
+		conn.WriteMessage(websocket.CloseMessage,
+			[]byte("container not found"))
+		return
+	}
 	opts := types.LogOptions{
-		ID:     c.Param("cid"),
+		ID:     container.ID,
 		Follow: follow,
 		Tail:   tail,
 	}
-
-	container := server.containerCli.GetInfo(ctx, opts.ID)
 
 	log.Debugf("get logs of container: %s", container.ID)
 	logsReadCloser, err := server.containerCli.Logs(ctx, opts)

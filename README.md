@@ -111,7 +111,8 @@ Now you will see all the containers of all the servers via *<http://localhost:80
 - [x] history audit (just `cat` the history logs after enable this feature)
 - [x] real time sharing (like screen sharing)
 - [x] container logs (click the container name)
-- [x] exec arguments (append an extra "?cmd=xxx" argument in URL)
+- [x] exec arguments (append an extra "?cmd=xxx" argument in URL,
+  `?user=xxx&p=1` needs `--enable-exec-privilege`)
 - [x] connect to gRPC servers via HTTP/Socks5 proxy
 
 ### Audit exec history and container outputs
@@ -164,6 +165,7 @@ GLOBAL OPTIONS:
    --docker-ps value            docker ps options
    --enable-audit, --audit      enable audit the container outputs (default: false)
    --enable-collaborate, --clb  collaborate on the same TTY process (default: false)
+   --enable-exec-privilege      allow clients to set the exec user and privileged mode via URL arguments (?user=root&p=1), DANGEROUS (default: false)
    --grpc-auth value            grpc auth token (default: "password")
    --grpc-port value            grpc server port, -1 for disable the grpc server (default: -1)
    --grpc-proxy value           grpc proxy address, in the format of http://127.0.0.1:8080 or socks5://127.0.0.1:1080

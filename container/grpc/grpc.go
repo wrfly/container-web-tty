@@ -206,7 +206,7 @@ func (gCli GrpcCli) containerAction(ctx context.Context, action, containerID str
 			return err2
 		}
 		if err1 != nil {
-			return fmt.Errorf(err1.Err)
+			return fmt.Errorf("%s", err1.Err)
 		}
 		return nil
 	}

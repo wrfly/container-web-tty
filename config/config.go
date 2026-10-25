@@ -53,6 +53,9 @@ type ServerConfig struct {
 	Term            string `default:"xterm"`
 	ShowLocation    bool
 	Collaborate     bool
+	// let clients choose the exec user and privileged mode
+	// via the URL arguments (?user=root&p=1)
+	ExecPrivilege bool
 
 	// audit
 	EnableAudit bool

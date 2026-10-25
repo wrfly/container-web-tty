@@ -90,6 +90,9 @@ func getContainerIP(networkSettings interface{}) (ips []string) {
 	switch networkSettings.(type) {
 	case *container.NetworkSettingsSummary:
 		network := networkSettings.(*container.NetworkSettingsSummary)
+		if network == nil {
+			return
+		}
 		for net := range network.Networks {
 			if network.Networks[net] == nil {
 				continue
@@ -98,6 +101,9 @@ func getContainerIP(networkSettings interface{}) (ips []string) {
 		}
 	case *container.NetworkSettings:
 		network := networkSettings.(*container.NetworkSettings)
+		if network == nil {
+			return
+		}
 		for net := range network.Networks {
 			if network.Networks[net] == nil {
 				continue
@@ -130,57 +136,32 @@ func (d *DockerCli) watchEvents() {
 	logrus.Errorf("docker cli watch events error: %s", <-errChan)
 }
 
-func (d *DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
-	if d.containers.Len() == 0 {
-		logrus.Debugf("zero containers, get cid %s", cid)
-		d.List(ctx)
-	}
-
-	// find in containers
+// find returns the container only if it is in the (filtered) container list,
+// containers out of the list are not accessible
+func (d *DockerCli) find(ctx context.Context, cid string) types.Container {
 	if container := d.containers.Find(cid); container.ID != "" {
-		if container.Shell == "" {
-			shell := d.getShell(ctx, cid)
-			container.Shell = shell
-			d.containers.SetShell(cid, shell)
-		}
-		logrus.Debugf("found valid container: %s (%s)", container.ID, container.Shell)
 		return container
 	}
-
-	// didn't get this container, this really happens
-	resp, err := d.cli.ContainerInspect(ctx, cid)
-	if err != nil {
-		logrus.Errorf("inspect container %s error: %s", cid, err)
-		return types.Container{}
+	// the list may be outdated, refresh it (with the ps filters)
+	if time.Since(d.lastList) > time.Second*3 {
+		d.listContainers(ctx, true)
 	}
-
-	c := d.convert2Container(resp)
-	if c.ID != "" {
-		d.containers.Append(c)
-	}
-	return c
+	return d.containers.Find(cid)
 }
 
-func (d *DockerCli) convert2Container(inspect container.InspectResponse) types.Container {
-	if inspect.Config == nil {
-		// WTF?
+func (d *DockerCli) GetInfo(ctx context.Context, cid string) types.Container {
+	container := d.find(ctx, cid)
+	if container.ID == "" {
+		logrus.Errorf("no such container: %s", cid)
 		return types.Container{}
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	shell := d.getShell(ctx, inspect.ID)
-
-	return types.Container{
-		ID:      inspect.ID,
-		Name:    inspect.Name,
-		Image:   inspect.Image,
-		Command: fmt.Sprintf("%s", inspect.Config.Cmd),
-		IPs:     getContainerIP(inspect.NetworkSettings),
-		Status:  inspect.State.Status,
-		State:   inspect.State.Status,
-		Shell:   shell,
+	if container.Shell == "" {
+		shell := d.getShell(ctx, container.ID)
+		container.Shell = shell
+		d.containers.SetShell(container.ID, shell)
 	}
+	logrus.Debugf("found valid container: %s (%s)", container.ID, container.Shell)
+	return container
 }
 
 func (d *DockerCli) listContainers(ctx context.Context, force bool) []types.Container {
@@ -250,17 +231,37 @@ func (d *DockerCli) getShell(ctx context.Context, cid string) string {
 	return ""
 }
 
+func (d *DockerCli) findID(ctx context.Context, cid string) (string, error) {
+	c := d.find(ctx, cid)
+	if c.ID == "" {
+		return "", fmt.Errorf("no such container: %s", cid)
+	}
+	return c.ID, nil
+}
+
 func (d *DockerCli) Start(ctx context.Context, cid string) error {
-	return d.cli.ContainerStart(ctx, cid, container.StartOptions{})
+	id, err := d.findID(ctx, cid)
+	if err != nil {
+		return err
+	}
+	return d.cli.ContainerStart(ctx, id, container.StartOptions{})
 }
 
 func (d *DockerCli) Stop(ctx context.Context, cid string) error {
-	return d.cli.ContainerStop(ctx, cid, container.StopOptions{})
+	id, err := d.findID(ctx, cid)
+	if err != nil {
+		return err
+	}
+	return d.cli.ContainerStop(ctx, id, container.StopOptions{})
 }
 
 func (d *DockerCli) Restart(ctx context.Context, cid string) error {
+	id, err := d.findID(ctx, cid)
+	if err != nil {
+		return err
+	}
 	// restart immediately
-	return d.cli.ContainerRestart(ctx, cid, container.StopOptions{})
+	return d.cli.ContainerRestart(ctx, id, container.StopOptions{})
 }
 
 func buildListOptions(options string) (container.ListOptions, error) {
@@ -301,6 +302,11 @@ func buildListOptions(options string) (container.ListOptions, error) {
 }
 
 func (d *DockerCli) Exec(ctx context.Context, c types.Container) (types.TTY, error) {
+	id, err := d.findID(ctx, c.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	cmds := []string{c.Shell}
 	opts := c.Exec
 	if cmd := opts.Cmd; cmd != "" {
@@ -326,7 +332,7 @@ func (d *DockerCli) Exec(ctx context.Context, c types.Container) (types.TTY, err
 			strings.Split(opts.Env, " ")...)
 	}
 
-	response, err := d.cli.ContainerExecCreate(ctx, c.ID, execConfig)
+	response, err := d.cli.ContainerExecCreate(ctx, id, execConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +365,11 @@ func (d *DockerCli) Close() error {
 }
 
 func (d *DockerCli) Logs(ctx context.Context, opts types.LogOptions) (io.ReadCloser, error) {
-	rc, err := d.cli.ContainerLogs(ctx, opts.ID, container.LogsOptions{
+	id, err := d.findID(ctx, opts.ID)
+	if err != nil {
+		return nil, err
+	}
+	rc, err := d.cli.ContainerLogs(ctx, id, container.LogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
 		Follow:     opts.Follow,

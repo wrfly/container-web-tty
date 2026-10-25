@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,8 +19,12 @@ import (
 )
 
 func (server *Server) handleExecRedirect(c *gin.Context) {
-	containerID := c.Param("cid")
-	execID := server.setContainerID(containerID)
+	cInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("cid"))
+	if cInfo.ID == "" {
+		c.String(http.StatusNotFound, "container not found")
+		return
+	}
+	execID := server.setContainerID(cInfo.ID)
 	base := filepath.Join(server.options.Base, "/exec/") + "/"
 	if query := c.Request.URL.RawQuery; query != "" {
 		c.Redirect(302, base+execID+"?"+c.Request.URL.RawQuery)
@@ -46,6 +51,10 @@ func (server *Server) handleExec(c *gin.Context, counter *counter) {
 	}
 
 	cInfo := server.containerCli.GetInfo(c.Request.Context(), containerID)
+	if cInfo.ID == "" {
+		c.String(http.StatusNotFound, "container not found")
+		return
+	}
 	server.generateHandleWS(c.Request.Context(), execID, counter, cInfo).
 		ServeHTTP(c.Writer, c.Request)
 }
@@ -117,12 +126,7 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 	if err != nil {
 		return err
 	}
-	container.Exec = types.ExecOptions{
-		Cmd:        q.Get("cmd"),
-		Env:        q.Get("env"),
-		User:       q.Get("user"),
-		Privileged: q.Get("p") != "",
-	}
+	container.Exec = server.execOptions(q)
 
 	containerTTY, err := server.containerCli.Exec(ctx, container)
 	if err != nil {
@@ -204,4 +208,21 @@ func (server *Server) processTTY(ctx context.Context, execID string, timeoutCanc
 	}
 
 	return tty.Run(ctx)
+}
+
+// execOptions parses the exec options from the client arguments,
+// user and privileged mode are only accepted with --enable-exec-privilege
+func (server *Server) execOptions(q url.Values) types.ExecOptions {
+	opts := types.ExecOptions{
+		Cmd: q.Get("cmd"),
+		Env: q.Get("env"),
+	}
+	if server.options.ExecPrivilege {
+		opts.User = q.Get("user")
+		opts.Privileged = q.Get("p") != ""
+	} else if q.Get("user") != "" || q.Get("p") != "" {
+		log.Warnf("ignore exec user and privileged arguments, " +
+			"use --enable-exec-privilege to enable them")
+	}
+	return opts
 }

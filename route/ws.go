@@ -23,6 +23,10 @@ func (server *Server) handleWSIndex(c *gin.Context) {
 		}
 	}
 	cInfo := server.containerCli.GetInfo(c.Request.Context(), containerID)
+	if cInfo.ID == "" {
+		c.String(http.StatusNotFound, "container not found")
+		return
+	}
 	titleVars := server.titleVariables(
 		[]string{"server"},
 		map[string]map[string]interface{}{

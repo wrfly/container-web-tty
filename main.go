@@ -143,6 +143,12 @@ func main() {
 			Destination: &conf.Server.Collaborate,
 		},
 		&cli.BoolFlag{
+			Name:        "enable-exec-privilege",
+			EnvVars:     util.EnvVars("exec-privilege"),
+			Usage:       "allow clients to set the exec user and privileged mode via URL arguments (?user=root&p=1), DANGEROUS",
+			Destination: &conf.Server.ExecPrivilege,
+		},
+		&cli.BoolFlag{
 			Name:        "enable-audit",
 			Aliases:     []string{"audit"},
 			EnvVars:     util.EnvVars("audit"),

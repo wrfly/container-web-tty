@@ -67,7 +67,15 @@ func (server *Server) handleListContainers(c *gin.Context) {
 }
 
 func (server *Server) handleContainerActions(c *gin.Context, action string) {
-	cid := c.Param("id")
+	cInfo := server.containerCli.GetInfo(c.Request.Context(), c.Param("id"))
+	if cInfo.ID == "" {
+		c.JSON(404, types.ContainerActionMessage{
+			Code:  404,
+			Error: "container not found",
+		})
+		return
+	}
+	cid := cInfo.ID
 	log.Debugf("client [%s] is going to [%s] container [%s]",
 		c.ClientIP(), action, cid)
 	var err error
@@ -88,7 +96,7 @@ func (server *Server) handleContainerActions(c *gin.Context, action string) {
 	}
 	c.JSON(0, types.ContainerActionMessage{
 		Code:    0,
-		Message: fmt.Sprintf("%s container %s successfully", action, cid[:7]),
+		Message: fmt.Sprintf("%s container %.7s successfully", action, cid),
 	})
 }
 

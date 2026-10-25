@@ -6,7 +6,8 @@ import (
 )
 
 type Containers struct {
-	c    map[string]Container
+	c    map[string]Container // full ID and 12-char short ID
+	n    map[string]Container // name
 	cs   []Container
 	m    sync.RWMutex
 	once sync.Once
@@ -27,14 +28,19 @@ func (cs *Containers) Set(containers []Container) {
 	cs.init()
 
 	mapContainers := make(map[string]Container, len(containers)*2)
+	nameContainers := make(map[string]Container, len(containers))
 	for _, c := range containers {
 		mapContainers[c.ID] = c
 		if len(c.ID) >= 12 {
 			mapContainers[c.ID[:12]] = c
 		}
+		if c.Name != "" {
+			nameContainers[c.Name] = c
+		}
 	}
 	cs.m.Lock()
 	cs.c = mapContainers
+	cs.n = nameContainers
 	cs.cs = containers
 	cs.m.Unlock()
 }
@@ -50,10 +56,16 @@ func (cs *Containers) Append(c Container) {
 	if len(c.ID) >= 12 {
 		cs.c[c.ID[:12]] = c
 	}
+	if c.Name != "" {
+		cs.n[c.Name] = c
+	}
 	cs.cs = append(cs.cs, c)
 	cs.m.Unlock()
 }
 
+// Find a container by its full ID, 12-char short ID or name.
+// Arbitrary ID prefixes are not accepted, so the result is always
+// a container of the list.
 func (cs *Containers) Find(cID string) Container {
 	cs.init()
 
@@ -63,17 +75,8 @@ func (cs *Containers) Find(cID string) Container {
 	if c, exist := cs.c[cID]; exist {
 		return c
 	}
-	// didn't find this cid
-	rC := Container{}
-	l := 0
-	for id, info := range cs.c {
-		if strings.HasPrefix(id, cID) {
-			l++
-			rC = info
-		}
-	}
-	if l == 1 {
-		return rC
+	if c, exist := cs.n[strings.TrimPrefix(cID, "/")]; exist {
+		return c
 	}
 
 	return Container{}
@@ -93,5 +96,6 @@ func (cs *Containers) SetShell(cID, shell string) {
 func (cs *Containers) init() {
 	cs.once.Do(func() {
 		cs.c = make(map[string]Container, 100)
+		cs.n = make(map[string]Container, 100)
 	})
 }
