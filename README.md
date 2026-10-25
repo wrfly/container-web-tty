@@ -1,3 +1,5 @@
+> This project is no longer maintained. Please use [Dozzle](https://github.com/amir20/dozzle) instead.
+
 # Container web TTY
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/wrfly/container-web-tty)](https://goreportcard.com/report/github.com/wrfly/container-web-tty)
