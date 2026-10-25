@@ -1,5 +1,4 @@
 > This project is no longer maintained. Please use [Dozzle](https://github.com/amir20/dozzle) instead.
-> 本项目不再维护，请使用 [Dozzle](https://github.com/amir20/dozzle)。
 
 # Container web TTY
 
